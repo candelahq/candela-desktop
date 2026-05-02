@@ -182,5 +182,133 @@ providers:
       final config = await service.load();
       expect(config.remote, 'https://candela.example.com#auth');
     });
+
+    // --- YAML error handling ---
+
+    test('load handles YAML syntax errors gracefully', () async {
+      File(testConfigPath).writeAsStringSync('port: [invalid yaml');
+      final config = await service.load();
+      expect(config.issues, isNotEmpty);
+      expect(config.issues.first.severity, IssueSeverity.error);
+      expect(config.issues.first.message, contains('YAML syntax error'));
+    });
+
+    test('load handles empty YAML file', () async {
+      File(testConfigPath).writeAsStringSync('');
+      final config = await service.load();
+      expect(config.issues, isNotEmpty);
+      expect(config.issues.first.message, contains('empty'));
+    });
+
+    // --- Validation ---
+
+    test('team mode without audience generates error', () async {
+      File(testConfigPath).writeAsStringSync('''
+remote: https://candela.example.com
+port: 8181
+''');
+      final config = await service.load();
+      final audienceIssue = config.issues.where((i) => i.field == 'audience');
+      expect(audienceIssue, isNotEmpty);
+      expect(audienceIssue.first.severity, IssueSeverity.error);
+    });
+
+    test('cloud provider without vertex_ai.project generates error', () async {
+      File(testConfigPath).writeAsStringSync('''
+providers:
+  - name: google
+''');
+      final config = await service.load();
+      final projectIssue = config.issues.where((i) => i.field == 'vertex_ai.project');
+      expect(projectIssue, isNotEmpty);
+    });
+
+    test('cloud provider without vertex_ai.region generates warning', () async {
+      File(testConfigPath).writeAsStringSync('''
+providers:
+  - name: google
+vertex_ai:
+  project: my-project
+''');
+      final config = await service.load();
+      final regionIssue = config.issues.where((i) => i.field == 'vertex_ai.region');
+      expect(regionIssue, isNotEmpty);
+      expect(regionIssue.first.severity, IssueSeverity.warning);
+    });
+
+    // --- vertex_ai parsing ---
+
+    test('load parses vertex_ai config', () async {
+      File(testConfigPath).writeAsStringSync('''
+providers:
+  - name: google
+vertex_ai:
+  project: my-project
+  region: us-east1
+''');
+      final config = await service.load();
+      expect(config.vertexAI, isNotNull);
+      expect(config.vertexAI!.project, 'my-project');
+      expect(config.vertexAI!.region, 'us-east1');
+    });
+
+    // --- Duplicate prevention ---
+
+    test('addProvider does not add duplicate', () async {
+      File(testConfigPath).writeAsStringSync('''
+providers:
+  - name: google
+''');
+      await service.addProvider('google');
+      final config = await service.load();
+      expect(config.providers.length, 1);
+    });
+
+    // --- Mode detection ---
+
+    test('solo cloud mode detected when providers but no remote', () async {
+      File(testConfigPath).writeAsStringSync('''
+providers:
+  - name: google
+vertex_ai:
+  project: my-project
+  region: us-central1
+''');
+      final config = await service.load();
+      expect(config.mode, CandelaMode.soloCloud);
+    });
+
+    test('solo mode detected when no providers and no remote', () async {
+      File(testConfigPath).writeAsStringSync('port: 8181\n');
+      final config = await service.load();
+      expect(config.mode, CandelaMode.solo);
+    });
+
+    // --- Provider models ---
+
+    test('load parses provider models list', () async {
+      File(testConfigPath).writeAsStringSync('''
+providers:
+  - name: google
+    models:
+      - gemini-1.5-pro
+      - gemini-1.5-flash
+''');
+      final config = await service.load();
+      expect(config.providers[0].models, ['gemini-1.5-pro', 'gemini-1.5-flash']);
+    });
+
+    // --- Port boundary values ---
+
+    test('setPort accepts boundary values', () async {
+      File(testConfigPath).writeAsStringSync('port: 8181\n');
+      await service.setPort('port', 1);
+      var config = await service.load();
+      expect(config.port, 1);
+
+      await service.setPort('port', 65535);
+      config = await service.load();
+      expect(config.port, 65535);
+    });
   });
 }

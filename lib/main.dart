@@ -35,6 +35,9 @@ void main() async {
   processManager.configure(
     providerNames: config.providers.map((p) => p.name).toList(),
     proxyPort: config.port.toString(),
+    portOverrides: {
+      'lmstudio': config.lmStudioPort.toString(),
+    },
   );
 
   // Detect already-running processes.

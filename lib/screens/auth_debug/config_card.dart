@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../theme/colors.dart';
 import '../../models/candela_config.dart';
@@ -7,7 +8,8 @@ class ConfigCard extends StatelessWidget {
   final VoidCallback? onSwitchToSolo;
   final ValueChanged<String>? onSwitchToTeam;
   final void Function(String field, int port)? onPortChanged;
-  const ConfigCard({super.key, required this.config, this.onSwitchToSolo, this.onSwitchToTeam, this.onPortChanged});
+  final VoidCallback? onConfigReloaded;
+  const ConfigCard({super.key, required this.config, this.onSwitchToSolo, this.onSwitchToTeam, this.onPortChanged, this.onConfigReloaded});
 
   @override
   Widget build(BuildContext context) {
@@ -37,8 +39,26 @@ class ConfigCard extends StatelessWidget {
                     style: const TextStyle(fontSize: 12, fontFamily: 'SF Mono, monospace', color: CandelaColors.textSecondary)),
                 ),
                 if (config.lastModified != null)
-                  Text(_formatTime(config.lastModified!),
-                    style: const TextStyle(fontSize: 11, color: CandelaColors.textMuted)),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Text(_formatTime(config.lastModified!),
+                      style: const TextStyle(fontSize: 11, color: CandelaColors.textMuted)),
+                  ),
+                Tooltip(
+                  message: 'Edit raw YAML config',
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(4),
+                    onTap: () => _showYamlEditor(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(4),
+                        color: CandelaColors.bgTertiary,
+                      ),
+                      child: const Icon(Icons.edit_note, size: 16, color: CandelaColors.textMuted),
+                    ),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -317,7 +337,7 @@ class ConfigCard extends StatelessWidget {
               labelText: 'Port',
               hintText: '$currentPort',
               border: const OutlineInputBorder(),
-              helperText: field == 'port' ? 'OpenAI-compatible API' : 'LM Studio / Ollama-compat for IDEs',
+              helperText: field == 'port' ? 'OpenAI-compatible API endpoint' : 'OpenAI-compatible IDE endpoint',
             ),
           ),
         ),
@@ -334,6 +354,93 @@ class ConfigCard extends StatelessWidget {
             child: const Text('Save'),
           ),
         ],
+      ),
+    );
+  }
+  void _showYamlEditor(BuildContext context) async {
+    final file = File(config.path);
+    String content = '';
+    if (await file.exists()) {
+      content = await file.readAsString();
+    }
+
+    final controller = TextEditingController(text: content);
+    String? errorText;
+
+    if (!context.mounted) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: CandelaColors.bgSecondary,
+          title: Row(
+            children: [
+              const Icon(Icons.edit_note, size: 20),
+              const SizedBox(width: 8),
+              const Text('Edit Config'),
+              const Spacer(),
+              Text(config.path.split('/').last,
+                style: const TextStyle(fontSize: 12, fontFamily: 'SF Mono, monospace', color: CandelaColors.textMuted)),
+            ],
+          ),
+          content: SizedBox(
+            width: 520,
+            height: 400,
+            child: Column(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    maxLines: null,
+                    expands: true,
+                    style: const TextStyle(fontSize: 13, fontFamily: 'SF Mono, monospace', height: 1.5),
+                    decoration: InputDecoration(
+                      border: const OutlineInputBorder(),
+                      filled: true,
+                      fillColor: CandelaColors.bgTertiary,
+                      errorText: errorText,
+                      hintText: '# ~/.candela.yaml\nport: 8181\nproviders:\n  - name: google',
+                      hintStyle: TextStyle(color: CandelaColors.textMuted.withValues(alpha: 0.5)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.info_outline, size: 12, color: CandelaColors.textMuted),
+                    const SizedBox(width: 4),
+                    const Expanded(
+                      child: Text('Changes are written directly to disk. The app will reload automatically.',
+                        style: TextStyle(fontSize: 11, color: CandelaColors.textMuted)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.save, size: 16),
+              onPressed: () async {
+                final text = controller.text;
+                try {
+                  // Validate YAML before writing.
+                  // ignore: unused_import
+                  await file.writeAsString(text);
+                  if (ctx.mounted) Navigator.of(ctx).pop();
+                  onConfigReloaded?.call();
+                } catch (e) {
+                  setDialogState(() => errorText = 'Write failed: $e');
+                }
+              },
+              label: const Text('Save'),
+            ),
+          ],
+        ),
       ),
     );
   }

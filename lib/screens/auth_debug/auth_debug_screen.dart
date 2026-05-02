@@ -72,6 +72,9 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
     processManager.configure(
       providerNames: config.providers.map((p) => p.name).toList(),
       proxyPort: config.port.toString(),
+      portOverrides: {
+        'lmstudio': config.lmStudioPort.toString(),
+      },
     );
     await processManager.detectRunning();
 
@@ -287,6 +290,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
                             await _configService.setPort(field, port);
                             await _loadAll();
                           },
+                          onConfigReloaded: _loadAll,
                         ),
                       const SizedBox(height: 24),
 
@@ -330,7 +334,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
                                 physics: const NeverScrollableScrollPhysics(),
                                 crossAxisSpacing: 12,
                                 mainAxisSpacing: 12,
-                                childAspectRatio: 1.4,
+                                childAspectRatio: crossCount == 4 ? 1.2 : 1.4,
                                 children: [
                                   for (final s in _providerStatuses)
                                     _isLocalProvider(s.name)

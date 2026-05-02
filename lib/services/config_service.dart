@@ -7,16 +7,20 @@ import '../models/candela_config.dart';
 
 /// Reads, parses, and validates ~/.candela.yaml.
 class ConfigService {
+  final String? configPath;
+
+  ConfigService({this.configPath});
+
   /// Load and validate the candela config file.
   ///
-  /// Search order: $CANDELA_CONFIG → ~/.candela.yaml
+  /// Search order: configPath → $CANDELA_CONFIG → ~/.candela.yaml
   Future<CandelaConfig> load() async {
-    final configPath = _resolveConfigPath();
-    final file = File(configPath);
+    final resolvedPath = _resolveConfigPath();
+    final file = File(resolvedPath);
 
     if (!await file.exists()) {
       return CandelaConfig(
-        path: configPath,
+        path: resolvedPath,
         issues: const [
           ConfigIssue(
             severity: IssueSeverity.info,
@@ -34,7 +38,7 @@ class ConfigService {
       final yaml = loadYaml(content) as YamlMap?;
       if (yaml == null) {
         return CandelaConfig(
-          path: configPath,
+          path: resolvedPath,
           lastModified: stat.modified,
           issues: const [
             ConfigIssue(
@@ -45,10 +49,10 @@ class ConfigService {
           ],
         );
       }
-      return _parse(configPath, stat.modified, yaml);
+      return _parse(resolvedPath, stat.modified, yaml);
     } on YamlException catch (e) {
       return CandelaConfig(
-        path: configPath,
+        path: resolvedPath,
         lastModified: stat.modified,
         issues: [
           ConfigIssue(
@@ -70,6 +74,7 @@ class ConfigService {
   }
 
   String _resolveConfigPath() {
+    if (configPath != null) return configPath!;
     final envPath = Platform.environment['CANDELA_CONFIG'];
     if (envPath != null && envPath.isNotEmpty) return envPath;
     final home = Platform.environment['HOME'] ?? '';
@@ -189,6 +194,22 @@ class ConfigService {
       yamlMap.remove('runtime_manage');
     }
 
+    await _writeYaml(file, yamlMap);
+  }
+
+  /// Set a port field (port or lmstudio_port) in the config.
+  Future<void> setPort(String field, int port) async {
+    final configPath = _resolveConfigPath();
+    final file = File(configPath);
+
+    Map<String, dynamic> yamlMap = {};
+    if (await file.exists()) {
+      final content = await file.readAsString();
+      final parsed = loadYaml(content);
+      if (parsed is YamlMap) yamlMap = _yamlMapToMap(parsed);
+    }
+
+    yamlMap[field] = port;
     await _writeYaml(file, yamlMap);
   }
 

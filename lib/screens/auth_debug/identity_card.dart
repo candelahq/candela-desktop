@@ -14,7 +14,6 @@ class IdentityCard extends StatefulWidget {
 }
 
 class _IdentityCardState extends State<IdentityCard> {
-  String? _runningCommand;
 
   @override
   Widget build(BuildContext context) {
@@ -81,24 +80,42 @@ class _IdentityCardState extends State<IdentityCard> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 OutlinedButton.icon(
-                  onPressed: _runningCommand != null ? null : widget.onRefresh,
+                  onPressed: _adcProcess != null ? null : widget.onRefresh,
                   icon: const Icon(Icons.refresh, size: 14),
                   label: const Text('Refresh'),
                 ),
                 const SizedBox(height: 6),
-                _authButton(
-                  label: 'gcloud login',
-                  icon: Icons.person,
-                  command: 'auth', args: ['login'],
-                  tooltip: 'gcloud auth login — switch GCP user account',
-                ),
-                const SizedBox(height: 4),
-                _authButton(
-                  label: 'ADC login',
-                  icon: Icons.key,
-                  command: 'auth', args: ['application-default', 'login'],
-                  tooltip: 'gcloud auth application-default login — refresh ADC credentials',
-                ),
+                if (_adcProcess == null)
+                  Tooltip(
+                    message: 'gcloud auth application-default login\nRefresh or switch ADC credentials',
+                    child: SizedBox(
+                      width: 130,
+                      child: OutlinedButton.icon(
+                        onPressed: _runAdcLogin,
+                        icon: const Icon(Icons.key, size: 14),
+                        label: const Text('ADC Login', style: TextStyle(fontSize: 11)),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  SizedBox(
+                    width: 130,
+                    child: OutlinedButton.icon(
+                      onPressed: _cancelAdcLogin,
+                      icon: const SizedBox(width: 14, height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 1.5)),
+                      label: const Text('Cancel', style: TextStyle(fontSize: 11)),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        visualDensity: VisualDensity.compact,
+                        foregroundColor: CandelaColors.error,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ],
@@ -107,50 +124,25 @@ class _IdentityCardState extends State<IdentityCard> {
     );
   }
 
-  Widget _authButton({
-    required String label,
-    required IconData icon,
-    required String command,
-    required List<String> args,
-    required String tooltip,
-  }) {
-    final isRunning = _runningCommand == label;
-    return Tooltip(
-      message: tooltip,
-      child: SizedBox(
-        width: 120,
-        child: OutlinedButton.icon(
-          onPressed: isRunning ? null : () => _runGcloudAuth(label, command, args),
-          icon: isRunning
-            ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 1.5))
-            : Icon(icon, size: 14),
-          label: Text(isRunning ? 'Running...' : label, style: const TextStyle(fontSize: 11)),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            visualDensity: VisualDensity.compact,
-          ),
-        ),
-      ),
-    );
-  }
+  Process? _adcProcess;
 
-  Future<void> _runGcloudAuth(String label, String command, List<String> args) async {
-    setState(() => _runningCommand = label);
+  Future<void> _runAdcLogin() async {
+    setState(() {});
     try {
-      // This opens a browser for the OAuth flow.
-      final result = await Process.run('gcloud', [command, ...args]);
-      if (result.exitCode == 0) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('$label completed successfully'), backgroundColor: CandelaColors.success),
-          );
-        }
+      _adcProcess = await Process.start('gcloud', ['auth', 'application-default', 'login']);
+      setState(() {}); // show cancel button
+
+      final exitCode = await _adcProcess!.exitCode;
+      if (!mounted) return;
+
+      if (exitCode == 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('ADC credentials refreshed'), backgroundColor: CandelaColors.success),
+        );
       } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('$label failed: ${result.stderr}'), backgroundColor: CandelaColors.error),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('ADC login exited with code $exitCode'), backgroundColor: CandelaColors.error),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -159,10 +151,20 @@ class _IdentityCardState extends State<IdentityCard> {
         );
       }
     }
+    _adcProcess = null;
     if (mounted) {
-      setState(() => _runningCommand = null);
+      setState(() {});
       widget.onRefresh();
     }
+  }
+
+  void _cancelAdcLogin() {
+    _adcProcess?.kill();
+    _adcProcess = null;
+    setState(() {});
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('ADC login cancelled')),
+    );
   }
 
   Widget _badge(String text) {

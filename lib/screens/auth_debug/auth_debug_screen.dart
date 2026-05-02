@@ -284,6 +284,10 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
                             await _configService.setMode(remote: url);
                             await _loadAll();
                           },
+                          onPortChanged: (field, port) async {
+                            await _configService.setPort(field, port);
+                            await _loadAll();
+                          },
                         ),
                       const SizedBox(height: 24),
 

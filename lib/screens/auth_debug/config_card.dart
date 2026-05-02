@@ -6,7 +6,8 @@ class ConfigCard extends StatelessWidget {
   final CandelaConfig config;
   final VoidCallback? onSwitchToSolo;
   final ValueChanged<String>? onSwitchToTeam;
-  const ConfigCard({super.key, required this.config, this.onSwitchToSolo, this.onSwitchToTeam});
+  final void Function(String field, int port)? onPortChanged;
+  const ConfigCard({super.key, required this.config, this.onSwitchToSolo, this.onSwitchToTeam, this.onPortChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -87,8 +88,8 @@ class ConfigCard extends StatelessWidget {
               spacing: 12,
               runSpacing: 6,
               children: [
-                _portChip('API', config.port, 'OpenAI-compatible endpoint'),
-                _portChip('IDE', config.lmStudioPort, 'LM Studio / Ollama-compat for IDEs'),
+                _portChip(context, 'API', 'port', config.port, 'OpenAI-compatible endpoint'),
+                _portChip(context, 'IDE', 'lmstudio_port', config.lmStudioPort, 'LM Studio / Ollama-compat for IDEs'),
               ],
             ),
             // Issues
@@ -265,28 +266,74 @@ class ConfigCard extends StatelessWidget {
     );
   }
 
-  Widget _portChip(String label, int port, String tooltip) {
+  Widget _portChip(BuildContext context, String label, String field, int port, String tooltip) {
     return Tooltip(
-      message: '$tooltip\nlocalhost:$port',
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: CandelaColors.bgTertiary,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: CandelaColors.borderSubtle),
+      message: '$tooltip\nlocalhost:$port\nClick to edit',
+      child: InkWell(
+        borderRadius: BorderRadius.circular(6),
+        onTap: onPortChanged != null ? () => _showPortEditor(context, label, field, port) : null,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: CandelaColors.bgTertiary,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: CandelaColors.borderSubtle),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                label == 'API' ? Icons.cloud_outlined : Icons.terminal,
+                size: 12, color: CandelaColors.textMuted,
+              ),
+              const SizedBox(width: 4),
+              Text('$label :$port',
+                style: const TextStyle(fontSize: 11, fontFamily: 'SF Mono, monospace', color: CandelaColors.textSecondary)),
+              if (onPortChanged != null) ...[
+                const SizedBox(width: 4),
+                const Icon(Icons.edit, size: 10, color: CandelaColors.textMuted),
+              ],
+            ],
+          ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              label == 'API' ? Icons.cloud_outlined : Icons.terminal,
-              size: 12, color: CandelaColors.textMuted,
+      ),
+    );
+  }
+
+  void _showPortEditor(BuildContext context, String label, String field, int currentPort) {
+    final controller = TextEditingController(text: '$currentPort');
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: CandelaColors.bgSecondary,
+        title: Text('Edit $label Port'),
+        content: SizedBox(
+          width: 240,
+          child: TextField(
+            controller: controller,
+            autofocus: true,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              labelText: 'Port',
+              hintText: '$currentPort',
+              border: const OutlineInputBorder(),
+              helperText: field == 'port' ? 'OpenAI-compatible API' : 'LM Studio / Ollama-compat for IDEs',
             ),
-            const SizedBox(width: 4),
-            Text('$label :$port',
-              style: const TextStyle(fontSize: 11, fontFamily: 'SF Mono, monospace', color: CandelaColors.textSecondary)),
-          ],
+          ),
         ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              final port = int.tryParse(controller.text.trim());
+              if (port != null && port > 0 && port <= 65535) {
+                Navigator.of(ctx).pop();
+                onPortChanged?.call(field, port);
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
       ),
     );
   }

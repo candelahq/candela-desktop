@@ -179,8 +179,8 @@ class DiagnosticRunner {
       }
     }
 
-    // Test runtime backend.
-    if (config.runtimeBackend == 'ollama' || config.runtimeBackend == null) {
+    // Test local runtime backends from providers list.
+    if (providerNames.contains('ollama')) {
       _emit('Testing Ollama (local)...', DiagnosticStatus.running);
       final ollamaStatus = await _providers.testOllama();
       if (ollamaStatus.isHealthy) {

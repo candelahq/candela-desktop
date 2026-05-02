@@ -7,6 +7,7 @@ import 'services/config_service.dart';
 
 /// Global singletons for process management and tray.
 final processManager = ProcessManager();
+late final ConfigService configService;
 late final TrayService trayService;
 
 void main() async {
@@ -28,10 +29,12 @@ void main() async {
   });
 
   // Load config and configure process manager.
-  final config = await ConfigService().load();
+  configService = ConfigService();
+  await configService.migrateLegacyFields();
+  final config = await configService.load();
   processManager.configure(
     providerNames: config.providers.map((p) => p.name).toList(),
-    proxyPort: config.port?.toString(),
+    proxyPort: config.port.toString(),
   );
 
   // Detect already-running processes.

@@ -97,4 +97,52 @@ void main() {
       expect(p.uptimeString, contains('h'));
     });
   });
+
+  // --- Fix #2: port overrides ---
+
+  group('ProcessManager port overrides', () {
+    late ProcessManager pm;
+    setUp(() => pm = ProcessManager());
+    tearDown(() => pm.dispose());
+
+    test('configure applies port overrides to local providers', () {
+      pm.configure(
+        providerNames: ['ollama', 'vllm'],
+        portOverrides: {'ollama': '22222', 'vllm': '33333'},
+      );
+      expect(pm.get('ollama')!.port, '22222');
+      expect(pm.get('vllm')!.port, '33333');
+    });
+
+    test('configure uses defaults when no override', () {
+      pm.configure(
+        providerNames: ['ollama'],
+        portOverrides: {},
+      );
+      expect(pm.get('ollama')!.port, '11434');
+    });
+  });
+
+  // --- Fix #6: stopAll coverage ---
+
+  group('ProcessManager stopAll', () {
+    late ProcessManager pm;
+    setUp(() => pm = ProcessManager());
+    tearDown(() => pm.dispose());
+
+    test('stopAll targets all running processes not just those with handles', () {
+      pm.configure(providerNames: ['ollama']);
+      // Simulate a detected-running process (no handle, but state=running).
+      final ollama = pm.get('ollama')!;
+      ollama.state = ProcessState.running;
+      ollama.pid = 12345;
+
+      // stopAll should attempt to stop it.
+      // We can't verify kill() in unit tests, but we can verify state transition.
+      pm.stopAll();
+      // After stopAll, process should be stopped.
+      expect(ollama.state, ProcessState.stopped);
+      expect(ollama.pid, isNull);
+    });
+  });
 }

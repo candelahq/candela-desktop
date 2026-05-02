@@ -30,7 +30,7 @@ class RuntimeControlCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: _borderColor),
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

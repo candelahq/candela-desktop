@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../theme/colors.dart';
-import '../../services/config_service.dart';
 import '../../services/gcloud_service.dart';
 import '../../services/adc_service.dart';
 import '../../services/provider_test_service.dart';
@@ -10,7 +9,7 @@ import '../../services/process_manager.dart';
 import '../../models/identity_state.dart';
 import '../../models/candela_config.dart';
 import '../../models/provider_status.dart';
-import '../../main.dart' show processManager;
+import '../../main.dart' show processManager, configService;
 
 import 'identity_card.dart';
 import 'config_card.dart';
@@ -28,7 +27,7 @@ class AuthDebugScreen extends StatefulWidget {
 class _AuthDebugScreenState extends State<AuthDebugScreen> {
   final _gcloud = GCloudService();
   final _adc = AdcService();
-  final _configService = ConfigService();
+  final _configService = configService;
   final _providerTest = ProviderTestService();
   late final DiagnosticRunner _diagnostics;
 
@@ -72,7 +71,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
     // Sync process manager with config.
     processManager.configure(
       providerNames: config.providers.map((p) => p.name).toList(),
-      proxyPort: config.port?.toString(),
+      proxyPort: config.port.toString(),
     );
     await processManager.detectRunning();
 

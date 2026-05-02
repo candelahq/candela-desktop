@@ -16,6 +16,12 @@ class IdentityCard extends StatefulWidget {
 class _IdentityCardState extends State<IdentityCard> {
 
   @override
+  void dispose() {
+    _adcProcess?.kill();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final identity = widget.identity;
     final token = identity.tokenInfo;

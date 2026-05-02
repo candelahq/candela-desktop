@@ -47,7 +47,11 @@ class ProcessManager extends ChangeNotifier {
 
   /// Configure which processes to manage based on the providers list.
   /// Always includes proxy. Adds any local providers found in the list.
-  void configure({required List<String> providerNames, String? proxyPort}) {
+  void configure({
+    required List<String> providerNames,
+    String? proxyPort,
+    Map<String, String>? portOverrides,
+  }) {
     _processes.clear();
 
     // Proxy is always managed.
@@ -60,6 +64,10 @@ class ProcessManager extends ChangeNotifier {
     for (final name in providerNames) {
       final info = _runtimeInfo(name);
       if (info != null) {
+        // Apply port override from config if available.
+        if (portOverrides != null && portOverrides.containsKey(name)) {
+          info.port = portOverrides[name];
+        }
         _processes[name] = info;
       }
     }
@@ -212,10 +220,13 @@ class ProcessManager extends ChangeNotifier {
     await start(name);
   }
 
-  /// Stop all managed processes.
+  /// Stop all managed processes (including detected ones without handles).
   Future<void> stopAll() async {
-    for (final name in _handles.keys.toList()) {
-      await stop(name);
+    for (final name in _processes.keys.toList()) {
+      if (_processes[name]?.state == ProcessState.running ||
+          _processes[name]?.state == ProcessState.starting) {
+        await stop(name);
+      }
     }
   }
 
@@ -261,20 +272,32 @@ class ProcessManager extends ChangeNotifier {
     }
   }
 
-  String? _healthUrl(String name) => switch (name) {
-    'ollama' => 'http://localhost:11434/api/tags',
-    'proxy' => 'http://localhost:${_processes["proxy"]?.port ?? "8181"}/v1/models',
-    'vllm' => 'http://localhost:8000/health',
-    'lmstudio' => 'http://localhost:1234/v1/models',
-    _ => null,
-  };
+  String? _healthUrl(String name) {
+    final port = _processes[name]?.port;
+    return switch (name) {
+      'ollama' => 'http://localhost:${port ?? "11434"}/api/tags',
+      'proxy' => 'http://localhost:${port ?? "8181"}/v1/models',
+      'vllm' => 'http://localhost:${port ?? "8000"}/health',
+      'lmstudio' => 'http://localhost:${port ?? "1234"}/v1/models',
+      _ => null,
+    };
+  }
 
   void _startHealthPolling(String name) {
     _healthTimers[name]?.cancel();
     _healthTimers[name] = Timer.periodic(const Duration(seconds: 10), (_) async {
       final p = _processes[name];
-      if (p == null || p.state != ProcessState.running) return;
-      if (!await _isHealthy(name)) {
+      if (p == null) return;
+      // Only poll processes that are running or in recoverable error.
+      if (p.state != ProcessState.running && p.state != ProcessState.error) return;
+
+      final healthy = await _isHealthy(name);
+      if (healthy && p.state == ProcessState.error) {
+        // Recovered from transient failure.
+        p.state = ProcessState.running;
+        p.errorMessage = null;
+        notifyListeners();
+      } else if (!healthy && p.state == ProcessState.running) {
         p.state = ProcessState.error;
         p.errorMessage = 'Health check failed';
         notifyListeners();

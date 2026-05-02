@@ -88,8 +88,8 @@ class ConfigCard extends StatelessWidget {
               spacing: 12,
               runSpacing: 6,
               children: [
-                _portChip(context, 'API', 'port', config.port, 'OpenAI-compatible endpoint'),
-                _portChip(context, 'IDE', 'lmstudio_port', config.lmStudioPort, 'LM Studio / Ollama-compat for IDEs'),
+                _portChip(context, 'API', 'port', config.port, 'OpenAI-compatible API endpoint'),
+                _portChip(context, 'IDE', 'lmstudio_port', config.lmStudioPort, 'OpenAI-compatible IDE endpoint'),
               ],
             ),
             // Issues

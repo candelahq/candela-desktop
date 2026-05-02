@@ -121,5 +121,66 @@ port: 8181
       expect(config.mode, CandelaMode.solo);
       expect(config.remote, isNull);
     });
+
+    // --- Fix #1: setPort field validation ---
+
+    test('setPort rejects invalid field names', () async {
+      File(testConfigPath).writeAsStringSync('port: 8181\n');
+      expect(
+        () => service.setPort('remote', 9999),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('setPort rejects out-of-range port', () async {
+      File(testConfigPath).writeAsStringSync('port: 8181\n');
+      expect(
+        () => service.setPort('port', 0),
+        throwsA(isA<ArgumentError>()),
+      );
+      expect(
+        () => service.setPort('port', 70000),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    // --- Fix #3: legacy migration ---
+
+    test('migrateLegacyFields removes runtime_backend', () async {
+      File(testConfigPath).writeAsStringSync('''
+port: 8181
+runtime_backend: ollama
+runtime_config: some_value
+runtime_manage: true
+providers:
+  - name: ollama
+''');
+      await service.migrateLegacyFields();
+      final content = File(testConfigPath).readAsStringSync();
+      expect(content, isNot(contains('runtime_backend')));
+      expect(content, isNot(contains('runtime_config')));
+      expect(content, isNot(contains('runtime_manage')));
+      // providers should still be there
+      expect(content, contains('ollama'));
+    });
+
+    test('migrateLegacyFields is no-op if no legacy fields', () async {
+      final original = 'port: 8181\nproviders:\n  - name: google\n';
+      File(testConfigPath).writeAsStringSync(original);
+      await service.migrateLegacyFields();
+      // File should be unchanged
+      final content = File(testConfigPath).readAsStringSync();
+      expect(content, original);
+    });
+
+    // --- Fix #7: YAML quoting ---
+
+    test('setMode preserves URLs with special characters', () async {
+      File(testConfigPath).writeAsStringSync('port: 8181\n');
+      await service.setMode(remote: 'https://candela.example.com#auth');
+      // Should survive a round-trip
+      final config = await service.load();
+      expect(config.remote, 'https://candela.example.com#auth');
+    });
   });
 }

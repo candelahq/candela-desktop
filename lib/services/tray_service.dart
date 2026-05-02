@@ -34,13 +34,22 @@ class TrayService with TrayListener {
   }
 
   String? _trayIconPath() {
-    // On macOS, use a template image for the menu bar.
-    // For now, we'll use the app icon. In production, use a 22x22 template.
     if (Platform.isMacOS) {
-      // Use the app icon as a fallback.
-      final iconDir = '${Directory.current.path}/macos/Runner/Assets.xcassets/AppIcon.appiconset';
-      final iconFile = File('$iconDir/app_icon_32.png');
-      if (iconFile.existsSync()) return iconFile.path;
+      // In production .app bundles, resolve relative to the executable.
+      final exePath = Platform.resolvedExecutable;
+      final bundleDir = exePath.contains('/Contents/MacOS/')
+          ? exePath.substring(0, exePath.indexOf('/Contents/MacOS/'))
+          : null;
+
+      // Try bundle resources first (production).
+      if (bundleDir != null) {
+        final resourceIcon = File('$bundleDir/Contents/Resources/AppIcon.icns');
+        if (resourceIcon.existsSync()) return resourceIcon.path;
+      }
+
+      // Fallback: dev mode — use source tree icon.
+      final devIcon = File('${Directory.current.path}/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_32.png');
+      if (devIcon.existsSync()) return devIcon.path;
     }
     return null;
   }

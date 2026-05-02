@@ -6,7 +6,6 @@ class CandelaConfig {
   final String? audience;
   final int port;
   final int lmStudioPort;
-  final String? runtimeBackend;
   final List<ProviderConfig> providers;
   final VertexAIConfig? vertexAI;
   final CandelaMode mode;
@@ -19,7 +18,6 @@ class CandelaConfig {
     this.audience,
     this.port = 8181,
     this.lmStudioPort = 1234,
-    this.runtimeBackend,
     this.providers = const [],
     this.vertexAI,
     this.mode = CandelaMode.solo,

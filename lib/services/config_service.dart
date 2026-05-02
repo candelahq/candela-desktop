@@ -89,7 +89,6 @@ class ConfigService {
     final audience = yaml['audience'] as String?;
     final port = yaml['port'] as int? ?? 8181;
     final lmStudioPort = yaml['lmstudio_port'] as int? ?? 1234;
-    final runtimeBackend = yaml['runtime_backend'] as String?;
 
     // Parse providers.
     final providers = <ProviderConfig>[];
@@ -166,7 +165,6 @@ class ConfigService {
       audience: audience,
       port: port,
       lmStudioPort: lmStudioPort,
-      runtimeBackend: runtimeBackend,
       providers: providers,
       vertexAI: vertexAI,
       mode: mode,
@@ -174,31 +172,37 @@ class ConfigService {
     );
   }
 
-  /// Set or remove the runtime backend (e.g., ollama).
-  Future<void> setRuntimeBackend(String? backend) async {
+  /// Migrate legacy config: remove runtime_backend, runtime_config, runtime_manage.
+  Future<void> migrateLegacyFields() async {
     final configPath = _resolveConfigPath();
     final file = File(configPath);
+    if (!await file.exists()) return;
 
-    Map<String, dynamic> yamlMap = {};
-    if (await file.exists()) {
-      final content = await file.readAsString();
-      final parsed = loadYaml(content);
-      if (parsed is YamlMap) yamlMap = _yamlMapToMap(parsed);
+    final content = await file.readAsString();
+    final parsed = loadYaml(content);
+    if (parsed is! YamlMap) return;
+
+    final yamlMap = _yamlMapToMap(parsed);
+    var changed = false;
+    for (final field in ['runtime_backend', 'runtime_config', 'runtime_manage']) {
+      if (yamlMap.containsKey(field)) {
+        yamlMap.remove(field);
+        changed = true;
+      }
     }
-
-    if (backend != null) {
-      yamlMap['runtime_backend'] = backend;
-    } else {
-      yamlMap.remove('runtime_backend');
-      yamlMap.remove('runtime_config');
-      yamlMap.remove('runtime_manage');
-    }
-
-    await _writeYaml(file, yamlMap);
+    if (changed) await _writeYaml(file, yamlMap);
   }
 
   /// Set a port field (port or lmstudio_port) in the config.
   Future<void> setPort(String field, int port) async {
+    const allowed = {'port', 'lmstudio_port'};
+    if (!allowed.contains(field)) {
+      throw ArgumentError('Invalid port field: $field. Allowed: $allowed');
+    }
+    if (port <= 0 || port > 65535) {
+      throw ArgumentError('Port must be 1-65535, got $port');
+    }
+
     final configPath = _resolveConfigPath();
     final file = File(configPath);
 
@@ -340,8 +344,18 @@ class ConfigService {
     }
   }
 
+  static final _yamlUnsafe = RegExp(r'[:#{}\[\]&*!|>%@`]');
+  static const _yamlKeywords = {'true', 'false', 'null', 'yes', 'no', 'on', 'off'};
+
   String _yamlValue(dynamic value) {
-    if (value is String) return value;
+    if (value is String) {
+      if (value.isEmpty ||
+          _yamlUnsafe.hasMatch(value) ||
+          _yamlKeywords.contains(value.toLowerCase())) {
+        return "'${value.replaceAll("'", "''")}'";
+      }
+      return value;
+    }
     if (value is bool) return value.toString();
     if (value is num) return value.toString();
     if (value is List) return '[${value.map(_yamlValue).join(', ')}]';

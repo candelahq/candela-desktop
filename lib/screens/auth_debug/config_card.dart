@@ -81,6 +81,16 @@ class ConfigCard extends StatelessWidget {
                   ),
               ],
             ),
+            const SizedBox(height: 10),
+            // Listener ports
+            Wrap(
+              spacing: 12,
+              runSpacing: 6,
+              children: [
+                _portChip('API', config.port, 'OpenAI-compatible endpoint'),
+                _portChip('IDE', config.lmStudioPort, 'LM Studio / Ollama-compat for IDEs'),
+              ],
+            ),
             // Issues
             if (config.issues.isNotEmpty) ...[
               const SizedBox(height: 12),
@@ -251,6 +261,32 @@ class ConfigCard extends StatelessWidget {
             child: const Text('Switch to Solo'),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _portChip(String label, int port, String tooltip) {
+    return Tooltip(
+      message: '$tooltip\nlocalhost:$port',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: CandelaColors.bgTertiary,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: CandelaColors.borderSubtle),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              label == 'API' ? Icons.cloud_outlined : Icons.terminal,
+              size: 12, color: CandelaColors.textMuted,
+            ),
+            const SizedBox(width: 4),
+            Text('$label :$port',
+              style: const TextStyle(fontSize: 11, fontFamily: 'SF Mono, monospace', color: CandelaColors.textSecondary)),
+          ],
+        ),
       ),
     );
   }

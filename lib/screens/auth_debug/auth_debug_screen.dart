@@ -6,13 +6,16 @@ import '../../services/gcloud_service.dart';
 import '../../services/adc_service.dart';
 import '../../services/provider_test_service.dart';
 import '../../services/diagnostic_runner.dart';
+import '../../services/process_manager.dart';
 import '../../models/identity_state.dart';
 import '../../models/candela_config.dart';
 import '../../models/provider_status.dart';
+import '../../main.dart' show processManager;
 
 import 'identity_card.dart';
 import 'config_card.dart';
 import 'provider_card.dart';
+import 'runtime_control_card.dart';
 import 'diagnostic_log.dart';
 
 class AuthDebugScreen extends StatefulWidget {
@@ -66,6 +69,13 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
       _loading = false;
     });
 
+    // Sync process manager with config.
+    processManager.configure(
+      providerNames: config.providers.map((p) => p.name).toList(),
+      proxyPort: config.port?.toString(),
+    );
+    await processManager.detectRunning();
+
     // Run provider tests.
     _runProviderTests(config, project, tokenInfo);
 
@@ -111,10 +121,21 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
       testFutures.add(_providerTest.testOpenAI());
     }
 
-    // Runtime backend (ollama, vllm, etc).
-    if (config.runtimeBackend == 'ollama' || config.runtimeBackend == null) {
-      loadingStatuses.add(const ProviderStatus(name: 'ollama', displayName: 'Ollama (local)', state: ProviderState.loading, icon: '🦙'));
+    // NOTE: Runtime backends (ollama, vllm, lmstudio) are NOT listed here —
+    // they're managed in the "Runtime Processes" section via ProcessManager.
+
+    // Local providers from config.
+    if (providerNames.contains('ollama')) {
+      loadingStatuses.add(const ProviderStatus(name: 'ollama', displayName: 'Ollama', state: ProviderState.loading, icon: '🦙'));
       testFutures.add(_providerTest.testOllama());
+    }
+    if (providerNames.contains('vllm')) {
+      loadingStatuses.add(const ProviderStatus(name: 'vllm', displayName: 'vLLM', state: ProviderState.loading, icon: 'V'));
+      testFutures.add(_providerTest.testVllm());
+    }
+    if (providerNames.contains('lmstudio')) {
+      loadingStatuses.add(const ProviderStatus(name: 'lmstudio', displayName: 'LM Studio', state: ProviderState.loading, icon: 'L'));
+      testFutures.add(_providerTest.testLmStudio());
     }
 
     setState(() => _providerStatuses = loadingStatuses);
@@ -124,41 +145,34 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
   }
 
   bool _isRemovableProvider(String name) {
-    // Only the proxy card is non-removable.
     return name != 'proxy';
   }
 
+  static const _localProviders = {'ollama', 'vllm', 'lmstudio'};
+
+  bool _isLocalProvider(String name) => _localProviders.contains(name);
+
   Future<void> _removeProvider(String providerName) async {
-    if (providerName == 'ollama') {
-      // Ollama is runtime_backend, not in providers list.
-      await _configService.setRuntimeBackend(null);
-    } else {
-      await _configService.removeProvider(providerName);
-    }
+    await _configService.removeProvider(providerName);
     await _loadAll();
   }
 
   void _showAddProviderDialog() {
-    final cloudProviders = [
+    final allProviders = [
       ('google', 'Google / Gemini', 'G', 'Vertex AI — Gemini models'),
       ('anthropic', 'Anthropic / Claude', 'A', 'Vertex AI — Claude models'),
       ('openai', 'OpenAI', 'O', 'Direct API — requires API key'),
-    ];
-    final localBackends = [
       ('ollama', 'Ollama', '🦙', 'Local runtime — llama, mistral, etc.'),
       ('vllm', 'vLLM', 'V', 'High-performance local/remote serving'),
       ('lmstudio', 'LM Studio', 'L', 'Desktop app — OpenAI-compatible API'),
     ];
 
-    final configuredProviders = _config?.providers.map((p) => p.name).toSet() ?? {};
-    final currentBackend = _config?.runtimeBackend;
+    final configured = _config?.providers.map((p) => p.name).toSet() ?? {};
+    final choices = allProviders.where((a) => !configured.contains(a.$1)).toList();
 
-    final availableCloud = cloudProviders.where((a) => !configuredProviders.contains(a.$1)).toList();
-    final availableBackends = localBackends.where((a) => a.$1 != currentBackend).toList();
-
-    if (availableCloud.isEmpty && availableBackends.isEmpty) {
+    if (choices.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('All providers and backends are already configured')),
+        const SnackBar(content: Text('All providers are already configured')),
       );
       return;
     }
@@ -167,34 +181,42 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: CandelaColors.bgSecondary,
-        title: const Text('Add Provider / Backend'),
+        title: const Text('Add Provider'),
         content: SizedBox(
           width: 380,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (availableCloud.isNotEmpty) ...[
-                const Text('CLOUD PROVIDERS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-                  color: CandelaColors.textMuted, letterSpacing: 1)),
-                const SizedBox(height: 4),
-                Text('Added to providers: list in config', style: TextStyle(fontSize: 10, color: CandelaColors.textMuted)),
-                const SizedBox(height: 8),
-                for (final (name, display, icon, desc) in availableCloud)
-                  _choiceTile(ctx, name, display, icon, desc, isBackend: false),
-              ],
-              if (availableCloud.isNotEmpty && availableBackends.isNotEmpty)
-                const Divider(height: 24),
-              if (availableBackends.isNotEmpty) ...[
-                const Text('LOCAL BACKENDS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-                  color: CandelaColors.textMuted, letterSpacing: 1)),
-                const SizedBox(height: 4),
-                Text('Sets runtime_backend in config (only one active)',
-                  style: TextStyle(fontSize: 10, color: CandelaColors.textMuted)),
-                const SizedBox(height: 8),
-                for (final (name, display, icon, desc) in availableBackends)
-                  _choiceTile(ctx, name, display, icon, desc, isBackend: true),
-              ],
+              for (final (name, display, icon, desc) in choices)
+                ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: _isLocalProvider(name) ? CandelaColors.bgTertiary : CandelaColors.accentDim,
+                    child: Text(icon, style: const TextStyle(fontWeight: FontWeight.w700)),
+                  ),
+                  title: Row(children: [
+                    Text(display),
+                    if (_isLocalProvider(name)) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: CandelaColors.bgTertiary,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text('LOCAL', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: CandelaColors.textMuted)),
+                      ),
+                    ],
+                  ]),
+                  subtitle: Text(desc, style: const TextStyle(fontSize: 12, color: CandelaColors.textSecondary)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  hoverColor: CandelaColors.bgHover,
+                  onTap: () async {
+                    Navigator.of(ctx).pop();
+                    await _configService.addProvider(name);
+                    await _loadAll();
+                  },
+                ),
             ],
           ),
         ),
@@ -202,28 +224,6 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
           TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
         ],
       ),
-    );
-  }
-
-  Widget _choiceTile(BuildContext ctx, String name, String display, String icon, String desc, {required bool isBackend}) {
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: isBackend ? CandelaColors.bgTertiary : CandelaColors.accentDim,
-        child: Text(icon, style: const TextStyle(fontWeight: FontWeight.w700)),
-      ),
-      title: Text(display),
-      subtitle: Text(desc, style: const TextStyle(fontSize: 12, color: CandelaColors.textSecondary)),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      hoverColor: CandelaColors.bgHover,
-      onTap: () async {
-        Navigator.of(ctx).pop();
-        if (isBackend) {
-          await _configService.setRuntimeBackend(name);
-        } else {
-          await _configService.addProvider(name);
-        }
-        await _loadAll();
-      },
     );
   }
 
@@ -287,12 +287,26 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
                         ),
                       const SizedBox(height: 24),
 
-                      // Section 2: Provider Connectivity
+                      // Section 2: Providers (cloud + local unified)
                       Row(
                         children: [
-                          const Text('Provider Connectivity',
+                          const Text('Providers',
                             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                           const Spacer(),
+                          ListenableBuilder(
+                            listenable: processManager,
+                            builder: (_, __) {
+                              final running = processManager.all.where((p) => p.state == ProcessState.running).length;
+                              if (running > 0) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 12),
+                                  child: Text('$running process${running > 1 ? "es" : ""} running',
+                                    style: const TextStyle(fontSize: 12, color: CandelaColors.textMuted)),
+                                );
+                              }
+                              return const SizedBox.shrink();
+                            },
+                          ),
                           TextButton.icon(
                             onPressed: _showAddProviderDialog,
                             icon: const Icon(Icons.add, size: 16),
@@ -301,26 +315,39 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final crossCount = constraints.maxWidth > 1000 ? 4 : 2;
-                          return GridView.count(
-                            crossAxisCount: crossCount,
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                            childAspectRatio: 1.5,
-                            children: [
-                              for (final s in _providerStatuses)
-                                ProviderCard(
-                                  status: s,
-                                  // Allow removing cloud providers (not proxy or ollama runtime).
-                                  onRemove: _isRemovableProvider(s.name)
-                                      ? () => _removeProvider(s.name)
-                                      : null,
-                                ),
-                            ],
+                      ListenableBuilder(
+                        listenable: processManager,
+                        builder: (context, _) {
+                          return LayoutBuilder(
+                            builder: (context, constraints) {
+                              final crossCount = constraints.maxWidth > 1000 ? 4 : 2;
+                              return GridView.count(
+                                crossAxisCount: crossCount,
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                                childAspectRatio: 1.4,
+                                children: [
+                                  for (final s in _providerStatuses)
+                                    _isLocalProvider(s.name)
+                                      ? RuntimeControlCard(
+                                          process: processManager.get(s.name) ?? ManagedProcess(name: s.name, displayName: s.displayName, icon: s.icon ?? '?'),
+                                          onStart: () => processManager.start(s.name),
+                                          onStop: () => processManager.stop(s.name),
+                                          onRestart: () => processManager.restart(s.name),
+                                          onRemove: _isRemovableProvider(s.name) ? () => _removeProvider(s.name) : null,
+                                          providerStatus: s,
+                                        )
+                                      : ProviderCard(
+                                          status: s,
+                                          onRemove: _isRemovableProvider(s.name)
+                                              ? () => _removeProvider(s.name)
+                                              : null,
+                                        ),
+                                ],
+                              );
+                            },
                           );
                         },
                       ),

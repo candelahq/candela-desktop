@@ -137,6 +137,48 @@ class ProviderTestService {
     }
   }
 
+  Future<ProviderStatus> testVllm({String host = 'http://localhost:8000'}) async {
+    try {
+      final sw = Stopwatch()..start();
+      final resp = await _client.get(Uri.parse('$host/v1/models')).timeout(const Duration(seconds: 5));
+      sw.stop();
+      if (resp.statusCode == 200) {
+        final body = json.decode(resp.body) as Map<String, dynamic>;
+        final models = (body['data'] as List?)?.map((m) => (m as Map)['id']?.toString() ?? '').toList() ?? [];
+        return ProviderStatus(name: 'vllm', displayName: 'vLLM',
+          state: ProviderState.connected, statusMessage: 'Running',
+          models: models, latency: sw.elapsed, icon: 'V');
+      }
+      return ProviderStatus(name: 'vllm', displayName: 'vLLM',
+        state: ProviderState.error, statusMessage: '${resp.statusCode}', icon: 'V');
+    } catch (_) {
+      return const ProviderStatus(name: 'vllm', displayName: 'vLLM',
+        state: ProviderState.error, statusMessage: 'Not running',
+        errorDetail: 'No response on port 8000', icon: 'V');
+    }
+  }
+
+  Future<ProviderStatus> testLmStudio({String host = 'http://localhost:1234'}) async {
+    try {
+      final sw = Stopwatch()..start();
+      final resp = await _client.get(Uri.parse('$host/v1/models')).timeout(const Duration(seconds: 5));
+      sw.stop();
+      if (resp.statusCode == 200) {
+        final body = json.decode(resp.body) as Map<String, dynamic>;
+        final models = (body['data'] as List?)?.map((m) => (m as Map)['id']?.toString() ?? '').toList() ?? [];
+        return ProviderStatus(name: 'lmstudio', displayName: 'LM Studio',
+          state: ProviderState.connected, statusMessage: 'Running',
+          models: models, latency: sw.elapsed, icon: 'L');
+      }
+      return ProviderStatus(name: 'lmstudio', displayName: 'LM Studio',
+        state: ProviderState.error, statusMessage: '${resp.statusCode}', icon: 'L');
+    } catch (_) {
+      return const ProviderStatus(name: 'lmstudio', displayName: 'LM Studio',
+        state: ProviderState.error, statusMessage: 'Not running',
+        errorDetail: 'No response on port 1234', icon: 'L');
+    }
+  }
+
   /// Test connectivity through the candela-local proxy.
   /// This is the most important test — it validates the actual user experience.
   Future<ProviderStatus> testProxy({int port = 8181}) async {

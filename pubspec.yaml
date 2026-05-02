@@ -31,6 +31,12 @@ dependencies:
   # Google Fonts (Inter)
   google_fonts: ^6.2.1
 
+  # System tray (macOS menu bar icon)
+  tray_manager: ^0.2.3
+
+  # Launch at login
+  launch_at_startup: ^0.3.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

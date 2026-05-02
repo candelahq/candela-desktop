@@ -197,6 +197,7 @@ class ProviderTestService {
           state: ProviderState.error,
           statusMessage: 'Unhealthy (${healthResp.statusCode})',
           icon: '🕯',
+          port: port,
         );
       }
 
@@ -235,6 +236,7 @@ class ProviderTestService {
         models: models,
         latency: sw.elapsed,
         icon: '🕯',
+        port: port,
       );
     } catch (_) {
       return ProviderStatus(
@@ -244,6 +246,7 @@ class ProviderTestService {
         errorDetail: 'No proxy on localhost:$port',
         fixCommand: 'candela-local',
         icon: '🕯',
+        port: port,
       );
     }
   }

@@ -140,6 +140,8 @@ class TrayService with TrayListener {
 
   Future<void> _quit() async {
     await processManager.stopAll();
+    // Give processes a moment to terminate gracefully.
+    await Future.delayed(const Duration(milliseconds: 500));
     await windowManager.destroy();
     exit(0);
   }

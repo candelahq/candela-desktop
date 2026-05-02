@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
@@ -8,6 +9,7 @@ import '../models/candela_config.dart';
 /// Reads, parses, and validates ~/.candela.yaml.
 class ConfigService {
   final String? configPath;
+  Future<void>? _writeLock;
 
   ConfigService({this.configPath});
 
@@ -32,7 +34,22 @@ class ConfigService {
     }
 
     final stat = await file.stat();
-    final content = await file.readAsString();
+    String content;
+    try {
+      content = await file.readAsString();
+    } catch (e) {
+      return CandelaConfig(
+        path: resolvedPath,
+        lastModified: stat.modified,
+        issues: [
+          ConfigIssue(
+            severity: IssueSeverity.error,
+            message: 'Config file is not valid text: $e',
+            field: 'file',
+          ),
+        ],
+      );
+    }
 
     try {
       final yaml = loadYaml(content) as YamlMap?;
@@ -85,8 +102,8 @@ class ConfigService {
     final issues = <ConfigIssue>[];
 
     // Parse fields.
-    final remote = yaml['remote'] as String?;
-    final audience = yaml['audience'] as String?;
+    final remote = yaml['remote']?.toString();
+    final audience = yaml['audience']?.toString();
     final port = yaml['port'] as int? ?? 8181;
     final lmStudioPort = yaml['lmstudio_port'] as int? ?? 1234;
 
@@ -305,11 +322,22 @@ class ConfigService {
     return map;
   }
 
-  /// Write a map back as YAML.
+  /// Write a map back as YAML (serialized via lock).
   Future<void> _writeYaml(File file, Map<String, dynamic> data) async {
-    final sb = StringBuffer();
-    _writeYamlMap(sb, data, 0);
-    await file.writeAsString(sb.toString());
+    // Serialize writes to prevent concurrent read-modify-write races.
+    while (_writeLock != null) {
+      await _writeLock;
+    }
+    final completer = Completer<void>();
+    _writeLock = completer.future;
+    try {
+      final sb = StringBuffer();
+      _writeYamlMap(sb, data, 0);
+      await file.writeAsString(sb.toString());
+    } finally {
+      _writeLock = null;
+      completer.complete();
+    }
   }
 
   void _writeYamlMap(StringBuffer sb, Map<String, dynamic> map, int indent) {

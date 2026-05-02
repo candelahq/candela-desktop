@@ -144,5 +144,53 @@ void main() {
       expect(ollama.state, ProcessState.stopped);
       expect(ollama.pid, isNull);
     });
+
+    test('configure clears previous processes', () {
+      pm.configure(providerNames: ['ollama'], proxyPort: '8181');
+      expect(pm.all.length, 2); // proxy + ollama
+
+      pm.configure(providerNames: ['vllm'], proxyPort: '8181');
+      expect(pm.all.length, 2); // proxy + vllm
+      expect(pm.get('ollama'), isNull);
+      expect(pm.get('vllm'), isNotNull);
+    });
+
+    test('stopAll handles error-state processes', () async {
+      pm.configure(providerNames: ['ollama'], proxyPort: '8181');
+      final ollama = pm.get('ollama')!;
+      ollama.state = ProcessState.error;
+      ollama.pid = 99999;
+
+      // stopAll skips error state (only running/starting) — verify no crash.
+      await pm.stopAll();
+      // Error processes should remain in error state since stopAll only handles running/starting.
+      expect(ollama.state, ProcessState.error);
+    });
+
+    test('get returns null for unknown process', () {
+      pm.configure(providerNames: ['ollama'], proxyPort: '8181');
+      expect(pm.get('nonexistent'), isNull);
+    });
+
+    test('configure with empty providers has only proxy', () {
+      pm.configure(providerNames: [], proxyPort: '9090');
+      expect(pm.all.length, 1);
+      expect(pm.all.first.name, 'proxy');
+      expect(pm.all.first.port, '9090');
+    });
+
+    test('process uptime string formats correctly', () {
+      final p = ManagedProcess(name: 'test', displayName: 'Test', icon: 'T');
+      expect(p.uptimeString, ''); // no startedAt
+
+      p.startedAt = DateTime.now().subtract(const Duration(seconds: 45));
+      expect(p.uptimeString, '45s');
+
+      p.startedAt = DateTime.now().subtract(const Duration(minutes: 12, seconds: 30));
+      expect(p.uptimeString, '12m');
+
+      p.startedAt = DateTime.now().subtract(const Duration(hours: 2, minutes: 15));
+      expect(p.uptimeString, '2h 15m');
+    });
   });
 }

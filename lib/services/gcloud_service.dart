@@ -133,4 +133,6 @@ class GCloudService {
       isValid: true,
     );
   }
+  /// Expose JWT decoding for testing.
+  TokenInfo? getTokenInfoForTest(String token) => _decodeJwt(token);
 }

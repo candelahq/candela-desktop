@@ -153,7 +153,7 @@ class _ProviderDetailDialogState extends State<_ProviderDetailDialog> {
 
     final results = await _providerTest.verifyProxyCategories(
       widget.status.models,
-      port: int.tryParse(widget.status.statusMessage?.replaceAll(RegExp(r'[^0-9]'), '') ?? '8181') ?? 8181,
+      port: widget.status.port ?? 8181,
     );
 
     if (!mounted) return;

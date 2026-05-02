@@ -13,6 +13,7 @@ class ProviderStatus {
   final String? fixUrl;
   final String? errorDetail;
   final String? icon;
+  final int? port;
 
   const ProviderStatus({
     required this.name,
@@ -28,6 +29,7 @@ class ProviderStatus {
     this.fixUrl,
     this.errorDetail,
     this.icon,
+    this.port,
   });
 
   bool get isHealthy => state == ProviderState.connected;

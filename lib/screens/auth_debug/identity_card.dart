@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../theme/colors.dart';
 import '../../models/identity_state.dart';
+import '../../services/gcloud_service.dart';
 
 class IdentityCard extends StatefulWidget {
   final IdentityState identity;
@@ -135,7 +136,8 @@ class _IdentityCardState extends State<IdentityCard> {
   Future<void> _runAdcLogin() async {
     setState(() {});
     try {
-      _adcProcess = await Process.start('gcloud', ['auth', 'application-default', 'login']);
+      _adcProcess = await Process.start('gcloud', ['auth', 'application-default', 'login'],
+        environment: GCloudService().augmentedEnv);
       setState(() {}); // show cancel button
 
       final exitCode = await _adcProcess!.exitCode;

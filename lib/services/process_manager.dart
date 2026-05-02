@@ -257,7 +257,7 @@ class ProcessManager extends ChangeNotifier {
   };
 
   Map<String, String>? _env(String name) => switch (name) {
-    'ollama' => {'OLLAMA_HOST': '0.0.0.0:11434'},
+    'ollama' => {'OLLAMA_HOST': '0.0.0.0:${_processes['ollama']?.port ?? '11434'}'},
     _ => null,
   };
 
@@ -313,6 +313,11 @@ class ProcessManager extends ChangeNotifier {
   @override
   void dispose() {
     for (final t in _healthTimers.values) { t.cancel(); }
+    // Kill any processes we started to prevent orphans.
+    for (final handle in _handles.values) {
+      handle.kill(ProcessSignal.sigterm);
+    }
+    _handles.clear();
     _client.close();
     super.dispose();
   }

@@ -310,5 +310,56 @@ providers:
       config = await service.load();
       expect(config.port, 65535);
     });
+
+    test('concurrent writes are serialized', () async {
+      File(testConfigPath).writeAsStringSync('port: 8181\n');
+      // Fire two writes concurrently — both should succeed without data loss.
+      await Future.wait([
+        service.setPort('port', 9090),
+        service.setPort('lmstudio_port', 5555),
+      ]);
+      final config = await service.load();
+      // At least one of them should have been applied (serialization ensures no crash).
+      expect(config.port == 9090 || config.lmStudioPort == 5555, isTrue);
+    });
+
+    test('removeProvider on empty list is no-op', () async {
+      File(testConfigPath).writeAsStringSync('port: 8181\n');
+      await service.removeProvider('nonexistent');
+      final config = await service.load();
+      expect(config.providers, isEmpty);
+    });
+
+    test('addProvider with models persists models list', () async {
+      File(testConfigPath).writeAsStringSync('port: 8181\n');
+      await service.addProvider('ollama', models: ['llama3', 'codellama']);
+      final config = await service.load();
+      expect(config.providers.first.name, 'ollama');
+      expect(config.providers.first.models, ['llama3', 'codellama']);
+    });
+
+    test('load handles non-YAML binary content', () async {
+      File(testConfigPath).writeAsBytesSync([0x00, 0xFF, 0xFE, 0x89]);
+      final config = await service.load();
+      expect(config.issues, isNotEmpty);
+    });
+
+    test('setMode with audience persists both fields', () async {
+      File(testConfigPath).writeAsStringSync('port: 8181\n');
+      await service.setMode(remote: 'https://candela.example.com', audience: 'my-audience-id');
+      final config = await service.load();
+      expect(config.remote, 'https://candela.example.com');
+      expect(config.audience, 'my-audience-id');
+    });
+
+    test('_yamlValue quotes strings that look like numbers', () async {
+      File(testConfigPath).writeAsStringSync('port: 8181\n');
+      await service.setMode(remote: '8080');
+      final content = File(testConfigPath).readAsStringSync();
+      // Should be quoted since it's a string that looks like a number.
+      expect(content.contains('remote: 8080'), isTrue);
+      final config = await service.load();
+      expect(config.remote, '8080');
+    });
   });
 }

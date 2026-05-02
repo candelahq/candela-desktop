@@ -198,6 +198,6 @@ class RuntimeControlCard extends StatelessWidget {
   };
 }
 
-extension<T> on List<T> {
-  List<T> takeLast(int n) => length <= n ? this : sublist(length - n);
+extension LogListHelpers on List<String> {
+  List<String> takeLast(int n) => length <= n ? this : sublist(length - n);
 }

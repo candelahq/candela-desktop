@@ -1,0 +1,40 @@
+name: candela_desktop
+description: Candela — LLM Observability for your machine
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.6.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Window management (custom titlebar, size, position)
+  window_manager: ^0.4.3
+
+  # Navigation
+  go_router: ^14.8.1
+
+  # YAML parsing (for ~/.candela.yaml)
+  yaml: ^3.1.3
+
+  # HTTP client (provider connectivity tests)
+  http: ^1.3.0
+
+  # Path utilities
+  path: ^1.9.1
+
+  # Open URLs in browser ("Fix →" buttons)
+  url_launcher: ^6.3.1
+
+  # Google Fonts (Inter)
+  google_fonts: ^6.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true

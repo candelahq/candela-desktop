@@ -26,27 +26,45 @@ class ProviderCard extends StatelessWidget {
           _header(),
           const SizedBox(height: 8),
           if (status.state == ProviderState.loading)
-            const Expanded(child: Center(child: SizedBox(width: 20, height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2, color: CandelaColors.accent))))
+            const Expanded(
+                child: Center(
+                    child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: CandelaColors.accent))))
           else ...[
             if (status.project != null) _row('Project', status.project!),
             if (status.region != null) _row('Region', status.region!),
             if (status.models.isNotEmpty)
               Row(children: [
-                Expanded(child: Text(
+                Expanded(
+                    child: Text(
                   'Models: ${status.models.take(3).join(", ")}',
-                  style: const TextStyle(fontSize: 11, color: CandelaColors.textSecondary),
-                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 11, color: CandelaColors.textSecondary),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 )),
                 if (status.models.length > 3)
-                  Text(' +${status.models.length - 3}', style: const TextStyle(fontSize: 10, color: CandelaColors.textMuted)),
+                  Text(' +${status.models.length - 3}',
+                      style: const TextStyle(
+                          fontSize: 10, color: CandelaColors.textMuted)),
               ]),
             if (status.errorDetail != null)
-              Padding(padding: const EdgeInsets.only(top: 4), child: Row(children: [
-                const Icon(Icons.warning_amber, size: 12, color: CandelaColors.warning),
-                const SizedBox(width: 4),
-                Flexible(child: Text(status.errorDetail!, style: const TextStyle(fontSize: 11, color: CandelaColors.warning), maxLines: 2, overflow: TextOverflow.ellipsis)),
-              ])),
+              Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Row(children: [
+                    const Icon(Icons.warning_amber,
+                        size: 12, color: CandelaColors.warning),
+                    const SizedBox(width: 4),
+                    Flexible(
+                        child: Text(status.errorDetail!,
+                            style: const TextStyle(
+                                fontSize: 11, color: CandelaColors.warning),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis)),
+                  ])),
             const Spacer(),
             _action(context),
           ],
@@ -63,10 +81,10 @@ class ProviderCard extends StatelessWidget {
   }
 
   Color get _borderColor => switch (status.state) {
-    ProviderState.connected => CandelaColors.success.withValues(alpha: 0.3),
-    ProviderState.error => CandelaColors.error.withValues(alpha: 0.3),
-    _ => CandelaColors.borderSubtle,
-  };
+        ProviderState.connected => CandelaColors.success.withValues(alpha: 0.3),
+        ProviderState.error => CandelaColors.error.withValues(alpha: 0.3),
+        _ => CandelaColors.borderSubtle,
+      };
 
   Widget _header() {
     final color = switch (status.state) {
@@ -77,8 +95,13 @@ class ProviderCard extends StatelessWidget {
     return Row(children: [
       Text(status.icon ?? '', style: const TextStyle(fontSize: 16)),
       const SizedBox(width: 8),
-      Expanded(child: Text(status.displayName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
-      Text(status.statusMessage ?? '', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: color)),
+      Expanded(
+          child: Text(status.displayName,
+              style:
+                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+      Text(status.statusMessage ?? '',
+          style: TextStyle(
+              fontSize: 11, fontWeight: FontWeight.w500, color: color)),
       if (onRemove != null) ...[
         const SizedBox(width: 6),
         Tooltip(
@@ -92,7 +115,8 @@ class ProviderCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
                 color: CandelaColors.bgTertiary,
               ),
-              child: const Icon(Icons.close, size: 12, color: CandelaColors.textMuted),
+              child: const Icon(Icons.close,
+                  size: 12, color: CandelaColors.textMuted),
             ),
           ),
         ),
@@ -101,21 +125,35 @@ class ProviderCard extends StatelessWidget {
   }
 
   Widget _row(String label, String value) => Padding(
-    padding: const EdgeInsets.only(bottom: 2),
-    child: Text('$label: $value', style: const TextStyle(fontSize: 11, color: CandelaColors.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
-  );
+        padding: const EdgeInsets.only(bottom: 2),
+        child: Text('$label: $value',
+            style: const TextStyle(
+                fontSize: 11, color: CandelaColors.textSecondary),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis),
+      );
 
   Widget _action(BuildContext context) {
     if (status.fixUrl != null) {
-      return Align(alignment: Alignment.centerRight, child: ElevatedButton(
-        onPressed: () => launchUrl(Uri.parse(status.fixUrl!)), child: const Text('Fix →')));
+      return Align(
+          alignment: Alignment.centerRight,
+          child: ElevatedButton(
+              onPressed: () => launchUrl(Uri.parse(status.fixUrl!)),
+              child: const Text('Fix →')));
     }
     if (status.fixCommand != null) {
-      return Align(alignment: Alignment.centerRight, child: OutlinedButton.icon(
-        onPressed: () { Clipboard.setData(ClipboardData(text: status.fixCommand!));
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Copied: ${status.fixCommand}'))); },
-        icon: const Icon(Icons.copy, size: 14),
-        label: Text(status.fixCommand!, style: const TextStyle(fontSize: 11, fontFamily: 'monospace'))));
+      return Align(
+          alignment: Alignment.centerRight,
+          child: OutlinedButton.icon(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: status.fixCommand!));
+                ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Copied: ${status.fixCommand}')));
+              },
+              icon: const Icon(Icons.copy, size: 14),
+              label: Text(status.fixCommand!,
+                  style:
+                      const TextStyle(fontSize: 11, fontFamily: 'monospace'))));
     }
     return const SizedBox.shrink();
   }
@@ -164,7 +202,11 @@ class _ProviderDetailDialogState extends State<_ProviderDetailDialog> {
         final cat = ProviderTestService.modelCategory(r.model);
         for (final m in widget.status.models) {
           if (ProviderTestService.modelCategory(m) == cat) {
-            _verifications[m] = ModelVerification(model: m, reachable: r.reachable, latency: r.latency, error: r.error);
+            _verifications[m] = ModelVerification(
+                model: m,
+                reachable: r.reachable,
+                latency: r.latency,
+                error: r.error);
           }
         }
       }
@@ -190,7 +232,8 @@ class _ProviderDetailDialogState extends State<_ProviderDetailDialog> {
         if (s.name == 'proxy')
           TextButton.icon(
             onPressed: _verifying ? null : _verifyAll,
-            icon: Icon(_verifying ? Icons.hourglass_top : Icons.verified, size: 14),
+            icon: Icon(_verifying ? Icons.hourglass_top : Icons.verified,
+                size: 14),
             label: Text(_verifying ? 'Verifying...' : 'Re-verify'),
           ),
       ]),
@@ -202,12 +245,16 @@ class _ProviderDetailDialogState extends State<_ProviderDetailDialog> {
           children: [
             if (s.project != null) _infoRow('Project', s.project!),
             if (s.region != null) _infoRow('Region', s.region!),
-            if (s.latency != null) _infoRow('Latency', '${s.latency!.inMilliseconds}ms'),
+            if (s.latency != null)
+              _infoRow('Latency', '${s.latency!.inMilliseconds}ms'),
             const SizedBox(height: 12),
             Row(children: [
-              const Text('Available Models', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              const Text('Available Models',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
               const Spacer(),
-              Text('${s.models.length} models', style: const TextStyle(fontSize: 11, color: CandelaColors.textMuted)),
+              Text('${s.models.length} models',
+                  style: const TextStyle(
+                      fontSize: 11, color: CandelaColors.textMuted)),
             ]),
             const SizedBox(height: 8),
             ...s.models.map((m) => _modelRow(m)),
@@ -215,7 +262,9 @@ class _ProviderDetailDialogState extends State<_ProviderDetailDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Close')),
+        TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close')),
       ],
     );
   }
@@ -224,19 +273,26 @@ class _ProviderDetailDialogState extends State<_ProviderDetailDialog> {
     final v = _verifications[model];
     final Widget indicator;
     if (v == null && _verifications.containsKey(model)) {
-      indicator = const SizedBox(width: 12, height: 12,
-        child: CircularProgressIndicator(strokeWidth: 1.5, color: CandelaColors.accent));
+      indicator = const SizedBox(
+          width: 12,
+          height: 12,
+          child: CircularProgressIndicator(
+              strokeWidth: 1.5, color: CandelaColors.accent));
     } else if (v != null) {
       indicator = Container(
-        width: 8, height: 8,
-        decoration: BoxDecoration(shape: BoxShape.circle,
-          color: v.reachable ? CandelaColors.success : CandelaColors.error),
+        width: 8,
+        height: 8,
+        decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: v.reachable ? CandelaColors.success : CandelaColors.error),
       );
     } else {
       indicator = Container(
-        width: 8, height: 8,
-        decoration: BoxDecoration(shape: BoxShape.circle,
-          color: CandelaColors.success.withValues(alpha: 0.4)),
+        width: 8,
+        height: 8,
+        decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: CandelaColors.success.withValues(alpha: 0.4)),
       );
     }
 
@@ -245,15 +301,21 @@ class _ProviderDetailDialogState extends State<_ProviderDetailDialog> {
       child: Row(children: [
         indicator,
         const SizedBox(width: 10),
-        Expanded(child: Text(model, style: const TextStyle(fontSize: 12, fontFamily: 'SF Mono, monospace'))),
+        Expanded(
+            child: Text(model,
+                style: const TextStyle(
+                    fontSize: 12, fontFamily: 'SF Mono, monospace'))),
         if (v?.latency != null)
-          Text('${v!.latency!.inMilliseconds}ms', style: const TextStyle(fontSize: 10, color: CandelaColors.textMuted)),
+          Text('${v!.latency!.inMilliseconds}ms',
+              style: const TextStyle(
+                  fontSize: 10, color: CandelaColors.textMuted)),
         if (v != null && !v.reachable && v.error != null)
           Tooltip(
-            message: v.error!,
+            message: v.error,
             child: const Padding(
               padding: EdgeInsets.only(left: 4),
-              child: Icon(Icons.warning_amber, size: 12, color: CandelaColors.error),
+              child: Icon(Icons.warning_amber,
+                  size: 12, color: CandelaColors.error),
             ),
           ),
       ]),
@@ -261,10 +323,12 @@ class _ProviderDetailDialogState extends State<_ProviderDetailDialog> {
   }
 
   Widget _infoRow(String label, String value) => Padding(
-    padding: const EdgeInsets.only(bottom: 4),
-    child: Row(children: [
-      Text('$label: ', style: const TextStyle(fontSize: 12, color: CandelaColors.textMuted)),
-      Text(value, style: const TextStyle(fontSize: 12)),
-    ]),
-  );
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Row(children: [
+          Text('$label: ',
+              style: const TextStyle(
+                  fontSize: 12, color: CandelaColors.textMuted)),
+          Text(value, style: const TextStyle(fontSize: 12)),
+        ]),
+      );
 }

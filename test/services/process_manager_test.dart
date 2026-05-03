@@ -93,7 +93,8 @@ void main() {
 
     test('uptime shows hours when > 1h', () {
       final p = ManagedProcess(name: 'test', displayName: 'Test', icon: 'T');
-      p.startedAt = DateTime.now().subtract(const Duration(hours: 2, minutes: 30));
+      p.startedAt =
+          DateTime.now().subtract(const Duration(hours: 2, minutes: 30));
       expect(p.uptimeString, contains('h'));
     });
   });
@@ -130,7 +131,8 @@ void main() {
     setUp(() => pm = ProcessManager());
     tearDown(() => pm.dispose());
 
-    test('stopAll targets all running processes not just those with handles', () {
+    test('stopAll targets all running processes not just those with handles',
+        () {
       pm.configure(providerNames: ['ollama']);
       // Simulate a detected-running process (no handle, but state=running).
       final ollama = pm.get('ollama')!;
@@ -155,16 +157,16 @@ void main() {
       expect(pm.get('vllm'), isNotNull);
     });
 
-    test('stopAll handles error-state processes', () async {
+    test('stopAll handles error-state processes with PIDs', () async {
       pm.configure(providerNames: ['ollama'], proxyPort: '8181');
       final ollama = pm.get('ollama')!;
       ollama.state = ProcessState.error;
       ollama.pid = 99999;
 
-      // stopAll skips error state (only running/starting) — verify no crash.
+      // stopAll now also stops error-state processes to prevent zombie PIDs.
       await pm.stopAll();
-      // Error processes should remain in error state since stopAll only handles running/starting.
-      expect(ollama.state, ProcessState.error);
+      expect(ollama.state, ProcessState.stopped);
+      expect(ollama.pid, isNull);
     });
 
     test('get returns null for unknown process', () {
@@ -186,11 +188,72 @@ void main() {
       p.startedAt = DateTime.now().subtract(const Duration(seconds: 45));
       expect(p.uptimeString, '45s');
 
-      p.startedAt = DateTime.now().subtract(const Duration(minutes: 12, seconds: 30));
+      p.startedAt =
+          DateTime.now().subtract(const Duration(minutes: 12, seconds: 30));
       expect(p.uptimeString, '12m');
 
-      p.startedAt = DateTime.now().subtract(const Duration(hours: 2, minutes: 15));
+      p.startedAt =
+          DateTime.now().subtract(const Duration(hours: 2, minutes: 15));
       expect(p.uptimeString, '2h 15m');
+    });
+  });
+
+  // --- Audit v4: new unit tests ---
+
+  group('ProcessManager — audit v4 tests', () {
+    late ProcessManager pm;
+    setUp(() => pm = ProcessManager());
+    tearDown(() => pm.dispose());
+
+    test('stopAll stops error-state processes that still have PIDs', () async {
+      pm.configure(providerNames: ['ollama']);
+      final ollama = pm.get('ollama')!;
+      ollama.state = ProcessState.error;
+      ollama.pid = 54321;
+      ollama.errorMessage = 'Health check failed';
+      await pm.stopAll();
+      expect(ollama.state, ProcessState.stopped);
+      expect(ollama.pid, isNull);
+      expect(ollama.startedAt, isNull);
+    });
+
+    test('configure clears health timers from previous config', () {
+      pm.configure(providerNames: ['ollama']);
+      pm.configure(providerNames: ['vllm']);
+      // No timer leak — previous ollama timers should be gone.
+      expect(pm.get('ollama'), isNull);
+      expect(pm.get('vllm'), isNotNull);
+    });
+
+    test('ManagedProcess uptimeString formats sub-minute correctly', () {
+      final p = ManagedProcess(name: 'x', displayName: 'X', icon: 'X');
+      p.startedAt = DateTime.now().subtract(const Duration(seconds: 5));
+      expect(p.uptimeString, '5s');
+    });
+
+    test('ManagedProcess recentLogs capped at maxLogLines', () {
+      final p = ManagedProcess(name: 'x', displayName: 'X', icon: 'X');
+      for (var i = 0; i < 60; i++) {
+        p.recentLogs.addLast('line $i');
+        while (p.recentLogs.length > ManagedProcess.maxLogLines) {
+          p.recentLogs.removeFirst();
+        }
+      }
+      expect(p.recentLogs.length, ManagedProcess.maxLogLines);
+      expect(p.recentLogs.first, 'line 10'); // oldest 10 were evicted
+    });
+
+    test('_runtimeInfo returns null for cloud-only provider', () {
+      pm.configure(providerNames: ['google', 'anthropic']);
+      expect(pm.all.length, 1); // only proxy
+    });
+
+    test('configure applies lmstudio port override', () {
+      pm.configure(
+        providerNames: ['lmstudio'],
+        portOverrides: {'lmstudio': '5555'},
+      );
+      expect(pm.get('lmstudio')!.port, '5555');
     });
   });
 }

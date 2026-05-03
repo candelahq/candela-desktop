@@ -114,10 +114,9 @@ class ConfigService {
       for (final p in providersYaml) {
         if (p is YamlMap) {
           final name = p['name'] as String? ?? '';
-          final models = (p['models'] as YamlList?)
-                  ?.map((m) => m.toString())
-                  .toList() ??
-              [];
+          final models =
+              (p['models'] as YamlList?)?.map((m) => m.toString()).toList() ??
+                  [];
           providers.add(ProviderConfig(name: name, models: models));
         }
       }
@@ -158,7 +157,8 @@ class ConfigService {
     final hasGcpProvider = providers.any(
       (p) => p.name == 'google' || p.name == 'anthropic' || p.name == 'gemini',
     );
-    if (hasGcpProvider && (vertexAI?.project == null || vertexAI!.project!.isEmpty)) {
+    if (hasGcpProvider &&
+        (vertexAI?.project == null || vertexAI!.project!.isEmpty)) {
       issues.add(const ConfigIssue(
         severity: IssueSeverity.error,
         message: '`vertex_ai.project` is required for cloud providers',
@@ -201,7 +201,11 @@ class ConfigService {
 
     final yamlMap = _yamlMapToMap(parsed);
     var changed = false;
-    for (final field in ['runtime_backend', 'runtime_config', 'runtime_manage']) {
+    for (final field in [
+      'runtime_backend',
+      'runtime_config',
+      'runtime_manage'
+    ]) {
       if (yamlMap.containsKey(field)) {
         yamlMap.remove(field);
         changed = true;
@@ -258,7 +262,8 @@ class ConfigService {
   }
 
   /// Add a provider to the config file.
-  Future<void> addProvider(String providerName, {List<String> models = const []}) async {
+  Future<void> addProvider(String providerName,
+      {List<String> models = const []}) async {
     final configPath = _resolveConfigPath();
     final file = File(configPath);
 
@@ -272,12 +277,14 @@ class ConfigService {
     }
 
     // Get or create providers list.
-    final providers = (yamlMap['providers'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final providers =
+        (yamlMap['providers'] as List?)?.cast<Map<String, dynamic>>() ?? [];
 
     // Don't add duplicate.
     if (providers.any((p) => p['name'] == providerName)) return;
 
-    providers.add({'name': providerName, if (models.isNotEmpty) 'models': models});
+    providers
+        .add({'name': providerName, if (models.isNotEmpty) 'models': models});
     yamlMap['providers'] = providers;
 
     await _writeYaml(file, yamlMap);
@@ -294,7 +301,8 @@ class ConfigService {
     if (parsed is! YamlMap) return;
 
     final yamlMap = _yamlMapToMap(parsed);
-    final providers = (yamlMap['providers'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final providers =
+        (yamlMap['providers'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     providers.removeWhere((p) => p['name'] == providerName);
 
     if (providers.isEmpty) {
@@ -314,7 +322,8 @@ class ConfigService {
       if (value is YamlMap) {
         map[key.toString()] = _yamlMapToMap(value);
       } else if (value is YamlList) {
-        map[key.toString()] = value.map((e) => e is YamlMap ? _yamlMapToMap(e) : e).toList();
+        map[key.toString()] =
+            value.map((e) => e is YamlMap ? _yamlMapToMap(e) : e).toList();
       } else {
         map[key.toString()] = value;
       }
@@ -322,21 +331,30 @@ class ConfigService {
     return map;
   }
 
-  /// Write a map back as YAML (serialized via lock).
+  /// Write a map back as YAML (serialized via async mutex).
   Future<void> _writeYaml(File file, Map<String, dynamic> data) async {
-    // Serialize writes to prevent concurrent read-modify-write races.
-    while (_writeLock != null) {
-      await _writeLock;
-    }
+    // Chain writes: each waits for the previous to finish.
+    final previous = _writeLock;
     final completer = Completer<void>();
     _writeLock = completer.future;
     try {
+      if (previous != null) await previous;
       final sb = StringBuffer();
       _writeYamlMap(sb, data, 0);
       await file.writeAsString(sb.toString());
+      // Restrict permissions to owner-only (0600) since config may contain
+      // sensitive project/audience data.
+      if (!Platform.isWindows) {
+        try {
+          await Process.run('chmod', ['600', file.path]);
+        } catch (_) {
+          // chmod not available — best-effort.
+        }
+      }
     } finally {
-      _writeLock = null;
       completer.complete();
+      // Only clear if we're still the latest writer.
+      if (_writeLock == completer.future) _writeLock = null;
     }
   }
 
@@ -373,13 +391,28 @@ class ConfigService {
   }
 
   static final _yamlUnsafe = RegExp(r'[:#{}\[\]&*!|>%@`]');
-  static const _yamlKeywords = {'true', 'false', 'null', 'yes', 'no', 'on', 'off'};
+  static final _yamlNumeric =
+      RegExp(r'^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$');
+  static final _yamlOctal = RegExp(r'^0[0-7]+$');
+  static final _yamlHex = RegExp(r'^0x[0-9a-fA-F]+$');
+  static const _yamlKeywords = {
+    'true',
+    'false',
+    'null',
+    'yes',
+    'no',
+    'on',
+    'off'
+  };
 
   String _yamlValue(dynamic value) {
     if (value is String) {
       if (value.isEmpty ||
           _yamlUnsafe.hasMatch(value) ||
-          _yamlKeywords.contains(value.toLowerCase())) {
+          _yamlKeywords.contains(value.toLowerCase()) ||
+          _yamlNumeric.hasMatch(value) ||
+          _yamlOctal.hasMatch(value) ||
+          _yamlHex.hasMatch(value)) {
         return "'${value.replaceAll("'", "''")}'";
       }
       return value;

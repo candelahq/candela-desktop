@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../theme/colors.dart';
 import '../../services/gcloud_service.dart';
@@ -34,35 +33,51 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
   IdentityState? _identity;
   CandelaConfig? _config;
   List<ProviderStatus> _providerStatuses = [];
+  // ignore: unused_field — stored for switch-back-to-team feature
   String? _lastRemoteUrl;
   bool _loading = true;
+  int _loadGeneration = 0; // cancellation guard
 
   @override
   void initState() {
     super.initState();
     _diagnostics = DiagnosticRunner(
-      config: _configService, gcloud: _gcloud, adc: _adc, providers: _providerTest,
+      config: _configService,
+      gcloud: _gcloud,
+      adc: _adc,
+      providers: _providerTest,
     );
     _loadAll();
   }
 
   Future<void> _loadAll() async {
+    final gen = ++_loadGeneration;
     setState(() => _loading = true);
 
-    // Load identity info.
+    // Parallelize independent gcloud subprocess calls (~800ms savings).
     final installed = await _gcloud.isInstalled();
-    final account = installed ? await _gcloud.getActiveAccount() : null;
-    final project = installed ? await _gcloud.getProject() : null;
-    final adcInfo = await _adc.readAdcFile();
-    final tokenInfo = installed ? await _gcloud.getTokenInfo() : null;
+    final results = await Future.wait([
+      installed ? _gcloud.getActiveAccount() : Future<String?>.value(null),
+      installed ? _gcloud.getProject() : Future<String?>.value(null),
+      _adc.readAdcFile(),
+      installed ? _gcloud.getTokenInfo() : Future<TokenInfo?>.value(null),
+      _configService.load(),
+    ]);
+    if (gen != _loadGeneration) return; // stale — abort
 
-    // Load config.
-    final config = await _configService.load();
+    final account = results[0] as String?;
+    final project = results[1] as String?;
+    final adcInfo = results[2] as AdcInfo?;
+    final tokenInfo = results[3] as TokenInfo?;
+    final config = results[4] as CandelaConfig;
 
     setState(() {
       _identity = IdentityState(
-        email: account, project: project, adcInfo: adcInfo,
-        tokenInfo: tokenInfo, gcloudInstalled: installed,
+        email: account,
+        project: project,
+        adcInfo: adcInfo,
+        tokenInfo: tokenInfo,
+        gcloudInstalled: installed,
       );
       _config = config;
       _loading = false;
@@ -77,6 +92,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
       },
     );
     await processManager.detectRunning();
+    if (gen != _loadGeneration) return;
 
     // Run provider tests.
     _runProviderTests(config, project, tokenInfo);
@@ -85,16 +101,12 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
     _diagnostics.runAll();
   }
 
-  Future<void> _runProviderTests(CandelaConfig config, String? project, TokenInfo? token) async {
-    // Get raw access token for tests.
+  Future<void> _runProviderTests(
+      CandelaConfig config, String? project, TokenInfo? token) async {
+    // Reuse access token from already-fetched TokenInfo.
     String? accessToken;
     if (token != null && token.isValid) {
-      try {
-        final result = await Process.run('gcloud',
-          ['auth', 'application-default', 'print-access-token'],
-          environment: _gcloud.augmentedEnv);
-        if (result.exitCode == 0) accessToken = (result.stdout as String).trim();
-      } catch (_) {}
+      accessToken = token.accessToken;
     }
 
     final region = config.vertexAI?.effectiveRegion ?? 'us-central1';
@@ -102,7 +114,11 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
     // Build provider list dynamically from config.
     final loadingStatuses = <ProviderStatus>[
       // Proxy always shown.
-      const ProviderStatus(name: 'proxy', displayName: 'Candela Proxy', state: ProviderState.loading, icon: '🕯'),
+      const ProviderStatus(
+          name: 'proxy',
+          displayName: 'Candela Proxy',
+          state: ProviderState.loading,
+          icon: '🕯'),
     ];
     final testFutures = <Future<ProviderStatus>>[
       _providerTest.testProxy(port: config.port),
@@ -111,15 +127,29 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
     // Cloud providers from config.
     final providerNames = config.providers.map((p) => p.name).toSet();
     if (providerNames.contains('google') || providerNames.contains('gemini')) {
-      loadingStatuses.add(const ProviderStatus(name: 'google', displayName: 'Google / Vertex AI', state: ProviderState.loading, icon: 'G'));
-      testFutures.add(_providerTest.testGoogle(project: project, accessToken: accessToken));
+      loadingStatuses.add(const ProviderStatus(
+          name: 'google',
+          displayName: 'Google / Vertex AI',
+          state: ProviderState.loading,
+          icon: 'G'));
+      testFutures.add(
+          _providerTest.testGoogle(project: project, accessToken: accessToken));
     }
     if (providerNames.contains('anthropic')) {
-      loadingStatuses.add(const ProviderStatus(name: 'anthropic', displayName: 'Anthropic (Vertex)', state: ProviderState.loading, icon: 'A'));
-      testFutures.add(_providerTest.testAnthropic(project: project, region: region, accessToken: accessToken));
+      loadingStatuses.add(const ProviderStatus(
+          name: 'anthropic',
+          displayName: 'Anthropic (Vertex)',
+          state: ProviderState.loading,
+          icon: 'A'));
+      testFutures.add(_providerTest.testAnthropic(
+          project: project, region: region, accessToken: accessToken));
     }
     if (providerNames.contains('openai')) {
-      loadingStatuses.add(const ProviderStatus(name: 'openai', displayName: 'OpenAI', state: ProviderState.loading, icon: 'O'));
+      loadingStatuses.add(const ProviderStatus(
+          name: 'openai',
+          displayName: 'OpenAI',
+          state: ProviderState.loading,
+          icon: 'O'));
       testFutures.add(_providerTest.testOpenAI());
     }
 
@@ -128,15 +158,27 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
 
     // Local providers from config.
     if (providerNames.contains('ollama')) {
-      loadingStatuses.add(const ProviderStatus(name: 'ollama', displayName: 'Ollama', state: ProviderState.loading, icon: '🦙'));
+      loadingStatuses.add(const ProviderStatus(
+          name: 'ollama',
+          displayName: 'Ollama',
+          state: ProviderState.loading,
+          icon: '🦙'));
       testFutures.add(_providerTest.testOllama());
     }
     if (providerNames.contains('vllm')) {
-      loadingStatuses.add(const ProviderStatus(name: 'vllm', displayName: 'vLLM', state: ProviderState.loading, icon: 'V'));
+      loadingStatuses.add(const ProviderStatus(
+          name: 'vllm',
+          displayName: 'vLLM',
+          state: ProviderState.loading,
+          icon: 'V'));
       testFutures.add(_providerTest.testVllm());
     }
     if (providerNames.contains('lmstudio')) {
-      loadingStatuses.add(const ProviderStatus(name: 'lmstudio', displayName: 'LM Studio', state: ProviderState.loading, icon: 'L'));
+      loadingStatuses.add(const ProviderStatus(
+          name: 'lmstudio',
+          displayName: 'LM Studio',
+          state: ProviderState.loading,
+          icon: 'L'));
       testFutures.add(_providerTest.testLmStudio());
     }
 
@@ -170,7 +212,8 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
     ];
 
     final configured = _config?.providers.map((p) => p.name).toSet() ?? {};
-    final choices = allProviders.where((a) => !configured.contains(a.$1)).toList();
+    final choices =
+        allProviders.where((a) => !configured.contains(a.$1)).toList();
 
     if (choices.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -193,25 +236,36 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
               for (final (name, display, icon, desc) in choices)
                 ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: _isLocalProvider(name) ? CandelaColors.bgTertiary : CandelaColors.accentDim,
-                    child: Text(icon, style: const TextStyle(fontWeight: FontWeight.w700)),
+                    backgroundColor: _isLocalProvider(name)
+                        ? CandelaColors.bgTertiary
+                        : CandelaColors.accentDim,
+                    child: Text(icon,
+                        style: const TextStyle(fontWeight: FontWeight.w700)),
                   ),
                   title: Row(children: [
                     Text(display),
                     if (_isLocalProvider(name)) ...[
                       const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 1),
                         decoration: BoxDecoration(
                           color: CandelaColors.bgTertiary,
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Text('LOCAL', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: CandelaColors.textMuted)),
+                        child: const Text('LOCAL',
+                            style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                                color: CandelaColors.textMuted)),
                       ),
                     ],
                   ]),
-                  subtitle: Text(desc, style: const TextStyle(fontSize: 12, color: CandelaColors.textSecondary)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  subtitle: Text(desc,
+                      style: const TextStyle(
+                          fontSize: 12, color: CandelaColors.textSecondary)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
                   hoverColor: CandelaColors.bgHover,
                   onTap: () async {
                     Navigator.of(ctx).pop();
@@ -223,7 +277,9 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancel')),
         ],
       ),
     );
@@ -232,6 +288,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
   @override
   void dispose() {
     _diagnostics.dispose();
+    _providerTest.dispose();
     super.dispose();
   }
 
@@ -245,12 +302,13 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 24),
           decoration: const BoxDecoration(
             color: CandelaColors.bgSecondary,
-            border: Border(bottom: BorderSide(color: CandelaColors.borderSubtle)),
+            border:
+                Border(bottom: BorderSide(color: CandelaColors.borderSubtle)),
           ),
           child: Row(
             children: [
               const Text('Auth & Connectivity',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
               const Spacer(),
               OutlinedButton.icon(
                 onPressed: _loading ? null : _loadAll,
@@ -263,7 +321,8 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
         // Body
         Expanded(
           child: _loading && _identity == null
-              ? const Center(child: CircularProgressIndicator(color: CandelaColors.accent))
+              ? const Center(
+                  child: CircularProgressIndicator(color: CandelaColors.accent))
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
                   child: Column(
@@ -298,17 +357,23 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
                       Row(
                         children: [
                           const Text('Providers',
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                              style: TextStyle(
+                                  fontSize: 15, fontWeight: FontWeight.w600)),
                           const Spacer(),
                           ListenableBuilder(
                             listenable: processManager,
                             builder: (_, __) {
-                              final running = processManager.all.where((p) => p.state == ProcessState.running).length;
+                              final running = processManager.all
+                                  .where((p) => p.state == ProcessState.running)
+                                  .length;
                               if (running > 0) {
                                 return Padding(
                                   padding: const EdgeInsets.only(right: 12),
-                                  child: Text('$running process${running > 1 ? "es" : ""} running',
-                                    style: const TextStyle(fontSize: 12, color: CandelaColors.textMuted)),
+                                  child: Text(
+                                      '$running process${running > 1 ? "es" : ""} running',
+                                      style: const TextStyle(
+                                          fontSize: 12,
+                                          color: CandelaColors.textMuted)),
                                 );
                               }
                               return const SizedBox.shrink();
@@ -327,7 +392,8 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
                         builder: (context, _) {
                           return LayoutBuilder(
                             builder: (context, constraints) {
-                              final crossCount = constraints.maxWidth > 1000 ? 4 : 2;
+                              final crossCount =
+                                  constraints.maxWidth > 1000 ? 4 : 2;
                               return GridView.count(
                                 crossAxisCount: crossCount,
                                 shrinkWrap: true,
@@ -338,20 +404,34 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
                                 children: [
                                   for (final s in _providerStatuses)
                                     _isLocalProvider(s.name)
-                                      ? RuntimeControlCard(
-                                          process: processManager.get(s.name) ?? ManagedProcess(name: s.name, displayName: s.displayName, icon: s.icon ?? '?'),
-                                          onStart: () => processManager.start(s.name),
-                                          onStop: () => processManager.stop(s.name),
-                                          onRestart: () => processManager.restart(s.name),
-                                          onRemove: _isRemovableProvider(s.name) ? () => _removeProvider(s.name) : null,
-                                          providerStatus: s,
-                                        )
-                                      : ProviderCard(
-                                          status: s,
-                                          onRemove: _isRemovableProvider(s.name)
-                                              ? () => _removeProvider(s.name)
-                                              : null,
-                                        ),
+                                        ? RuntimeControlCard(
+                                            process: processManager
+                                                    .get(s.name) ??
+                                                ManagedProcess(
+                                                    name: s.name,
+                                                    displayName: s.displayName,
+                                                    icon: s.icon ?? '?'),
+                                            onStart: () =>
+                                                processManager.start(s.name),
+                                            onStop: () =>
+                                                processManager.stop(s.name),
+                                            onRestart: () =>
+                                                processManager.restart(s.name),
+                                            onRemove:
+                                                _isRemovableProvider(s.name)
+                                                    ? () =>
+                                                        _removeProvider(s.name)
+                                                    : null,
+                                            providerStatus: s,
+                                          )
+                                        : ProviderCard(
+                                            status: s,
+                                            onRemove:
+                                                _isRemovableProvider(s.name)
+                                                    ? () =>
+                                                        _removeProvider(s.name)
+                                                    : null,
+                                          ),
                                 ],
                               );
                             },
@@ -362,7 +442,8 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
 
                       // Section 3: Diagnostic Log
                       const Text('Diagnostic Log',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                          style: TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w600)),
                       const SizedBox(height: 12),
                       DiagnosticLog(runner: _diagnostics),
                     ],

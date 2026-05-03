@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -17,7 +18,10 @@ class ManagedProcess {
   String? port;
   DateTime? startedAt;
   String? errorMessage;
-  final List<String> recentLogs = [];
+
+  /// Ring buffer for recent log lines — O(1) add, O(1) removeFirst.
+  final Queue<String> recentLogs = Queue<String>();
+  static const int maxLogLines = 50;
 
   ManagedProcess({
     required this.name,
@@ -27,7 +31,8 @@ class ManagedProcess {
     this.port,
   });
 
-  Duration? get uptime => startedAt != null ? DateTime.now().difference(startedAt!) : null;
+  Duration? get uptime =>
+      startedAt != null ? DateTime.now().difference(startedAt!) : null;
 
   String get uptimeString {
     final d = uptime;
@@ -56,7 +61,9 @@ class ProcessManager extends ChangeNotifier {
 
     // Proxy is always managed.
     _processes['proxy'] = ManagedProcess(
-      name: 'proxy', displayName: 'Candela Proxy', icon: '🕯️',
+      name: 'proxy',
+      displayName: 'Candela Proxy',
+      icon: '🕯️',
       port: proxyPort ?? '8181',
     );
 
@@ -75,11 +82,17 @@ class ProcessManager extends ChangeNotifier {
   }
 
   static ManagedProcess? _runtimeInfo(String name) => switch (name) {
-    'ollama' => ManagedProcess(name: 'ollama', displayName: 'Ollama', icon: '🦙', port: '11434'),
-    'vllm' => ManagedProcess(name: 'vllm', displayName: 'vLLM', icon: 'V', port: '8000'),
-    'lmstudio' => ManagedProcess(name: 'lmstudio', displayName: 'LM Studio', icon: 'L', port: '1234'),
-    _ => null,
-  };
+        'ollama' => ManagedProcess(
+            name: 'ollama', displayName: 'Ollama', icon: '🦙', port: '11434'),
+        'vllm' => ManagedProcess(
+            name: 'vllm', displayName: 'vLLM', icon: 'V', port: '8000'),
+        'lmstudio' => ManagedProcess(
+            name: 'lmstudio',
+            displayName: 'LM Studio',
+            icon: 'L',
+            port: '1234'),
+        _ => null,
+      };
 
   List<ManagedProcess> get all => _processes.values.toList();
   ManagedProcess? get(String name) => _processes[name];
@@ -97,14 +110,23 @@ class ProcessManager extends ChangeNotifier {
   }
 
   /// Detect already-running processes on startup.
+  /// Checks all processes in parallel to avoid sequential 2s timeouts.
   Future<void> detectRunning() async {
-    for (final entry in _processes.entries) {
-      final p = entry.value;
-      if (await _isHealthy(entry.key)) {
+    final entries = _processes.entries.toList();
+    final results = await Future.wait(
+      entries.map((e) async {
+        final healthy = await _isHealthy(e.key);
+        final installed = healthy || await isInstalled(e.key);
+        return (healthy: healthy, installed: installed);
+      }),
+    );
+    for (var i = 0; i < entries.length; i++) {
+      final p = entries[i].value;
+      if (results[i].healthy) {
         p.state = ProcessState.running;
-        p.startedAt = DateTime.now(); // approximate
-        _startHealthPolling(entry.key);
-      } else if (!await isInstalled(entry.key)) {
+        // Leave startedAt null — actual start time is unknown.
+        _startHealthPolling(entries[i].key);
+      } else if (!results[i].installed) {
         p.state = ProcessState.notInstalled;
       }
     }
@@ -133,15 +155,22 @@ class ProcessManager extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final process = await Process.start(binary, args, environment: _env(name));
+      final process =
+          await Process.start(binary, args, environment: _env(name));
       _handles[name] = process;
       p.pid = process.pid;
 
       // Capture stdout/stderr.
-      process.stdout.transform(utf8.decoder).transform(const LineSplitter()).listen((line) {
+      process.stdout
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .listen((line) {
         _addLog(p, line);
       });
-      process.stderr.transform(utf8.decoder).transform(const LineSplitter()).listen((line) {
+      process.stderr
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .listen((line) {
         _addLog(p, '[err] $line');
       });
 
@@ -166,7 +195,8 @@ class ProcessManager extends ChangeNotifier {
 
       // Handle unexpected exit.
       process.exitCode.then((code) {
-        if (p.state == ProcessState.running || p.state == ProcessState.starting) {
+        if (p.state == ProcessState.running ||
+            p.state == ProcessState.starting) {
           p.state = ProcessState.error;
           p.errorMessage = 'Process exited with code $code';
           _handles.remove(name);
@@ -221,10 +251,13 @@ class ProcessManager extends ChangeNotifier {
   }
 
   /// Stop all managed processes (including detected ones without handles).
+  /// Also stops error-state processes that may still have live OS handles/PIDs.
   Future<void> stopAll() async {
     for (final name in _processes.keys.toList()) {
-      if (_processes[name]?.state == ProcessState.running ||
-          _processes[name]?.state == ProcessState.starting) {
+      final state = _processes[name]?.state;
+      if (state == ProcessState.running ||
+          state == ProcessState.starting ||
+          state == ProcessState.error) {
         await stop(name);
       }
     }
@@ -233,7 +266,8 @@ class ProcessManager extends ChangeNotifier {
   /// Start all configured processes.
   Future<void> startAll() async {
     for (final entry in _processes.entries) {
-      if (entry.value.state == ProcessState.stopped && await isInstalled(entry.key)) {
+      if (entry.value.state == ProcessState.stopped &&
+          await isInstalled(entry.key)) {
         await start(entry.key);
       }
     }
@@ -242,30 +276,33 @@ class ProcessManager extends ChangeNotifier {
   // --- Private helpers ---
 
   String? _binaryName(String name) => switch (name) {
-    'ollama' => 'ollama',
-    'proxy' => 'candela-local',
-    'vllm' => 'vllm',
-    'lmstudio' => null, // LM Studio is a GUI app, can't start from CLI
-    _ => null,
-  };
+        'ollama' => 'ollama',
+        'proxy' => 'candela-local',
+        'vllm' => 'vllm',
+        'lmstudio' => null, // LM Studio is a GUI app, can't start from CLI
+        _ => null,
+      };
 
   List<String> _binaryArgs(String name) => switch (name) {
-    'ollama' => ['serve'],
-    'proxy' => [],
-    'vllm' => ['serve'],
-    _ => [],
-  };
+        'ollama' => ['serve'],
+        'proxy' => [],
+        'vllm' => ['serve'],
+        _ => [],
+      };
 
   Map<String, String>? _env(String name) => switch (name) {
-    'ollama' => {'OLLAMA_HOST': '0.0.0.0:${_processes['ollama']?.port ?? '11434'}'},
-    _ => null,
-  };
+        'ollama' => {
+            'OLLAMA_HOST': '0.0.0.0:${_processes['ollama']?.port ?? '11434'}'
+          },
+        _ => null,
+      };
 
   Future<bool> _isHealthy(String name) async {
     final url = _healthUrl(name);
     if (url == null) return false;
     try {
-      final resp = await _client.get(Uri.parse(url)).timeout(const Duration(seconds: 2));
+      final resp =
+          await _client.get(Uri.parse(url)).timeout(const Duration(seconds: 2));
       return resp.statusCode == 200;
     } catch (_) {
       return false;
@@ -285,11 +322,14 @@ class ProcessManager extends ChangeNotifier {
 
   void _startHealthPolling(String name) {
     _healthTimers[name]?.cancel();
-    _healthTimers[name] = Timer.periodic(const Duration(seconds: 10), (_) async {
+    _healthTimers[name] =
+        Timer.periodic(const Duration(seconds: 10), (_) async {
       final p = _processes[name];
       if (p == null) return;
       // Only poll processes that are running or in recoverable error.
-      if (p.state != ProcessState.running && p.state != ProcessState.error) return;
+      if (p.state != ProcessState.running && p.state != ProcessState.error) {
+        return;
+      }
 
       final healthy = await _isHealthy(name);
       if (healthy && p.state == ProcessState.error) {
@@ -306,13 +346,17 @@ class ProcessManager extends ChangeNotifier {
   }
 
   void _addLog(ManagedProcess p, String line) {
-    p.recentLogs.add(line);
-    if (p.recentLogs.length > 50) p.recentLogs.removeAt(0);
+    p.recentLogs.addLast(line);
+    while (p.recentLogs.length > ManagedProcess.maxLogLines) {
+      p.recentLogs.removeFirst();
+    }
   }
 
   @override
   void dispose() {
-    for (final t in _healthTimers.values) { t.cancel(); }
+    for (final t in _healthTimers.values) {
+      t.cancel();
+    }
     // Kill any processes we started to prevent orphans.
     for (final handle in _handles.values) {
       handle.kill(ProcessSignal.sigterm);

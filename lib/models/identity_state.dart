@@ -14,7 +14,8 @@ class IdentityState {
     this.gcloudInstalled = false,
   });
 
-  bool get isAuthenticated => email != null && tokenInfo != null && tokenInfo!.isValid;
+  bool get isAuthenticated =>
+      email != null && tokenInfo != null && tokenInfo!.isValid;
 }
 
 /// Decoded Application Default Credentials file info.
@@ -41,11 +42,13 @@ class AdcInfo {
 /// Token info from decoding a JWT access token.
 class TokenInfo {
   final String? email;
+  final String? accessToken;
   final DateTime expiresAt;
   final bool isValid;
 
   const TokenInfo({
     this.email,
+    this.accessToken,
     required this.expiresAt,
     required this.isValid,
   });

@@ -9,7 +9,8 @@ void main() {
     late String testConfigPath;
 
     setUp(() {
-      testConfigPath = '${Directory.systemTemp.path}/candela_test_${DateTime.now().millisecondsSinceEpoch}.yaml';
+      testConfigPath =
+          '${Directory.systemTemp.path}/candela_test_${DateTime.now().millisecondsSinceEpoch}.yaml';
       service = ConfigService(configPath: testConfigPath);
     });
 
@@ -67,7 +68,8 @@ providers:
       await service.addProvider('ollama');
       final config = await service.load();
       expect(config.providers.length, 2);
-      expect(config.providers.map((p) => p.name).toList(), ['google', 'ollama']);
+      expect(
+          config.providers.map((p) => p.name).toList(), ['google', 'ollama']);
     });
 
     test('removeProvider removes from list', () async {
@@ -219,7 +221,8 @@ providers:
   - name: google
 ''');
       final config = await service.load();
-      final projectIssue = config.issues.where((i) => i.field == 'vertex_ai.project');
+      final projectIssue =
+          config.issues.where((i) => i.field == 'vertex_ai.project');
       expect(projectIssue, isNotEmpty);
     });
 
@@ -231,7 +234,8 @@ vertex_ai:
   project: my-project
 ''');
       final config = await service.load();
-      final regionIssue = config.issues.where((i) => i.field == 'vertex_ai.region');
+      final regionIssue =
+          config.issues.where((i) => i.field == 'vertex_ai.region');
       expect(regionIssue, isNotEmpty);
       expect(regionIssue.first.severity, IssueSeverity.warning);
     });
@@ -295,7 +299,8 @@ providers:
       - gemini-1.5-flash
 ''');
       final config = await service.load();
-      expect(config.providers[0].models, ['gemini-1.5-pro', 'gemini-1.5-flash']);
+      expect(
+          config.providers[0].models, ['gemini-1.5-pro', 'gemini-1.5-flash']);
     });
 
     // --- Port boundary values ---
@@ -346,7 +351,8 @@ providers:
 
     test('setMode with audience persists both fields', () async {
       File(testConfigPath).writeAsStringSync('port: 8181\n');
-      await service.setMode(remote: 'https://candela.example.com', audience: 'my-audience-id');
+      await service.setMode(
+          remote: 'https://candela.example.com', audience: 'my-audience-id');
       final config = await service.load();
       expect(config.remote, 'https://candela.example.com');
       expect(config.audience, 'my-audience-id');
@@ -357,9 +363,71 @@ providers:
       await service.setMode(remote: '8080');
       final content = File(testConfigPath).readAsStringSync();
       // Should be quoted since it's a string that looks like a number.
-      expect(content.contains('remote: 8080'), isTrue);
+      expect(content.contains("remote: '8080'"), isTrue);
       final config = await service.load();
       expect(config.remote, '8080');
+    });
+
+    // --- Audit v4: new unit tests ---
+
+    test('setPort creates config file if it does not exist', () async {
+      expect(File(testConfigPath).existsSync(), isFalse);
+      await service.setPort('port', 9999);
+      expect(File(testConfigPath).existsSync(), isTrue);
+      final config = await service.load();
+      expect(config.port, 9999);
+    });
+
+    test('setMode creates config file if it does not exist', () async {
+      expect(File(testConfigPath).existsSync(), isFalse);
+      await service.setMode(remote: 'https://new.example.com');
+      expect(File(testConfigPath).existsSync(), isTrue);
+      final config = await service.load();
+      expect(config.remote, 'https://new.example.com');
+    });
+
+    test('load ignores unknown YAML keys gracefully', () async {
+      File(testConfigPath).writeAsStringSync('''
+port: 8181
+unknown_future_key: some_value
+another_unknown:
+  nested: value
+providers:
+  - name: google
+''');
+      final config = await service.load();
+      expect(config.port, 8181);
+      expect(config.providers.length, 1);
+      // Should not error on unknown keys.
+      expect(
+          config.issues.where((i) => i.severity == IssueSeverity.error),
+          isNot(contains(predicate<ConfigIssue>(
+              (i) => i.message.contains('unknown_future_key')))));
+    });
+
+    test('addProvider to minimal file creates providers list', () async {
+      File(testConfigPath).writeAsStringSync('port: 8181\n');
+      await service.addProvider('ollama');
+      final config = await service.load();
+      expect(config.providers.length, 1);
+      expect(config.providers.first.name, 'ollama');
+    });
+
+    test('_yamlValue quotes numeric-looking strings on round-trip', () async {
+      File(testConfigPath).writeAsStringSync('port: 8181\n');
+      await service.addProvider('test-provider',
+          models: ['3.14', '0777', '0xDEAD', '1e10']);
+      final config = await service.load();
+      // All should survive as strings, not be parsed as numbers.
+      expect(config.providers.first.models, ['3.14', '0777', '0xDEAD', '1e10']);
+    });
+
+    test('setPort with negative port throws ArgumentError', () async {
+      File(testConfigPath).writeAsStringSync('port: 8181\n');
+      expect(
+        () => service.setPort('port', -1),
+        throwsA(isA<ArgumentError>()),
+      );
     });
   });
 }

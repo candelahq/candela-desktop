@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import '../models/diagnostic_entry.dart';
 import '../models/provider_status.dart';
 import '../models/candela_config.dart';
@@ -23,6 +22,9 @@ class DiagnosticRunner {
   bool _running = false;
   bool get isRunning => _running;
 
+  /// Completer for the current run, used to reject/await concurrent calls.
+  Completer<DiagnosticSummary>? _runCompleter;
+
   DiagnosticRunner({
     ConfigService? config,
     GCloudService? gcloud,
@@ -34,8 +36,27 @@ class DiagnosticRunner {
         _providers = providers ?? ProviderTestService();
 
   /// Run all diagnostic checks. Returns summary when complete.
+  /// Rejects concurrent runs by returning the in-flight future.
   Future<DiagnosticSummary> runAll() async {
+    if (_running && _runCompleter != null) {
+      return _runCompleter!.future;
+    }
     _running = true;
+    _runCompleter = Completer<DiagnosticSummary>();
+    try {
+      final result = await _runAllImpl();
+      _runCompleter!.complete(result);
+      return result;
+    } catch (e, st) {
+      _runCompleter!.completeError(e, st);
+      rethrow;
+    } finally {
+      _running = false;
+      _runCompleter = null;
+    }
+  }
+
+  Future<DiagnosticSummary> _runAllImpl() async {
     history.clear();
     int passed = 0, failed = 0, warned = 0;
 
@@ -49,7 +70,6 @@ class DiagnosticRunner {
           fixUrl: 'https://cloud.google.com/sdk/docs/install');
       failed++;
       _emitSummary(passed, failed, warned);
-      _running = false;
       return DiagnosticSummary(passed: passed, failed: failed, warned: warned);
     }
 
@@ -57,7 +77,8 @@ class DiagnosticRunner {
     _emit('Reading config file...', DiagnosticStatus.running);
     final config = await _config.load();
     if (config.issues.any((i) => i.severity == IssueSeverity.error)) {
-      for (final issue in config.issues.where((i) => i.severity == IssueSeverity.error)) {
+      for (final issue
+          in config.issues.where((i) => i.severity == IssueSeverity.error)) {
         _emit('Config: ${issue.message}', DiagnosticStatus.fail);
         failed++;
       }
@@ -67,23 +88,28 @@ class DiagnosticRunner {
         CandelaMode.soloCloud => 'Solo + Cloud Mode',
         CandelaMode.team => 'Team Mode',
       };
-      _emit('Config loaded ($modeLabel) — ${config.path}', DiagnosticStatus.pass);
+      _emit(
+          'Config loaded ($modeLabel) — ${config.path}', DiagnosticStatus.pass);
       passed++;
-      for (final issue in config.issues.where((i) => i.severity == IssueSeverity.warning)) {
+      for (final issue
+          in config.issues.where((i) => i.severity == IssueSeverity.warning)) {
         _emit('Config: ${issue.message}', DiagnosticStatus.warn);
         warned++;
       }
     }
 
     // 3. ADC
-    _emit('Checking Application Default Credentials...', DiagnosticStatus.running);
+    _emit('Checking Application Default Credentials...',
+        DiagnosticStatus.running);
     final adc = await _adc.readAdcFile();
     if (adc == null) {
       _emit('No ADC found', DiagnosticStatus.fail,
           fixCommand: 'gcloud auth application-default login');
       failed++;
     } else {
-      _emit('ADC: ${adc.displayType}${adc.clientEmail != null ? ' (${adc.clientEmail})' : ''}', DiagnosticStatus.pass);
+      _emit(
+          'ADC: ${adc.displayType}${adc.clientEmail != null ? ' (${adc.clientEmail})' : ''}',
+          DiagnosticStatus.pass);
       passed++;
     }
 
@@ -100,15 +126,11 @@ class DiagnosticRunner {
           fixCommand: 'gcloud auth application-default login');
       failed++;
     } else {
-      _emit('Token valid (expires in ${token.expiryDisplay})', DiagnosticStatus.pass);
+      _emit('Token valid (expires in ${token.expiryDisplay})',
+          DiagnosticStatus.pass);
       passed++;
-      // Get raw token for provider tests.
-      try {
-        final result = await Process.run('gcloud',
-          ['auth', 'application-default', 'print-access-token'],
-          environment: _gcloud.augmentedEnv);
-        if (result.exitCode == 0) accessTokenStr = (result.stdout as String).trim();
-      } catch (_) {}
+      // Reuse raw token from TokenInfo — no extra gcloud call needed.
+      accessTokenStr = token.accessToken;
     }
 
     // 5. GCP Project
@@ -126,10 +148,12 @@ class DiagnosticRunner {
     // 6. Provider tests — only test what's configured.
 
     // Always test the proxy.
-    _emit('Testing Candela Proxy (:${config.port})...', DiagnosticStatus.running);
+    _emit(
+        'Testing Candela Proxy (:${config.port})...', DiagnosticStatus.running);
     final proxyStatus = await _providers.testProxy(port: config.port);
     if (proxyStatus.isHealthy) {
-      _emit('Proxy: Running — ${proxyStatus.models.length} models available', DiagnosticStatus.pass);
+      _emit('Proxy: Running — ${proxyStatus.models.length} models available',
+          DiagnosticStatus.pass);
       passed++;
     } else {
       _emit('Proxy: ${proxyStatus.statusMessage}', DiagnosticStatus.warn,
@@ -142,9 +166,11 @@ class DiagnosticRunner {
 
     if (providerNames.contains('google') || providerNames.contains('gemini')) {
       _emit('Testing Google / Vertex AI...', DiagnosticStatus.running);
-      final googleStatus = await _providers.testGoogle(project: project, accessToken: accessTokenStr);
+      final googleStatus = await _providers.testGoogle(
+          project: project, accessToken: accessTokenStr);
       if (googleStatus.isHealthy) {
-        _emit('Google: Connected (${googleStatus.latency?.inMilliseconds}ms)', DiagnosticStatus.pass);
+        _emit('Google: Connected (${googleStatus.latency?.inMilliseconds}ms)',
+            DiagnosticStatus.pass);
         passed++;
       } else {
         _emit('Google: ${googleStatus.statusMessage}', DiagnosticStatus.fail,
@@ -156,13 +182,19 @@ class DiagnosticRunner {
     if (providerNames.contains('anthropic')) {
       _emit('Testing Anthropic (Vertex AI)...', DiagnosticStatus.running);
       final anthropicStatus = await _providers.testAnthropic(
-        project: project, region: config.vertexAI?.effectiveRegion ?? 'us-central1', accessToken: accessTokenStr);
+          project: project,
+          region: config.vertexAI?.effectiveRegion ?? 'us-central1',
+          accessToken: accessTokenStr);
       if (anthropicStatus.isHealthy) {
-        _emit('Anthropic: Connected (${anthropicStatus.latency?.inMilliseconds}ms)', DiagnosticStatus.pass);
+        _emit(
+            'Anthropic: Connected (${anthropicStatus.latency?.inMilliseconds}ms)',
+            DiagnosticStatus.pass);
         passed++;
       } else {
-        _emit('Anthropic: ${anthropicStatus.statusMessage}', DiagnosticStatus.fail,
-            detail: anthropicStatus.errorDetail, fixUrl: anthropicStatus.fixUrl);
+        _emit('Anthropic: ${anthropicStatus.statusMessage}',
+            DiagnosticStatus.fail,
+            detail: anthropicStatus.errorDetail,
+            fixUrl: anthropicStatus.fixUrl);
         failed++;
       }
     }
@@ -171,7 +203,8 @@ class DiagnosticRunner {
       _emit('Testing OpenAI...', DiagnosticStatus.running);
       final openaiStatus = await _providers.testOpenAI();
       if (openaiStatus.isHealthy) {
-        _emit('OpenAI: Connected (${openaiStatus.latency?.inMilliseconds}ms)', DiagnosticStatus.pass);
+        _emit('OpenAI: Connected (${openaiStatus.latency?.inMilliseconds}ms)',
+            DiagnosticStatus.pass);
         passed++;
       } else {
         _emit('OpenAI: ${openaiStatus.statusMessage}', DiagnosticStatus.fail,
@@ -185,7 +218,8 @@ class DiagnosticRunner {
       _emit('Testing Ollama (local)...', DiagnosticStatus.running);
       final ollamaStatus = await _providers.testOllama();
       if (ollamaStatus.isHealthy) {
-        _emit('Ollama: Running — ${ollamaStatus.models.length} models', DiagnosticStatus.pass);
+        _emit('Ollama: Running — ${ollamaStatus.models.length} models',
+            DiagnosticStatus.pass);
         passed++;
       } else if (ollamaStatus.state == ProviderState.notInstalled) {
         _emit('Ollama: Not installed', DiagnosticStatus.info);
@@ -197,14 +231,18 @@ class DiagnosticRunner {
     }
 
     _emitSummary(passed, failed, warned);
-    _running = false;
     return DiagnosticSummary(passed: passed, failed: failed, warned: warned);
   }
 
-  void _emit(String message, DiagnosticStatus status, {String? detail, String? fixCommand, String? fixUrl}) {
+  void _emit(String message, DiagnosticStatus status,
+      {String? detail, String? fixCommand, String? fixUrl}) {
     final entry = DiagnosticEntry(
-      timestamp: DateTime.now(), message: message, status: status,
-      detail: detail, fixCommand: fixCommand, fixUrl: fixUrl);
+        timestamp: DateTime.now(),
+        message: message,
+        status: status,
+        detail: detail,
+        fixCommand: fixCommand,
+        fixUrl: fixUrl);
     history.add(entry);
     _controller.add(entry);
   }

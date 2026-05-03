@@ -1,0 +1,56 @@
+# Candela Desktop — CI Pipeline
+# Runs on all PRs and pushes to main.
+#
+# Two jobs:
+#   lint  — fast, Linux: format + static analysis
+#   test  — macOS: Flutter widget/integration tests (needs Cocoa)
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel in-flight runs for the same PR/branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - run: flutter pub get
+
+      - name: Format check
+        run: dart format --set-exit-if-changed lib/ test/
+
+      - name: Static analysis
+        run: dart analyze --fatal-infos lib/ test/
+
+  test:
+    name: Test
+    runs-on: macos-latest
+    timeout-minutes: 15
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - run: flutter pub get
+
+      - name: Run tests
+        run: flutter test

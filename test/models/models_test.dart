@@ -110,19 +110,27 @@ void main() {
   group('ProviderStatus', () {
     test('isHealthy only true for connected state', () {
       const connected = ProviderStatus(
-        name: 'test', displayName: 'Test', state: ProviderState.connected,
+        name: 'test',
+        displayName: 'Test',
+        state: ProviderState.connected,
       );
       expect(connected.isHealthy, isTrue);
 
-      for (final state in ProviderState.values.where((s) => s != ProviderState.connected)) {
-        final status = ProviderStatus(name: 'test', displayName: 'Test', state: state);
-        expect(status.isHealthy, isFalse, reason: 'Expected $state to not be healthy');
+      for (final state
+          in ProviderState.values.where((s) => s != ProviderState.connected)) {
+        final status =
+            ProviderStatus(name: 'test', displayName: 'Test', state: state);
+        expect(status.isHealthy, isFalse,
+            reason: 'Expected $state to not be healthy');
       }
     });
 
     test('port field is accessible', () {
       const status = ProviderStatus(
-        name: 'proxy', displayName: 'Proxy', state: ProviderState.connected, port: 8181,
+        name: 'proxy',
+        displayName: 'Proxy',
+        state: ProviderState.connected,
+        port: 8181,
       );
       expect(status.port, 8181);
     });
@@ -151,6 +159,53 @@ void main() {
     test('effectiveRegion uses provided region', () {
       const vtx = VertexAIConfig(project: 'my-proj', region: 'europe-west4');
       expect(vtx.effectiveRegion, 'europe-west4');
+    });
+  });
+
+  // --- Audit v4: new unit tests ---
+
+  group('CandelaConfig — audit v4', () {
+    test('hasErrors returns true when issues contain errors', () {
+      const config = CandelaConfig(
+        path: '/test',
+        issues: [
+          ConfigIssue(severity: IssueSeverity.error, message: 'broken'),
+          ConfigIssue(severity: IssueSeverity.warning, message: 'warn'),
+        ],
+      );
+      expect(config.hasErrors, isTrue);
+      expect(config.hasWarnings, isTrue);
+    });
+
+    test('hasWarnings returns false with only errors', () {
+      const config = CandelaConfig(
+        path: '/test',
+        issues: [
+          ConfigIssue(severity: IssueSeverity.error, message: 'err1'),
+          ConfigIssue(severity: IssueSeverity.error, message: 'err2'),
+        ],
+      );
+      expect(config.hasWarnings, isFalse);
+    });
+  });
+
+  group('TokenInfo — audit v4', () {
+    test('expiryDisplay shows hours and minutes format', () {
+      final token = TokenInfo(
+        expiresAt: DateTime.now().add(const Duration(hours: 3, minutes: 42)),
+        isValid: true,
+      );
+      // Account for test execution time — minutes could be 41 or 42.
+      expect(token.expiryDisplay, contains('3h'));
+      expect(token.expiryDisplay, matches(RegExp(r'4[12]m')));
+    });
+  });
+
+  group('DiagnosticSummary — audit v4', () {
+    test('total sums all three fields correctly', () {
+      const summary = DiagnosticSummary(passed: 10, failed: 3, warned: 7);
+      expect(summary.total, 20);
+      expect(summary.allPassed, isFalse);
     });
   });
 }

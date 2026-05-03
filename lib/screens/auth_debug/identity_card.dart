@@ -8,14 +8,14 @@ class IdentityCard extends StatefulWidget {
   final IdentityState identity;
   final VoidCallback onRefresh;
 
-  const IdentityCard({super.key, required this.identity, required this.onRefresh});
+  const IdentityCard(
+      {super.key, required this.identity, required this.onRefresh});
 
   @override
   State<IdentityCard> createState() => _IdentityCardState();
 }
 
 class _IdentityCardState extends State<IdentityCard> {
-
   @override
   void dispose() {
     _adcProcess?.kill();
@@ -29,7 +29,9 @@ class _IdentityCardState extends State<IdentityCard> {
     final statusColor = token == null
         ? CandelaColors.error
         : token.isValid
-            ? (token.timeRemaining.inMinutes < 5 ? CandelaColors.warning : CandelaColors.success)
+            ? (token.timeRemaining.inMinutes < 5
+                ? CandelaColors.warning
+                : CandelaColors.success)
             : CandelaColors.error;
     final statusText = token == null
         ? '❌ No token'
@@ -44,7 +46,8 @@ class _IdentityCardState extends State<IdentityCard> {
           children: [
             // Avatar
             Container(
-              width: 48, height: 48,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: CandelaColors.accent.withValues(alpha: 0.2),
@@ -53,7 +56,9 @@ class _IdentityCardState extends State<IdentityCard> {
                 child: Text(
                   _initials(identity.email),
                   style: const TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.w700, color: CandelaColors.accent,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: CandelaColors.accent,
                   ),
                 ),
               ),
@@ -66,7 +71,8 @@ class _IdentityCardState extends State<IdentityCard> {
                 children: [
                   Text(
                     identity.email ?? 'Not authenticated',
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 4),
                   if (identity.adcInfo != null) ...[
@@ -75,9 +81,11 @@ class _IdentityCardState extends State<IdentityCard> {
                   ],
                   if (identity.project != null)
                     Text('GCP Project: ${identity.project}',
-                      style: const TextStyle(fontSize: 12, color: CandelaColors.textSecondary)),
+                        style: const TextStyle(
+                            fontSize: 12, color: CandelaColors.textSecondary)),
                   const SizedBox(height: 4),
-                  Text(statusText, style: TextStyle(fontSize: 12, color: statusColor)),
+                  Text(statusText,
+                      style: TextStyle(fontSize: 12, color: statusColor)),
                 ],
               ),
             ),
@@ -94,15 +102,18 @@ class _IdentityCardState extends State<IdentityCard> {
                 const SizedBox(height: 6),
                 if (_adcProcess == null)
                   Tooltip(
-                    message: 'gcloud auth application-default login\nRefresh or switch ADC credentials',
+                    message:
+                        'gcloud auth application-default login\nRefresh or switch ADC credentials',
                     child: SizedBox(
                       width: 130,
                       child: OutlinedButton.icon(
                         onPressed: _runAdcLogin,
                         icon: const Icon(Icons.key, size: 14),
-                        label: const Text('ADC Login', style: TextStyle(fontSize: 11)),
+                        label: const Text('ADC Login',
+                            style: TextStyle(fontSize: 11)),
                         style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           visualDensity: VisualDensity.compact,
                         ),
                       ),
@@ -113,11 +124,15 @@ class _IdentityCardState extends State<IdentityCard> {
                     width: 130,
                     child: OutlinedButton.icon(
                       onPressed: _cancelAdcLogin,
-                      icon: const SizedBox(width: 14, height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 1.5)),
-                      label: const Text('Cancel', style: TextStyle(fontSize: 11)),
+                      icon: const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 1.5)),
+                      label:
+                          const Text('Cancel', style: TextStyle(fontSize: 11)),
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         visualDensity: VisualDensity.compact,
                         foregroundColor: CandelaColors.error,
                       ),
@@ -136,8 +151,9 @@ class _IdentityCardState extends State<IdentityCard> {
   Future<void> _runAdcLogin() async {
     setState(() {});
     try {
-      _adcProcess = await Process.start('gcloud', ['auth', 'application-default', 'login'],
-        environment: GCloudService().augmentedEnv);
+      _adcProcess = await Process.start(
+          'gcloud', ['auth', 'application-default', 'login'],
+          environment: GCloudService().augmentedEnv);
       setState(() {}); // show cancel button
 
       final exitCode = await _adcProcess!.exitCode;
@@ -145,17 +161,23 @@ class _IdentityCardState extends State<IdentityCard> {
 
       if (exitCode == 0) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('ADC credentials refreshed'), backgroundColor: CandelaColors.success),
+          const SnackBar(
+              content: Text('ADC credentials refreshed'),
+              backgroundColor: CandelaColors.success),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('ADC login exited with code $exitCode'), backgroundColor: CandelaColors.error),
+          SnackBar(
+              content: Text('ADC login exited with code $exitCode'),
+              backgroundColor: CandelaColors.error),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to run gcloud: $e'), backgroundColor: CandelaColors.error),
+          SnackBar(
+              content: Text('Failed to run gcloud: $e'),
+              backgroundColor: CandelaColors.error),
         );
       }
     }
@@ -183,7 +205,9 @@ class _IdentityCardState extends State<IdentityCard> {
         borderRadius: BorderRadius.circular(100),
         border: Border.all(color: CandelaColors.border),
       ),
-      child: Text(text, style: const TextStyle(fontSize: 11, color: CandelaColors.textSecondary)),
+      child: Text(text,
+          style: const TextStyle(
+              fontSize: 11, color: CandelaColors.textSecondary)),
     );
   }
 

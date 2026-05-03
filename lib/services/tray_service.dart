@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 import 'process_manager.dart';
@@ -9,6 +9,7 @@ import 'process_manager.dart';
 class TrayService with TrayListener {
   final ProcessManager processManager;
   Timer? _updateTimer;
+  Timer? _debounceTimer;
   VoidCallback? onShowWindow;
 
   TrayService({required this.processManager});
@@ -27,10 +28,16 @@ class TrayService with TrayListener {
     await _updateMenu();
 
     // Refresh menu every 10s to reflect process state.
-    _updateTimer = Timer.periodic(const Duration(seconds: 10), (_) => _updateMenu());
+    _updateTimer =
+        Timer.periodic(const Duration(seconds: 10), (_) => _updateMenu());
 
-    // Also update when process state changes.
-    processManager.addListener(_updateMenu);
+    // Also update when process state changes (debounced).
+    processManager.addListener(_debouncedUpdate);
+  }
+
+  void _debouncedUpdate() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 500), _updateMenu);
   }
 
   String? _trayIconPath() {
@@ -48,7 +55,8 @@ class TrayService with TrayListener {
       }
 
       // Fallback: dev mode — use source tree icon.
-      final devIcon = File('${Directory.current.path}/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_32.png');
+      final devIcon = File(
+          '${Directory.current.path}/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_32.png');
       if (devIcon.existsSync()) return devIcon.path;
     }
     return null;
@@ -76,8 +84,10 @@ class TrayService with TrayListener {
     items.add(MenuItem.separator());
 
     // Controls.
-    final hasRunning = processManager.all.any((p) => p.state == ProcessState.running);
-    final hasStopped = processManager.all.any((p) => p.state == ProcessState.stopped);
+    final hasRunning =
+        processManager.all.any((p) => p.state == ProcessState.running);
+    final hasStopped =
+        processManager.all.any((p) => p.state == ProcessState.stopped);
 
     if (hasStopped) {
       items.add(MenuItem(
@@ -143,12 +153,14 @@ class TrayService with TrayListener {
     // Give processes a moment to terminate gracefully.
     await Future.delayed(const Duration(milliseconds: 500));
     await windowManager.destroy();
-    exit(0);
+    // Use SystemNavigator to allow Flutter cleanup instead of hard exit.
+    SystemNavigator.pop();
   }
 
   void dispose() {
     _updateTimer?.cancel();
-    processManager.removeListener(_updateMenu);
+    _debounceTimer?.cancel();
+    processManager.removeListener(_debouncedUpdate);
     trayManager.removeListener(this);
   }
 }

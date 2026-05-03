@@ -25,7 +25,8 @@ class CandelaConfig {
   });
 
   bool get hasErrors => issues.any((i) => i.severity == IssueSeverity.error);
-  bool get hasWarnings => issues.any((i) => i.severity == IssueSeverity.warning);
+  bool get hasWarnings =>
+      issues.any((i) => i.severity == IssueSeverity.warning);
 }
 
 enum CandelaMode { solo, soloCloud, team }

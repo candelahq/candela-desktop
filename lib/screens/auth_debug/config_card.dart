@@ -485,12 +485,12 @@ class ConfigCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Row(
+                const Row(
                   children: [
-                    const Icon(Icons.info_outline,
+                    Icon(Icons.info_outline,
                         size: 12, color: CandelaColors.textMuted),
-                    const SizedBox(width: 4),
-                    const Expanded(
+                    SizedBox(width: 4),
+                    Expanded(
                       child: Text(
                           'Changes are written directly to disk. The app will reload automatically.',
                           style: TextStyle(

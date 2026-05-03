@@ -1,0 +1,36 @@
+# Candela Desktop — CI Pipeline
+# Runs on all PRs and pushes to main.
+# Uses Nix for reproducible Flutter/Dart toolchain.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel in-flight runs for the same PR/branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-test:
+    name: Lint & Test
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Format check
+        run: nix develop -c dart format --set-exit-if-changed lib/ test/
+
+      - name: Static analysis
+        run: nix develop -c dart analyze --fatal-infos lib/ test/
+
+      - name: Run tests
+        run: nix develop -c flutter test --no-pub

@@ -311,7 +311,7 @@ class _ProviderDetailDialogState extends State<_ProviderDetailDialog> {
                   fontSize: 10, color: CandelaColors.textMuted)),
         if (v != null && !v.reachable && v.error != null)
           Tooltip(
-            message: v.error!,
+            message: v.error,
             child: const Padding(
               padding: EdgeInsets.only(left: 4),
               child: Icon(Icons.warning_amber,

@@ -29,7 +29,6 @@
 
             # ── General dev tooling ────────────────────────────
             git
-            pre-commit
             lefthook
             jq                   # handy for JSON config inspection
           ];

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -17,7 +18,10 @@ class ManagedProcess {
   String? port;
   DateTime? startedAt;
   String? errorMessage;
-  final List<String> recentLogs = [];
+
+  /// Ring buffer for recent log lines — O(1) add, O(1) removeFirst.
+  final Queue<String> recentLogs = Queue<String>();
+  static const int maxLogLines = 50;
 
   ManagedProcess({
     required this.name,
@@ -106,14 +110,23 @@ class ProcessManager extends ChangeNotifier {
   }
 
   /// Detect already-running processes on startup.
+  /// Checks all processes in parallel to avoid sequential 2s timeouts.
   Future<void> detectRunning() async {
-    for (final entry in _processes.entries) {
-      final p = entry.value;
-      if (await _isHealthy(entry.key)) {
+    final entries = _processes.entries.toList();
+    final results = await Future.wait(
+      entries.map((e) async {
+        final healthy = await _isHealthy(e.key);
+        final installed = healthy || await isInstalled(e.key);
+        return (healthy: healthy, installed: installed);
+      }),
+    );
+    for (var i = 0; i < entries.length; i++) {
+      final p = entries[i].value;
+      if (results[i].healthy) {
         p.state = ProcessState.running;
         p.startedAt = DateTime.now(); // approximate
-        _startHealthPolling(entry.key);
-      } else if (!await isInstalled(entry.key)) {
+        _startHealthPolling(entries[i].key);
+      } else if (!results[i].installed) {
         p.state = ProcessState.notInstalled;
       }
     }
@@ -238,10 +251,13 @@ class ProcessManager extends ChangeNotifier {
   }
 
   /// Stop all managed processes (including detected ones without handles).
+  /// Also stops error-state processes that may still have live OS handles/PIDs.
   Future<void> stopAll() async {
     for (final name in _processes.keys.toList()) {
-      if (_processes[name]?.state == ProcessState.running ||
-          _processes[name]?.state == ProcessState.starting) {
+      final state = _processes[name]?.state;
+      if (state == ProcessState.running ||
+          state == ProcessState.starting ||
+          state == ProcessState.error) {
         await stop(name);
       }
     }
@@ -330,8 +346,10 @@ class ProcessManager extends ChangeNotifier {
   }
 
   void _addLog(ManagedProcess p, String line) {
-    p.recentLogs.add(line);
-    if (p.recentLogs.length > 50) p.recentLogs.removeAt(0);
+    p.recentLogs.addLast(line);
+    while (p.recentLogs.length > ManagedProcess.maxLogLines) {
+      p.recentLogs.removeFirst();
+    }
   }
 
   @override

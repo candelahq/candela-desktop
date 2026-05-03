@@ -331,21 +331,28 @@ class ConfigService {
     return map;
   }
 
-  /// Write a map back as YAML (serialized via lock).
+  /// Write a map back as YAML (serialized via async mutex).
   Future<void> _writeYaml(File file, Map<String, dynamic> data) async {
-    // Serialize writes to prevent concurrent read-modify-write races.
-    while (_writeLock != null) {
-      await _writeLock;
-    }
+    // Chain writes: each waits for the previous to finish.
+    final previous = _writeLock;
     final completer = Completer<void>();
     _writeLock = completer.future;
     try {
+      if (previous != null) await previous;
       final sb = StringBuffer();
       _writeYamlMap(sb, data, 0);
       await file.writeAsString(sb.toString());
+      // Restrict permissions to owner-only (0600) since config may contain
+      // sensitive project/audience data.
+      try {
+        await Process.run('chmod', ['600', file.path]);
+      } catch (_) {
+        // chmod not available on all platforms — best-effort.
+      }
     } finally {
-      _writeLock = null;
       completer.complete();
+      // Only clear if we're still the latest writer.
+      if (_writeLock == completer.future) _writeLock = null;
     }
   }
 
@@ -382,6 +389,10 @@ class ConfigService {
   }
 
   static final _yamlUnsafe = RegExp(r'[:#{}\[\]&*!|>%@`]');
+  static final _yamlNumeric =
+      RegExp(r'^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$');
+  static final _yamlOctal = RegExp(r'^0[0-7]+$');
+  static final _yamlHex = RegExp(r'^0x[0-9a-fA-F]+$');
   static const _yamlKeywords = {
     'true',
     'false',
@@ -396,7 +407,10 @@ class ConfigService {
     if (value is String) {
       if (value.isEmpty ||
           _yamlUnsafe.hasMatch(value) ||
-          _yamlKeywords.contains(value.toLowerCase())) {
+          _yamlKeywords.contains(value.toLowerCase()) ||
+          _yamlNumeric.hasMatch(value) ||
+          _yamlOctal.hasMatch(value) ||
+          _yamlHex.hasMatch(value)) {
         return "'${value.replaceAll("'", "''")}'";
       }
       return value;

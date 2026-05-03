@@ -65,7 +65,7 @@ class RuntimeControlCard extends StatelessWidget {
               constraints: const BoxConstraints(maxHeight: 60),
               child: SingleChildScrollView(
                 child: Text(
-                  process.recentLogs.takeLast(5).join('\n'),
+                  process.recentLogs.toList().takeLast(5).join('\n'),
                   style: const TextStyle(
                       fontSize: 10,
                       fontFamily: 'SF Mono, monospace',

@@ -296,6 +296,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
   @override
   void dispose() {
     _diagnostics.dispose();
+    _providerTest.dispose();
     super.dispose();
   }
 

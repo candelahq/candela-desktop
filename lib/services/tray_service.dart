@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 import 'process_manager.dart';
@@ -153,7 +153,8 @@ class TrayService with TrayListener {
     // Give processes a moment to terminate gracefully.
     await Future.delayed(const Duration(milliseconds: 500));
     await windowManager.destroy();
-    exit(0);
+    // Use SystemNavigator to allow Flutter cleanup instead of hard exit.
+    SystemNavigator.pop();
   }
 
   void dispose() {

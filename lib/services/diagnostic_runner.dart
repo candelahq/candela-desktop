@@ -23,6 +23,9 @@ class DiagnosticRunner {
   bool _running = false;
   bool get isRunning => _running;
 
+  /// Completer for the current run, used to reject/await concurrent calls.
+  Completer<DiagnosticSummary>? _runCompleter;
+
   DiagnosticRunner({
     ConfigService? config,
     GCloudService? gcloud,
@@ -34,8 +37,27 @@ class DiagnosticRunner {
         _providers = providers ?? ProviderTestService();
 
   /// Run all diagnostic checks. Returns summary when complete.
+  /// Rejects concurrent runs by returning the in-flight future.
   Future<DiagnosticSummary> runAll() async {
+    if (_running && _runCompleter != null) {
+      return _runCompleter!.future;
+    }
     _running = true;
+    _runCompleter = Completer<DiagnosticSummary>();
+    try {
+      final result = await _runAllImpl();
+      _runCompleter!.complete(result);
+      return result;
+    } catch (e, st) {
+      _runCompleter!.completeError(e, st);
+      rethrow;
+    } finally {
+      _running = false;
+      _runCompleter = null;
+    }
+  }
+
+  Future<DiagnosticSummary> _runAllImpl() async {
     history.clear();
     int passed = 0, failed = 0, warned = 0;
 
@@ -49,7 +71,6 @@ class DiagnosticRunner {
           fixUrl: 'https://cloud.google.com/sdk/docs/install');
       failed++;
       _emitSummary(passed, failed, warned);
-      _running = false;
       return DiagnosticSummary(passed: passed, failed: failed, warned: warned);
     }
 
@@ -218,7 +239,6 @@ class DiagnosticRunner {
     }
 
     _emitSummary(passed, failed, warned);
-    _running = false;
     return DiagnosticSummary(passed: passed, failed: failed, warned: warned);
   }
 

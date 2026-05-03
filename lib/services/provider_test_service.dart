@@ -8,6 +8,20 @@ class ProviderTestService {
   final _client = http.Client();
   static const _timeout = Duration(seconds: 10);
 
+  /// Redact Bearer tokens and other sensitive patterns from error strings.
+  static String sanitizeError(String error) {
+    // Redact Bearer tokens.
+    error = error.replaceAll(
+        RegExp(r'Bearer\s+[A-Za-z0-9\-._~+/]+=*', caseSensitive: false),
+        'Bearer [REDACTED]');
+    // Redact API keys in headers.
+    error = error.replaceAll(
+        RegExp(r'(api[_-]?key|authorization)[":\s]+[A-Za-z0-9\-._~+/]{20,}',
+            caseSensitive: false),
+        r'$1: [REDACTED]');
+    return error;
+  }
+
   Future<ProviderStatus> testGoogle(
       {String? project, String? accessToken}) async {
     if (project == null) {
@@ -68,7 +82,7 @@ class ProviderTestService {
           displayName: 'Google / Vertex AI',
           state: ProviderState.error,
           statusMessage: 'Connection failed',
-          errorDetail: e.toString(),
+          errorDetail: sanitizeError(e.toString()),
           project: project,
           icon: 'G');
     }
@@ -135,7 +149,7 @@ class ProviderTestService {
           displayName: 'Anthropic (Vertex)',
           state: ProviderState.error,
           statusMessage: 'Connection failed',
-          errorDetail: e.toString(),
+          errorDetail: sanitizeError(e.toString()),
           project: project,
           region: region,
           icon: 'A');
@@ -188,7 +202,7 @@ class ProviderTestService {
           displayName: 'OpenAI',
           state: ProviderState.error,
           statusMessage: 'Connection failed',
-          errorDetail: e.toString(),
+          errorDetail: sanitizeError(e.toString()),
           icon: 'O');
     }
   }

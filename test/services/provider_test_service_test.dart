@@ -85,5 +85,48 @@ void main() {
         expect(latestSuffix.hasMatch('model@stable'), isFalse);
       });
     });
+
+    // --- Audit v4: new unit tests ---
+
+    group('sanitizeError', () {
+      test('redacts Bearer tokens from error strings', () {
+        const error =
+            'Connection failed: header Authorization: Bearer ya29.c.b0AXv0zTM_long_token_here';
+        final sanitized = ProviderTestService.sanitizeError(error);
+        expect(sanitized, contains('Bearer [REDACTED]'));
+        expect(sanitized, isNot(contains('ya29.c.b0AXv0zTM')));
+      });
+
+      test('preserves non-sensitive error details', () {
+        const error = 'Connection timed out after 10 seconds';
+        expect(ProviderTestService.sanitizeError(error), error);
+      });
+
+      test('redacts multiple Bearer tokens in same string', () {
+        const error = 'Try 1: Bearer abc123, Try 2: Bearer def456_longer_token';
+        final sanitized = ProviderTestService.sanitizeError(error);
+        expect('Bearer [REDACTED]'.allMatches(sanitized).length, 2);
+      });
+    });
+
+    group('_cleanModelName (tested via regex patterns)', () {
+      test('strips 8-digit date suffix', () {
+        final regex = RegExp(r'-\d{8}$');
+        final cleaned = 'claude-sonnet-4-20250514'.replaceAll(regex, '');
+        expect(cleaned, 'claude-sonnet-4');
+      });
+
+      test('strips version suffix like -001', () {
+        final regex = RegExp(r'-0{1,2}\d$');
+        final cleaned = 'gemini-2.0-flash-001'.replaceAll(regex, '');
+        expect(cleaned, 'gemini-2.0-flash');
+      });
+
+      test('strips @latest but preserves @v2', () {
+        final regex = RegExp(r'@latest$');
+        expect('model@latest'.replaceAll(regex, ''), 'model');
+        expect('model@v2'.replaceAll(regex, ''), 'model@v2');
+      });
+    });
   });
 }

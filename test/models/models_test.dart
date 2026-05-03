@@ -161,4 +161,51 @@ void main() {
       expect(vtx.effectiveRegion, 'europe-west4');
     });
   });
+
+  // --- Audit v4: new unit tests ---
+
+  group('CandelaConfig — audit v4', () {
+    test('hasErrors returns true when issues contain errors', () {
+      const config = CandelaConfig(
+        path: '/test',
+        issues: [
+          ConfigIssue(severity: IssueSeverity.error, message: 'broken'),
+          ConfigIssue(severity: IssueSeverity.warning, message: 'warn'),
+        ],
+      );
+      expect(config.hasErrors, isTrue);
+      expect(config.hasWarnings, isTrue);
+    });
+
+    test('hasWarnings returns false with only errors', () {
+      const config = CandelaConfig(
+        path: '/test',
+        issues: [
+          ConfigIssue(severity: IssueSeverity.error, message: 'err1'),
+          ConfigIssue(severity: IssueSeverity.error, message: 'err2'),
+        ],
+      );
+      expect(config.hasWarnings, isFalse);
+    });
+  });
+
+  group('TokenInfo — audit v4', () {
+    test('expiryDisplay shows hours and minutes format', () {
+      final token = TokenInfo(
+        expiresAt: DateTime.now().add(const Duration(hours: 3, minutes: 42)),
+        isValid: true,
+      );
+      // Account for test execution time — minutes could be 41 or 42.
+      expect(token.expiryDisplay, contains('3h'));
+      expect(token.expiryDisplay, matches(RegExp(r'4[12]m')));
+    });
+  });
+
+  group('DiagnosticSummary — audit v4', () {
+    test('total sums all three fields correctly', () {
+      const summary = DiagnosticSummary(passed: 10, failed: 3, warned: 7);
+      expect(summary.total, 20);
+      expect(summary.allPassed, isFalse);
+    });
+  });
 }

@@ -3,7 +3,7 @@
 
   inputs = {
     flake-schemas.url = "https://flakehub.com/f/DeterminateSystems/flake-schemas/*";
-    nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/*";
+    nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.2511.*";
   };
 
   outputs = { self, flake-schemas, nixpkgs }:
@@ -50,8 +50,10 @@
             # Let Flutter know we manage the SDK externally
             export FLUTTER_ROOT="$(dirname $(dirname $(which flutter)))"
 
-            # Install lefthook git hooks
-            lefthook install 2>/dev/null
+            # Install lefthook git hooks (only if not already present)
+            if ! grep -q 'LEFTHOOK' .git/hooks/pre-commit 2>/dev/null; then
+              lefthook install 2>/dev/null
+            fi
           '';
         };
       });

@@ -93,7 +93,8 @@ void main() {
 
     test('uptime shows hours when > 1h', () {
       final p = ManagedProcess(name: 'test', displayName: 'Test', icon: 'T');
-      p.startedAt = DateTime.now().subtract(const Duration(hours: 2, minutes: 30));
+      p.startedAt =
+          DateTime.now().subtract(const Duration(hours: 2, minutes: 30));
       expect(p.uptimeString, contains('h'));
     });
   });
@@ -130,7 +131,8 @@ void main() {
     setUp(() => pm = ProcessManager());
     tearDown(() => pm.dispose());
 
-    test('stopAll targets all running processes not just those with handles', () {
+    test('stopAll targets all running processes not just those with handles',
+        () {
       pm.configure(providerNames: ['ollama']);
       // Simulate a detected-running process (no handle, but state=running).
       final ollama = pm.get('ollama')!;
@@ -186,10 +188,12 @@ void main() {
       p.startedAt = DateTime.now().subtract(const Duration(seconds: 45));
       expect(p.uptimeString, '45s');
 
-      p.startedAt = DateTime.now().subtract(const Duration(minutes: 12, seconds: 30));
+      p.startedAt =
+          DateTime.now().subtract(const Duration(minutes: 12, seconds: 30));
       expect(p.uptimeString, '12m');
 
-      p.startedAt = DateTime.now().subtract(const Duration(hours: 2, minutes: 15));
+      p.startedAt =
+          DateTime.now().subtract(const Duration(hours: 2, minutes: 15));
       expect(p.uptimeString, '2h 15m');
     });
   });

@@ -13,10 +13,20 @@ class CandelaSidebar extends StatelessWidget {
   });
 
   static const _items = [
-    _NavItem(icon: Icons.shield_outlined, activeIcon: Icons.shield, label: 'Auth & Debug'),
-    _NavItem(icon: Icons.dashboard_outlined, activeIcon: Icons.dashboard, label: 'Dashboard'),
-    _NavItem(icon: Icons.timeline_outlined, activeIcon: Icons.timeline, label: 'Traces'),
-    _NavItem(icon: Icons.memory_outlined, activeIcon: Icons.memory, label: 'Models'),
+    _NavItem(
+        icon: Icons.shield_outlined,
+        activeIcon: Icons.shield,
+        label: 'Auth & Debug'),
+    _NavItem(
+        icon: Icons.dashboard_outlined,
+        activeIcon: Icons.dashboard,
+        label: 'Dashboard'),
+    _NavItem(
+        icon: Icons.timeline_outlined,
+        activeIcon: Icons.timeline,
+        label: 'Traces'),
+    _NavItem(
+        icon: Icons.memory_outlined, activeIcon: Icons.memory, label: 'Models'),
   ];
 
   @override
@@ -37,11 +47,13 @@ class CandelaSidebar extends StatelessWidget {
             child: Row(
               children: [
                 Container(
-                  width: 26, height: 26,
+                  width: 26,
+                  height: 26,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(6),
                     gradient: const LinearGradient(
-                      begin: Alignment.topLeft, end: Alignment.bottomRight,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                       colors: [CandelaColors.accent, Color(0xFFFF8C00)],
                     ),
                   ),
@@ -57,8 +69,10 @@ class CandelaSidebar extends StatelessWidget {
                   child: const Text(
                     'Candela',
                     style: TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.w700,
-                      letterSpacing: -0.3, color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.3,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -83,7 +97,8 @@ class CandelaSidebar extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: const BoxDecoration(
-              border: Border(top: BorderSide(color: CandelaColors.borderSubtle)),
+              border:
+                  Border(top: BorderSide(color: CandelaColors.borderSubtle)),
             ),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -93,9 +108,12 @@ class CandelaSidebar extends StatelessWidget {
               ),
               child: const Row(
                 children: [
-                  CircleAvatar(radius: 3, backgroundColor: CandelaColors.success),
+                  CircleAvatar(
+                      radius: 3, backgroundColor: CandelaColors.success),
                   SizedBox(width: 8),
-                  Text('v0.1.0', style: TextStyle(fontSize: 12, color: CandelaColors.textSecondary)),
+                  Text('v0.1.0',
+                      style: TextStyle(
+                          fontSize: 12, color: CandelaColors.textSecondary)),
                 ],
               ),
             ),
@@ -123,7 +141,9 @@ class CandelaSidebar extends StatelessWidget {
                 Icon(
                   isActive ? item.activeIcon : item.icon,
                   size: 18,
-                  color: isActive ? CandelaColors.accent : CandelaColors.textSecondary,
+                  color: isActive
+                      ? CandelaColors.accent
+                      : CandelaColors.textSecondary,
                 ),
                 const SizedBox(width: 10),
                 Text(
@@ -131,7 +151,9 @@ class CandelaSidebar extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 13.5,
                     fontWeight: isActive ? FontWeight.w500 : FontWeight.w400,
-                    color: isActive ? CandelaColors.accent : CandelaColors.textSecondary,
+                    color: isActive
+                        ? CandelaColors.accent
+                        : CandelaColors.textSecondary,
                   ),
                 ),
               ],
@@ -147,5 +169,6 @@ class _NavItem {
   final IconData icon;
   final IconData activeIcon;
   final String label;
-  const _NavItem({required this.icon, required this.activeIcon, required this.label});
+  const _NavItem(
+      {required this.icon, required this.activeIcon, required this.label});
 }

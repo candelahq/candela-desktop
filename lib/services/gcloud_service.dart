@@ -9,7 +9,10 @@ class GCloudService {
 
   /// Augmented PATH that includes common gcloud install locations.
   /// macOS GUI apps don't inherit shell PATH, so we search explicitly.
-  Map<String, String> get augmentedEnv {
+  /// Cached to avoid recreating on every call.
+  late final Map<String, String> augmentedEnv = _buildAugmentedEnv();
+
+  Map<String, String> _buildAugmentedEnv() {
     final env = Map<String, String>.from(Platform.environment);
     final home = env['HOME'] ?? '/Users/${env['USER'] ?? 'unknown'}';
     final extraPaths = [
@@ -27,7 +30,8 @@ class GCloudService {
 
   /// Run gcloud with augmented PATH.
   Future<ProcessResult> _run(List<String> args) {
-    return Process.run('gcloud', args, environment: augmentedEnv).timeout(_timeout);
+    return Process.run('gcloud', args, environment: augmentedEnv)
+        .timeout(_timeout);
   }
 
   /// Check if gcloud CLI is installed and accessible.
@@ -44,7 +48,8 @@ class GCloudService {
   Future<String?> getActiveAccount() async {
     try {
       final result = await _run([
-        'auth', 'list',
+        'auth',
+        'list',
         '--filter=status:ACTIVE',
         '--format=value(account)',
       ]);
@@ -60,7 +65,9 @@ class GCloudService {
   Future<String?> getProject() async {
     try {
       final result = await _run([
-        'config', 'get', 'project',
+        'config',
+        'get',
+        'project',
       ]);
       if (result.exitCode != 0) return null;
       final output = (result.stdout as String).trim();
@@ -74,7 +81,9 @@ class GCloudService {
   Future<TokenInfo?> getTokenInfo() async {
     try {
       final result = await _run([
-        'auth', 'application-default', 'print-access-token',
+        'auth',
+        'application-default',
+        'print-access-token',
       ]);
       if (result.exitCode != 0) return null;
 
@@ -91,12 +100,17 @@ class GCloudService {
   /// Check if a GCP API is enabled for the given project.
   Future<bool> isApiEnabled(String project, String api) async {
     try {
-      final result = await Process.run('gcloud', [
-        'services', 'list',
-        '--project=$project',
-        '--filter=config.name:$api',
-        '--format=value(config.name)',
-      ], environment: augmentedEnv).timeout(const Duration(seconds: 15));
+      final result = await Process.run(
+              'gcloud',
+              [
+                'services',
+                'list',
+                '--project=$project',
+                '--filter=config.name:$api',
+                '--format=value(config.name)',
+              ],
+              environment: augmentedEnv)
+          .timeout(const Duration(seconds: 15));
       return (result.stdout as String).trim().contains(api);
     } catch (_) {
       return false;
@@ -108,9 +122,8 @@ class GCloudService {
     if (parts.length >= 2) {
       try {
         final normalized = base64Url.normalize(parts[1]);
-        final payload =
-            json.decode(utf8.decode(base64Url.decode(normalized)))
-                as Map<String, dynamic>;
+        final payload = json.decode(utf8.decode(base64Url.decode(normalized)))
+            as Map<String, dynamic>;
         final exp = payload['exp'] as int?;
         final email = payload['email'] as String?;
 
@@ -133,6 +146,7 @@ class GCloudService {
       isValid: true,
     );
   }
+
   /// Expose JWT decoding for testing.
   TokenInfo? getTokenInfoForTest(String token) => _decodeJwt(token);
 }

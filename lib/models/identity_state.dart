@@ -14,7 +14,8 @@ class IdentityState {
     this.gcloudInstalled = false,
   });
 
-  bool get isAuthenticated => email != null && tokenInfo != null && tokenInfo!.isValid;
+  bool get isAuthenticated =>
+      email != null && tokenInfo != null && tokenInfo!.isValid;
 }
 
 /// Decoded Application Default Credentials file info.

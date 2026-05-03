@@ -31,7 +31,7 @@ class AdcService {
   String _adcPath() {
     final home = Platform.environment['HOME'] ?? '';
     // Standard ADC location on macOS/Linux.
-    return path.join(home, '.config', 'gcloud',
-        'application_default_credentials.json');
+    return path.join(
+        home, '.config', 'gcloud', 'application_default_credentials.json');
   }
 }

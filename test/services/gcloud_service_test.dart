@@ -30,8 +30,10 @@ void main() {
     });
 
     test('decodeJwt handles expired JWT', () {
-      final header = base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
-      final payload = base64Url.encode(utf8.encode('{"exp":1000000000,"email":"test@test.com"}'));
+      final header =
+          base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
+      final payload = base64Url
+          .encode(utf8.encode('{"exp":1000000000,"email":"test@test.com"}'));
       final fakeToken = '$header.$payload.signature';
 
       final token = service.getTokenInfoForTest(fakeToken);
@@ -41,8 +43,10 @@ void main() {
     });
 
     test('decodeJwt handles valid JWT', () {
-      final header = base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
-      final payload = base64Url.encode(utf8.encode('{"exp":4102444800,"email":"user@example.com"}'));
+      final header =
+          base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
+      final payload = base64Url
+          .encode(utf8.encode('{"exp":4102444800,"email":"user@example.com"}'));
       final fakeToken = '$header.$payload.signature';
 
       final token = service.getTokenInfoForTest(fakeToken);

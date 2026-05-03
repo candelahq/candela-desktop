@@ -9,7 +9,8 @@ void main() {
     late String testConfigPath;
 
     setUp(() {
-      testConfigPath = '${Directory.systemTemp.path}/candela_test_${DateTime.now().millisecondsSinceEpoch}.yaml';
+      testConfigPath =
+          '${Directory.systemTemp.path}/candela_test_${DateTime.now().millisecondsSinceEpoch}.yaml';
       service = ConfigService(configPath: testConfigPath);
     });
 
@@ -67,7 +68,8 @@ providers:
       await service.addProvider('ollama');
       final config = await service.load();
       expect(config.providers.length, 2);
-      expect(config.providers.map((p) => p.name).toList(), ['google', 'ollama']);
+      expect(
+          config.providers.map((p) => p.name).toList(), ['google', 'ollama']);
     });
 
     test('removeProvider removes from list', () async {
@@ -219,7 +221,8 @@ providers:
   - name: google
 ''');
       final config = await service.load();
-      final projectIssue = config.issues.where((i) => i.field == 'vertex_ai.project');
+      final projectIssue =
+          config.issues.where((i) => i.field == 'vertex_ai.project');
       expect(projectIssue, isNotEmpty);
     });
 
@@ -231,7 +234,8 @@ vertex_ai:
   project: my-project
 ''');
       final config = await service.load();
-      final regionIssue = config.issues.where((i) => i.field == 'vertex_ai.region');
+      final regionIssue =
+          config.issues.where((i) => i.field == 'vertex_ai.region');
       expect(regionIssue, isNotEmpty);
       expect(regionIssue.first.severity, IssueSeverity.warning);
     });
@@ -295,7 +299,8 @@ providers:
       - gemini-1.5-flash
 ''');
       final config = await service.load();
-      expect(config.providers[0].models, ['gemini-1.5-pro', 'gemini-1.5-flash']);
+      expect(
+          config.providers[0].models, ['gemini-1.5-pro', 'gemini-1.5-flash']);
     });
 
     // --- Port boundary values ---
@@ -346,7 +351,8 @@ providers:
 
     test('setMode with audience persists both fields', () async {
       File(testConfigPath).writeAsStringSync('port: 8181\n');
-      await service.setMode(remote: 'https://candela.example.com', audience: 'my-audience-id');
+      await service.setMode(
+          remote: 'https://candela.example.com', audience: 'my-audience-id');
       final config = await service.load();
       expect(config.remote, 'https://candela.example.com');
       expect(config.audience, 'my-audience-id');

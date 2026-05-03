@@ -110,19 +110,27 @@ void main() {
   group('ProviderStatus', () {
     test('isHealthy only true for connected state', () {
       const connected = ProviderStatus(
-        name: 'test', displayName: 'Test', state: ProviderState.connected,
+        name: 'test',
+        displayName: 'Test',
+        state: ProviderState.connected,
       );
       expect(connected.isHealthy, isTrue);
 
-      for (final state in ProviderState.values.where((s) => s != ProviderState.connected)) {
-        final status = ProviderStatus(name: 'test', displayName: 'Test', state: state);
-        expect(status.isHealthy, isFalse, reason: 'Expected $state to not be healthy');
+      for (final state
+          in ProviderState.values.where((s) => s != ProviderState.connected)) {
+        final status =
+            ProviderStatus(name: 'test', displayName: 'Test', state: state);
+        expect(status.isHealthy, isFalse,
+            reason: 'Expected $state to not be healthy');
       }
     });
 
     test('port field is accessible', () {
       const status = ProviderStatus(
-        name: 'proxy', displayName: 'Proxy', state: ProviderState.connected, port: 8181,
+        name: 'proxy',
+        displayName: 'Proxy',
+        state: ProviderState.connected,
+        port: 8181,
       );
       expect(status.port, 8181);
     });

@@ -40,16 +40,21 @@ class RuntimeControlCard extends StatelessWidget {
           if (process.errorMessage != null) ...[
             const SizedBox(height: 6),
             Row(children: [
-              const Icon(Icons.warning_amber, size: 12, color: CandelaColors.error),
+              const Icon(Icons.warning_amber,
+                  size: 12, color: CandelaColors.error),
               const SizedBox(width: 4),
-              Flexible(child: Text(
+              Flexible(
+                  child: Text(
                 process.errorMessage!,
-                style: const TextStyle(fontSize: 11, color: CandelaColors.error),
-                maxLines: 2, overflow: TextOverflow.ellipsis,
+                style:
+                    const TextStyle(fontSize: 11, color: CandelaColors.error),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               )),
             ]),
           ],
-          if (process.recentLogs.isNotEmpty && process.state == ProcessState.error) ...[
+          if (process.recentLogs.isNotEmpty &&
+              process.state == ProcessState.error) ...[
             const SizedBox(height: 6),
             Container(
               padding: const EdgeInsets.all(8),
@@ -61,7 +66,10 @@ class RuntimeControlCard extends StatelessWidget {
               child: SingleChildScrollView(
                 child: Text(
                   process.recentLogs.takeLast(5).join('\n'),
-                  style: const TextStyle(fontSize: 10, fontFamily: 'SF Mono, monospace', color: CandelaColors.textMuted),
+                  style: const TextStyle(
+                      fontSize: 10,
+                      fontFamily: 'SF Mono, monospace',
+                      color: CandelaColors.textMuted),
                 ),
               ),
             ),
@@ -77,7 +85,8 @@ class RuntimeControlCard extends StatelessWidget {
     return Row(children: [
       Text(process.icon, style: const TextStyle(fontSize: 16)),
       const SizedBox(width: 8),
-      Expanded(child: Text(
+      Expanded(
+          child: Text(
         process.displayName,
         style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
       )),
@@ -86,7 +95,8 @@ class RuntimeControlCard extends StatelessWidget {
         const SizedBox(width: 4),
         GestureDetector(
           onTap: onRemove,
-          child: const Icon(Icons.close, size: 14, color: CandelaColors.textMuted),
+          child:
+              const Icon(Icons.close, size: 14, color: CandelaColors.textMuted),
         ),
       ],
     ]);
@@ -108,13 +118,19 @@ class RuntimeControlCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        if (process.state == ProcessState.starting || process.state == ProcessState.stopping)
+        if (process.state == ProcessState.starting ||
+            process.state == ProcessState.stopping)
           Padding(
             padding: const EdgeInsets.only(right: 4),
-            child: SizedBox(width: 10, height: 10,
-              child: CircularProgressIndicator(strokeWidth: 1.5, color: color)),
+            child: SizedBox(
+                width: 10,
+                height: 10,
+                child:
+                    CircularProgressIndicator(strokeWidth: 1.5, color: color)),
           ),
-        Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color)),
+        Text(label,
+            style: TextStyle(
+                fontSize: 10, fontWeight: FontWeight.w600, color: color)),
       ]),
     );
   }
@@ -131,8 +147,10 @@ class RuntimeControlCard extends StatelessWidget {
             padding: const EdgeInsets.only(top: 4),
             child: Text(
               'Models: ${models.take(3).join(", ")}${models.length > 3 ? " +${models.length - 3}" : ""}',
-              style: const TextStyle(fontSize: 10, color: CandelaColors.textMuted),
-              maxLines: 1, overflow: TextOverflow.ellipsis,
+              style:
+                  const TextStyle(fontSize: 10, color: CandelaColors.textMuted),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
       ]);
@@ -152,9 +170,11 @@ class RuntimeControlCard extends StatelessWidget {
   Widget _controls() {
     return Row(mainAxisAlignment: MainAxisAlignment.end, children: [
       if (process.state == ProcessState.stopped)
-        _actionButton(Icons.play_arrow, 'Start', CandelaColors.success, onStart),
+        _actionButton(
+            Icons.play_arrow, 'Start', CandelaColors.success, onStart),
       if (process.state == ProcessState.running) ...[
-        _actionButton(Icons.refresh, 'Restart', CandelaColors.accent, onRestart),
+        _actionButton(
+            Icons.refresh, 'Restart', CandelaColors.accent, onRestart),
         const SizedBox(width: 8),
         _actionButton(Icons.stop, 'Stop', CandelaColors.error, onStop),
       ],
@@ -163,7 +183,8 @@ class RuntimeControlCard extends StatelessWidget {
     ]);
   }
 
-  Widget _actionButton(IconData icon, String label, Color color, VoidCallback? onTap) {
+  Widget _actionButton(
+      IconData icon, String label, Color color, VoidCallback? onTap) {
     return Tooltip(
       message: label,
       child: Material(
@@ -177,7 +198,9 @@ class RuntimeControlCard extends StatelessWidget {
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Icon(icon, size: 14, color: color),
               const SizedBox(width: 4),
-              Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+              Text(label,
+                  style: TextStyle(
+                      fontSize: 11, fontWeight: FontWeight.w600, color: color)),
             ]),
           ),
         ),
@@ -186,16 +209,17 @@ class RuntimeControlCard extends StatelessWidget {
   }
 
   Widget _infoRow(String label, String value) => Padding(
-    padding: const EdgeInsets.only(bottom: 2),
-    child: Text('$label: $value',
-      style: const TextStyle(fontSize: 11, color: CandelaColors.textSecondary)),
-  );
+        padding: const EdgeInsets.only(bottom: 2),
+        child: Text('$label: $value',
+            style: const TextStyle(
+                fontSize: 11, color: CandelaColors.textSecondary)),
+      );
 
   Color get _borderColor => switch (process.state) {
-    ProcessState.running => CandelaColors.success.withValues(alpha: 0.3),
-    ProcessState.error => CandelaColors.error.withValues(alpha: 0.3),
-    _ => CandelaColors.borderSubtle,
-  };
+        ProcessState.running => CandelaColors.success.withValues(alpha: 0.3),
+        ProcessState.error => CandelaColors.error.withValues(alpha: 0.3),
+        _ => CandelaColors.borderSubtle,
+      };
 }
 
 extension LogListHelpers on List<String> {

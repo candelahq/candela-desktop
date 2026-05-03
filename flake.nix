@@ -29,6 +29,7 @@
 
             # ── General dev tooling ────────────────────────────
             git
+            gh                   # GitHub CLI (PRs, issues, etc.)
             lefthook
             jq                   # handy for JSON config inspection
           ];

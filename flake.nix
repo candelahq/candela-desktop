@@ -24,14 +24,14 @@
             # ── Flutter / Dart SDK ──────────────────────────────
             flutter              # Flutter stable (includes Dart SDK)
 
-            # ── macOS native build tooling ─────────────────────
-            cocoapods            # CocoaPods for macOS Runner dependencies
-
             # ── General dev tooling ────────────────────────────
             git
             gh                   # GitHub CLI (PRs, issues, etc.)
             lefthook
             jq                   # handy for JSON config inspection
+          ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
+            # ── macOS native build tooling ─────────────────────
+            cocoapods            # CocoaPods for macOS Runner dependencies
           ];
 
           shellHook = ''

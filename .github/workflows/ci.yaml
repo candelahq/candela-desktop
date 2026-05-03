@@ -1,5 +1,9 @@
 # Candela Desktop — CI Pipeline
 # Runs on all PRs and pushes to main.
+#
+# Two jobs:
+#   lint  — Linux container (Nix from flake.lock): format + static analysis
+#   test  — macOS native: Flutter widget/integration tests (needs Cocoa)
 
 name: CI
 
@@ -15,10 +19,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint-and-test:
-    name: Lint & Test
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Format check
+        run: nix develop --no-update-lock-file -c dart format --set-exit-if-changed lib/ test/
+
+      - name: Static analysis
+        run: nix develop --no-update-lock-file -c dart analyze --fatal-infos lib/ test/
+
+  test:
+    name: Test
     runs-on: macos-latest
     timeout-minutes: 15
+    needs: lint
     steps:
       - uses: actions/checkout@v4
 
@@ -26,14 +47,7 @@ jobs:
         with:
           channel: stable
 
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Format check
-        run: dart format --set-exit-if-changed lib/ test/
-
-      - name: Static analysis
-        run: dart analyze --fatal-infos lib/ test/
+      - run: flutter pub get
 
       - name: Run tests
         run: flutter test

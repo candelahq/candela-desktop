@@ -344,10 +344,12 @@ class ConfigService {
       await file.writeAsString(sb.toString());
       // Restrict permissions to owner-only (0600) since config may contain
       // sensitive project/audience data.
-      try {
-        await Process.run('chmod', ['600', file.path]);
-      } catch (_) {
-        // chmod not available on all platforms — best-effort.
+      if (!Platform.isWindows) {
+        try {
+          await Process.run('chmod', ['600', file.path]);
+        } catch (_) {
+          // chmod not available — best-effort.
+        }
       }
     } finally {
       completer.complete();

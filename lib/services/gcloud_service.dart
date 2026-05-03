@@ -132,6 +132,7 @@ class GCloudService {
               DateTime.fromMillisecondsSinceEpoch(exp * 1000, isUtc: true);
           return TokenInfo(
             email: email,
+            accessToken: token,
             expiresAt: expiresAt,
             isValid: expiresAt.isAfter(DateTime.now().toUtc()),
           );
@@ -142,6 +143,7 @@ class GCloudService {
     }
     // Non-JWT token — assume valid since gcloud returned it.
     return TokenInfo(
+      accessToken: token,
       expiresAt: DateTime.now().add(const Duration(hours: 1)),
       isValid: true,
     );

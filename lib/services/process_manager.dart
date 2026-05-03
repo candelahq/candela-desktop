@@ -124,7 +124,7 @@ class ProcessManager extends ChangeNotifier {
       final p = entries[i].value;
       if (results[i].healthy) {
         p.state = ProcessState.running;
-        p.startedAt = DateTime.now(); // approximate
+        // Leave startedAt null — actual start time is unknown.
         _startHealthPolling(entries[i].key);
       } else if (!results[i].installed) {
         p.state = ProcessState.notInstalled;

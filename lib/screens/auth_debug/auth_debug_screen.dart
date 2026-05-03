@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../theme/colors.dart';
 import '../../services/gcloud_service.dart';
@@ -104,17 +103,10 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
 
   Future<void> _runProviderTests(
       CandelaConfig config, String? project, TokenInfo? token) async {
-    // Get raw access token for tests.
+    // Reuse access token from already-fetched TokenInfo.
     String? accessToken;
     if (token != null && token.isValid) {
-      try {
-        final result = await Process.run(
-            'gcloud', ['auth', 'application-default', 'print-access-token'],
-            environment: _gcloud.augmentedEnv);
-        if (result.exitCode == 0) {
-          accessToken = (result.stdout as String).trim();
-        }
-      } catch (_) {}
+      accessToken = token.accessToken;
     }
 
     final region = config.vertexAI?.effectiveRegion ?? 'us-central1';

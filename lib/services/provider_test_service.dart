@@ -8,17 +8,24 @@ class ProviderTestService {
   final _client = http.Client();
   static const _timeout = Duration(seconds: 10);
 
+  // Pre-compiled regex patterns for sanitizeError.
+  static final _bearerRe =
+      RegExp(r'Bearer\s+[A-Za-z0-9\-._~+/]+=*', caseSensitive: false);
+  static final _apiKeyRe = RegExp(
+      r'(api[_-]?key|authorization)[":\s]+[A-Za-z0-9\-._~+/]{20,}',
+      caseSensitive: false);
+
+  // Pre-compiled regex patterns for _cleanModelName.
+  static final _dateSuffixRe = RegExp(r'-\d{8}$');
+  static final _versionSuffixRe = RegExp(r'-0{1,2}\d$');
+  static final _latestSuffixRe = RegExp(r'@latest$');
+
   /// Redact Bearer tokens and other sensitive patterns from error strings.
   static String sanitizeError(String error) {
     // Redact Bearer tokens.
-    error = error.replaceAll(
-        RegExp(r'Bearer\s+[A-Za-z0-9\-._~+/]+=*', caseSensitive: false),
-        'Bearer [REDACTED]');
+    error = error.replaceAll(_bearerRe, 'Bearer [REDACTED]');
     // Redact API keys in headers.
-    error = error.replaceAll(
-        RegExp(r'(api[_-]?key|authorization)[":\s]+[A-Za-z0-9\-._~+/]{20,}',
-            caseSensitive: false),
-        r'$1: [REDACTED]');
+    error = error.replaceAll(_apiKeyRe, r'$1: [REDACTED]');
     return error;
   }
 
@@ -499,11 +506,11 @@ class ProviderTestService {
   ///      "gemini-2.0-flash-001"     → "gemini-2.0-flash"
   static String _cleanModelName(String name) {
     // Strip date suffix like -20250514 (exactly 8 digits = YYYYMMDD).
-    name = name.replaceAll(RegExp(r'-\d{8}$'), '');
+    name = name.replaceAll(_dateSuffixRe, '');
     // Strip trailing version suffix like -001, -002 (common in Google model IDs).
-    name = name.replaceAll(RegExp(r'-0{1,2}\d$'), '');
+    name = name.replaceAll(_versionSuffixRe, '');
     // Strip @latest only (preserve other @version tags).
-    name = name.replaceAll(RegExp(r'@latest$'), '');
+    name = name.replaceAll(_latestSuffixRe, '');
     return name;
   }
 

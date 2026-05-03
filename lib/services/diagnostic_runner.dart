@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import '../models/diagnostic_entry.dart';
 import '../models/provider_status.dart';
 import '../models/candela_config.dart';
@@ -130,15 +129,8 @@ class DiagnosticRunner {
       _emit('Token valid (expires in ${token.expiryDisplay})',
           DiagnosticStatus.pass);
       passed++;
-      // Get raw token for provider tests.
-      try {
-        final result = await Process.run(
-            'gcloud', ['auth', 'application-default', 'print-access-token'],
-            environment: _gcloud.augmentedEnv);
-        if (result.exitCode == 0) {
-          accessTokenStr = (result.stdout as String).trim();
-        }
-      } catch (_) {}
+      // Reuse raw token from TokenInfo — no extra gcloud call needed.
+      accessTokenStr = token.accessToken;
     }
 
     // 5. GCP Project

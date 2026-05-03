@@ -42,11 +42,13 @@ class AdcInfo {
 /// Token info from decoding a JWT access token.
 class TokenInfo {
   final String? email;
+  final String? accessToken;
   final DateTime expiresAt;
   final bool isValid;
 
   const TokenInfo({
     this.email,
+    this.accessToken,
     required this.expiresAt,
     required this.isValid,
   });

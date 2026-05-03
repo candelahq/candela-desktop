@@ -1,0 +1,19 @@
+# Lefthook — git hooks for Candela Desktop
+# https://github.com/evilmartians/lefthook
+
+pre-commit:
+  parallel: true
+  commands:
+    dart-format:
+      glob: "*.dart"
+      run: dart format --set-exit-if-changed {staged_files}
+      stage_fixed: true
+
+    dart-analyze:
+      glob: "*.dart"
+      run: dart analyze --fatal-infos lib/ test/
+
+pre-push:
+  commands:
+    flutter-test:
+      run: flutter test --no-pub

@@ -2,8 +2,8 @@
 # Runs on all PRs and pushes to main.
 #
 # Two jobs:
-#   lint  — Linux container (Nix from flake.lock): format + static analysis
-#   test  — macOS native: Flutter widget/integration tests (needs Cocoa)
+#   lint  — fast, Linux: format + static analysis
+#   test  — macOS: Flutter widget/integration tests (needs Cocoa)
 
 name: CI
 
@@ -22,18 +22,21 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
 
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - run: flutter pub get
 
       - name: Format check
-        run: nix develop --no-update-lock-file -c dart format --set-exit-if-changed lib/ test/
+        run: dart format --set-exit-if-changed lib/ test/
 
       - name: Static analysis
-        run: nix develop --no-update-lock-file -c dart analyze --fatal-infos lib/ test/
+        run: dart analyze --fatal-infos lib/ test/
 
   test:
     name: Test

@@ -1,6 +1,5 @@
 # Candela Desktop — CI Pipeline
 # Runs on all PRs and pushes to main.
-# Uses Nix for reproducible Flutter/Dart toolchain.
 
 name: CI
 
@@ -23,14 +22,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Install dependencies
+        run: flutter pub get
 
       - name: Format check
-        run: nix develop --no-update-lock-file -c dart format --set-exit-if-changed lib/ test/
+        run: dart format --set-exit-if-changed lib/ test/
 
       - name: Static analysis
-        run: nix develop --no-update-lock-file -c dart analyze --fatal-infos lib/ test/
+        run: dart analyze --fatal-infos lib/ test/
 
       - name: Run tests
-        run: nix develop --no-update-lock-file -c flutter test --no-pub
+        run: flutter test

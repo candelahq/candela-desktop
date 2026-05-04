@@ -6,7 +6,7 @@ import 'package:yaml/yaml.dart';
 
 import '../models/candela_config.dart';
 
-/// Reads, parses, and validates ~/.candela.yaml.
+/// Reads, parses, and validates ~/.config/candela/config.yaml.
 class ConfigService {
   final String? configPath;
   Future<void>? _writeLock;
@@ -15,7 +15,7 @@ class ConfigService {
 
   /// Load and validate the candela config file.
   ///
-  /// Search order: configPath → $CANDELA_CONFIG → ~/.candela.yaml
+  /// Search order: configPath → $CANDELA_CONFIG → ~/.config/candela/config.yaml
   Future<CandelaConfig> load() async {
     final resolvedPath = _resolveConfigPath();
     final file = File(resolvedPath);
@@ -90,12 +90,55 @@ class ConfigService {
     return file.watch(events: FileSystemEvent.modify | FileSystemEvent.delete);
   }
 
+  /// The default config path using XDG convention.
+  static String defaultConfigPath() {
+    final home = Platform.environment['HOME'] ?? '';
+    return path.join(home, '.config', 'candela', 'config.yaml');
+  }
+
+  /// The legacy config path (~/.candela.yaml).
+  static String legacyConfigPath() {
+    final home = Platform.environment['HOME'] ?? '';
+    return path.join(home, '.candela.yaml');
+  }
+
   String _resolveConfigPath() {
     if (configPath != null) return configPath!;
     final envPath = Platform.environment['CANDELA_CONFIG'];
     if (envPath != null && envPath.isNotEmpty) return envPath;
-    final home = Platform.environment['HOME'] ?? '';
-    return path.join(home, '.candela.yaml');
+    return defaultConfigPath();
+  }
+
+  /// Whether a config file exists at the resolved path.
+  Future<bool> configExists() async {
+    final configPath = _resolveConfigPath();
+    return File(configPath).exists();
+  }
+
+  /// Find an available port, starting with [preferred].
+  ///
+  /// Tries the preferred port first, then scans up to [preferred + maxScan].
+  /// Returns the preferred port if all attempts fail (let the proxy report the
+  /// actual error).
+  static Future<int> findAvailablePort({
+    int preferred = 8181,
+    int maxScan = 18,
+  }) async {
+    for (var port = preferred; port <= preferred + maxScan; port++) {
+      try {
+        final socket = await ServerSocket.bind(
+          InternetAddress.loopbackIPv4,
+          port,
+          shared: false,
+        );
+        await socket.close();
+        return port;
+      } on SocketException {
+        // Port in use — try next.
+        continue;
+      }
+    }
+    return preferred; // fallback
   }
 
   CandelaConfig _parse(String configPath, DateTime lastModified, YamlMap yaml) {
@@ -189,8 +232,56 @@ class ConfigService {
     );
   }
 
-  /// Migrate legacy config: remove runtime_backend, runtime_config, runtime_manage.
+  /// Migrate legacy config location and fields.
+  ///
+  /// 1. If ~/.candela.yaml exists but ~/.config/candela/config.yaml does not,
+  ///    move the legacy file to the new XDG-compliant location.
+  /// 2. Remove deprecated fields (runtime_backend, runtime_config, runtime_manage).
   Future<void> migrateLegacyFields() async {
+    // Skip migration if using explicit path override.
+    if (configPath != null || Platform.environment['CANDELA_CONFIG'] != null) {
+      return _migrateLegacyFieldsInPlace();
+    }
+
+    // Step 1: Migrate file location.
+    final legacy = File(legacyConfigPath());
+    final modern = File(defaultConfigPath());
+    if (await legacy.exists() && !await modern.exists()) {
+      // Ensure target directory exists.
+      await modern.parent.create(recursive: true);
+      // Copy to new location — check again after directory creation
+      // to avoid a race if another process migrated concurrently.
+      if (!await modern.exists()) {
+        await legacy.copy(modern.path);
+      }
+      // Leave a breadcrumb in the old file.
+      await legacy.writeAsString(
+        '# Candela config has moved to ~/.config/candela/config.yaml\n'
+        '# This file is no longer used and can be safely deleted.\n',
+      );
+    }
+
+    // Step 2: Remove deprecated fields from the active config.
+    await _migrateLegacyFieldsInPlace();
+  }
+
+  /// Write an initial config map in a single atomic operation.
+  ///
+  /// Used by onboarding to avoid N sequential read-modify-write cycles.
+  /// Only writes if the config file does not already exist.
+  Future<void> writeInitialConfig(Map<String, dynamic> config) async {
+    final resolvedPath = _resolveConfigPath();
+    final file = File(resolvedPath);
+    if (await file.exists()) {
+      throw StateError(
+        'Config file already exists at $resolvedPath. '
+        'Use setPort/setMode/addProvider to modify.',
+      );
+    }
+    await _writeYaml(file, config);
+  }
+
+  Future<void> _migrateLegacyFieldsInPlace() async {
     final configPath = _resolveConfigPath();
     final file = File(configPath);
     if (!await file.exists()) return;
@@ -339,6 +430,8 @@ class ConfigService {
     _writeLock = completer.future;
     try {
       if (previous != null) await previous;
+      // Ensure parent directory exists (for first-time config creation).
+      await file.parent.create(recursive: true);
       final sb = StringBuffer();
       _writeYamlMap(sb, data, 0);
       await file.writeAsString(sb.toString());

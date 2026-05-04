@@ -76,11 +76,46 @@ jobs:
           cd build/macos/Build/Products/Release
           ditto -c -k --keepParent Candela.app Candela-macos-${{ matrix.arch }}.zip
 
+      - name: Sign with Sparkle EdDSA
+        if: ${{ secrets.SPARKLE_PRIVATE_KEY != '' }}
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          ZIP_PATH="build/macos/Build/Products/Release/Candela-macos-${{ matrix.arch }}.zip"
+
+          # Import the private key into Keychain so sign_update can use it.
+          security add-generic-password -a "ed25519" -s "https://sparkle-project.org" \
+            -w "$SPARKLE_PRIVATE_KEY" -U 2>/dev/null || true
+
+          # Use Sparkle's native sign_update tool (available after pod install).
+          SIGN_OUTPUT=$(macos/Pods/Sparkle/bin/sign_update "$ZIP_PATH" 2>&1) || true
+          echo "sign_update output: $SIGN_OUTPUT"
+
+          # Extract signature: sparkle:edSignature="..." length="..."
+          ED_SIG=$(echo "$SIGN_OUTPUT" | grep -o 'edSignature="[^"]*"' | sed 's/edSignature="//;s/"//')
+          ED_LEN=$(echo "$SIGN_OUTPUT" | grep -o 'length="[^"]*"' | sed 's/length="//;s/"//')
+
+          echo "ed_signature=${ED_SIG}" >> "$GITHUB_OUTPUT"
+          echo "ed_length=${ED_LEN}" >> "$GITHUB_OUTPUT"
+
+          # Save signature to file for artifact upload.
+          mkdir -p sparkle-meta
+          echo "${ED_SIG}" > sparkle-meta/signature.txt
+          echo "${ED_LEN}" > sparkle-meta/length.txt
+          echo "✅ Sparkle EdDSA signature: ${ED_SIG:0:20}..."
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: macos-${{ matrix.arch }}
           path: build/macos/Build/Products/Release/Candela-macos-${{ matrix.arch }}.zip
+
+      - name: Upload Sparkle signature
+        if: ${{ secrets.SPARKLE_PRIVATE_KEY != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: sparkle-meta
+          path: sparkle-meta/
 
   # ── Linux Build ──────────────────────────────────────────
   build-linux:
@@ -149,6 +184,18 @@ jobs:
           LENGTH=$(stat -c%s "$MAC_ZIP" 2>/dev/null || stat -f%z "$MAC_ZIP")
           DATE=$(date -u +"%a, %d %b %Y %H:%M:%S +0000")
 
+          # Read Sparkle EdDSA signature if available (from macOS build job).
+          SIGN_ATTR=""
+          if [ -f "artifacts/sparkle-meta/signature.txt" ]; then
+            ED_SIG=$(cat artifacts/sparkle-meta/signature.txt)
+            if [ -n "$ED_SIG" ]; then
+              SIGN_ATTR="sparkle:edSignature=\"${ED_SIG}\""
+              echo "✅ Including Sparkle EdDSA signature in appcast.xml"
+            fi
+          else
+            echo "⚠️ No Sparkle signature found — appcast.xml will be unsigned"
+          fi
+
           cat > artifacts/appcast.xml << EOF
           <?xml version="1.0" encoding="utf-8"?>
           <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
@@ -167,6 +214,7 @@ jobs:
                   url="https://github.com/candelahq/candela-desktop/releases/download/${TAG}/Candela-macos-arm64.zip"
                   length="${LENGTH}"
                   type="application/octet-stream"
+                  ${SIGN_ATTR}
                 />
               </item>
             </channel>

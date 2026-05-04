@@ -77,9 +77,10 @@ jobs:
           ditto -c -k --keepParent Candela.app Candela-macos-${{ matrix.arch }}.zip
 
       - name: Sign with Sparkle EdDSA
-        if: ${{ secrets.SPARKLE_PRIVATE_KEY != '' }}
+        id: sparkle_sign
         env:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        if: env.SPARKLE_PRIVATE_KEY != ''
         run: |
           ZIP_PATH="build/macos/Build/Products/Release/Candela-macos-${{ matrix.arch }}.zip"
 
@@ -111,7 +112,7 @@ jobs:
           path: build/macos/Build/Products/Release/Candela-macos-${{ matrix.arch }}.zip
 
       - name: Upload Sparkle signature
-        if: ${{ secrets.SPARKLE_PRIVATE_KEY != '' }}
+        if: steps.sparkle_sign.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: sparkle-meta

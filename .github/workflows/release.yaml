@@ -84,12 +84,10 @@ jobs:
         run: |
           ZIP_PATH="build/macos/Build/Products/Release/Candela-macos-${{ matrix.arch }}.zip"
 
-          # Import the private key into Keychain so sign_update can use it.
-          security add-generic-password -a "ed25519" -s "https://sparkle-project.org" \
-            -w "$SPARKLE_PRIVATE_KEY" -U 2>/dev/null || true
-
-          # Use Sparkle's native sign_update tool (available after pod install).
-          SIGN_OUTPUT=$(macos/Pods/Sparkle/bin/sign_update "$ZIP_PATH" 2>&1) || true
+          # Pipe the private key via stdin to avoid Keychain prompts on CI.
+          # See: sign_update --help → --ed-key-file -
+          SIGN_OUTPUT=$(echo "$SPARKLE_PRIVATE_KEY" | macos/Pods/Sparkle/bin/sign_update \
+            --ed-key-file - "$ZIP_PATH" 2>&1) || true
           echo "sign_update output: $SIGN_OUTPUT"
 
           # Extract signature: sparkle:edSignature="..." length="..."

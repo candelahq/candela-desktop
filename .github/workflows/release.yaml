@@ -71,10 +71,26 @@ jobs:
       #       --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD" --wait
       #     xcrun stapler staple build/macos/Build/Products/Release/Candela.app
 
-      - name: Package
+      - name: Package zip
         run: |
           cd build/macos/Build/Products/Release
           ditto -c -k --keepParent Candela.app Candela-macos-${{ matrix.arch }}.zip
+
+      - name: Create DMG
+        run: |
+          brew install create-dmg
+          create-dmg \
+            --volname "Candela Desktop" \
+            --volicon "macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_512.png" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --icon "Candela.app" 150 190 \
+            --app-drop-link 450 190 \
+            --no-internet-enable \
+            "build/macos/Build/Products/Release/Candela-macos-${{ matrix.arch }}.dmg" \
+            "build/macos/Build/Products/Release/Candela.app" \
+            || true  # create-dmg exits 2 on "no code sign" which is expected
 
       - name: Sign with Sparkle EdDSA
         id: sparkle_sign
@@ -103,11 +119,13 @@ jobs:
           echo "${ED_LEN}" > sparkle-meta/length.txt
           echo "✅ Sparkle EdDSA signature: ${ED_SIG:0:20}..."
 
-      - name: Upload artifact
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: macos-${{ matrix.arch }}
-          path: build/macos/Build/Products/Release/Candela-macos-${{ matrix.arch }}.zip
+          path: |
+            build/macos/Build/Products/Release/Candela-macos-${{ matrix.arch }}.zip
+            build/macos/Build/Products/Release/Candela-macos-${{ matrix.arch }}.dmg
 
       - name: Upload Sparkle signature
         if: steps.sparkle_sign.outcome == 'success'
@@ -231,5 +249,6 @@ jobs:
           generate_release_notes: true
           files: |
             artifacts/macos-arm64/*.zip
+            artifacts/macos-arm64/*.dmg
             artifacts/linux-x64/*.tar.gz
             artifacts/appcast.xml

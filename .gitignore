@@ -47,3 +47,5 @@ app.*.map.json
 # Nix / direnv
 .direnv/
 result
+*.sparkle_private_key*
+.sparkle_private_key.tmp

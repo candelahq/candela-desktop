@@ -1,8 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../theme/colors.dart';
 
-class CandelaSidebar extends StatelessWidget {
+class CandelaSidebar extends StatefulWidget {
   final int selectedIndex;
   final ValueChanged<int> onItemSelected;
 
@@ -11,6 +12,13 @@ class CandelaSidebar extends StatelessWidget {
     required this.selectedIndex,
     required this.onItemSelected,
   });
+
+  @override
+  State<CandelaSidebar> createState() => _CandelaSidebarState();
+}
+
+class _CandelaSidebarState extends State<CandelaSidebar> {
+  String _version = '...';
 
   static const _items = [
     _NavItem(
@@ -28,6 +36,19 @@ class CandelaSidebar extends StatelessWidget {
     _NavItem(
         icon: Icons.memory_outlined, activeIcon: Icons.memory, label: 'Models'),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    if (mounted) {
+      setState(() => _version = 'v${info.version}');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +114,7 @@ class CandelaSidebar extends StatelessWidget {
               ),
             ),
           ),
-          // Footer — connection status
+          // Footer — version display
           Container(
             padding: const EdgeInsets.all(12),
             decoration: const BoxDecoration(
@@ -106,13 +127,13 @@ class CandelaSidebar extends StatelessWidget {
                 color: CandelaColors.bgTertiary,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  CircleAvatar(
+                  const CircleAvatar(
                       radius: 3, backgroundColor: CandelaColors.success),
-                  SizedBox(width: 8),
-                  Text('v0.1.0',
-                      style: TextStyle(
+                  const SizedBox(width: 8),
+                  Text(_version,
+                      style: const TextStyle(
                           fontSize: 12, color: CandelaColors.textSecondary)),
                 ],
               ),
@@ -124,7 +145,7 @@ class CandelaSidebar extends StatelessWidget {
   }
 
   Widget _buildNavItem(int index, _NavItem item) {
-    final isActive = index == selectedIndex;
+    final isActive = index == widget.selectedIndex;
     return Padding(
       padding: const EdgeInsets.only(bottom: 2),
       child: Material(
@@ -133,7 +154,7 @@ class CandelaSidebar extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
           hoverColor: CandelaColors.bgHover,
-          onTap: () => onItemSelected(index),
+          onTap: () => widget.onItemSelected(index),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(

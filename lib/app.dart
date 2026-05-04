@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'theme/candela_theme.dart';
+import 'theme/colors.dart';
 import 'widgets/sidebar.dart';
 import 'screens/auth_debug/auth_debug_screen.dart';
-import 'main.dart' show trayService;
+import 'screens/onboarding/onboarding_screen.dart';
+import 'main.dart' show trayService, configService;
 
 class CandelaApp extends StatelessWidget {
   const CandelaApp({super.key});
@@ -14,8 +16,61 @@ class CandelaApp extends StatelessWidget {
       title: 'Candela',
       debugShowCheckedModeBanner: false,
       theme: CandelaTheme.dark,
-      home: const AppShell(),
+      home: const _AppRouter(),
     );
+  }
+}
+
+/// Decides whether to show onboarding or the main app shell.
+class _AppRouter extends StatefulWidget {
+  const _AppRouter();
+
+  @override
+  State<_AppRouter> createState() => _AppRouterState();
+}
+
+class _AppRouterState extends State<_AppRouter> {
+  bool _loading = true;
+  bool _needsOnboarding = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkConfig();
+  }
+
+  Future<void> _checkConfig() async {
+    final exists = await configService.configExists();
+    if (mounted) {
+      setState(() {
+        _needsOnboarding = !exists;
+        _loading = false;
+      });
+    }
+  }
+
+  void _onOnboardingComplete() {
+    setState(() => _needsOnboarding = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(color: CandelaColors.accent),
+        ),
+      );
+    }
+
+    if (_needsOnboarding) {
+      return OnboardingScreen(
+        configService: configService,
+        onComplete: _onOnboardingComplete,
+      );
+    }
+
+    return const AppShell();
   }
 }
 
@@ -28,6 +83,7 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> with WindowListener {
   int _selectedIndex = 0;
+  bool _hasShownTrayTooltip = false;
 
   static const _pages = <Widget>[
     AuthDebugScreen(),
@@ -55,6 +111,26 @@ class _AppShellState extends State<AppShell> with WindowListener {
   /// Close button → minimize to tray instead of quitting.
   @override
   void onWindowClose() async {
+    // Show a one-time tooltip explaining tray behavior.
+    if (!_hasShownTrayTooltip && mounted) {
+      _hasShownTrayTooltip = true;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            '🕯️ Candela is still running in your menu bar. '
+            'Right-click the tray icon to quit.',
+          ),
+          duration: const Duration(seconds: 4),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: CandelaColors.bgTertiary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      );
+      // Small delay so the snackbar is visible before hiding.
+      await Future.delayed(const Duration(milliseconds: 500));
+    }
     await windowManager.hide();
     // App keeps running in tray.
   }

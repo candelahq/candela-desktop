@@ -1,0 +1,153 @@
+# Candela Desktop — Release Pipeline
+# Builds, signs, and publishes macOS + Linux releases.
+#
+# Trigger: git tag vX.Y.Z  (e.g., v0.2.0)
+# Beta:    git tag vX.Y.Z-beta.N (e.g., v0.2.0-beta.1)
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+# Only one release at a time.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write  # create GitHub Releases
+
+env:
+  FLUTTER_VERSION: stable
+
+jobs:
+  # ── macOS Build ──────────────────────────────────────────
+  build-macos:
+    name: Build macOS
+    runs-on: macos-latest
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        arch: [arm64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_VERSION }}
+
+      - run: flutter pub get
+
+      - name: Build macOS release
+        run: flutter build macos --release
+
+      # TODO: Code signing — uncomment when Apple Developer ID cert is available.
+      # - name: Code sign
+      #   env:
+      #     MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+      #     MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+      #     KEYCHAIN_PWD: ${{ secrets.KEYCHAIN_PWD }}
+      #   run: |
+      #     echo "$MACOS_CERTIFICATE" | base64 --decode > certificate.p12
+      #     security create-keychain -p "$KEYCHAIN_PWD" build.keychain
+      #     security default-keychain -s build.keychain
+      #     security unlock-keychain -p "$KEYCHAIN_PWD" build.keychain
+      #     security import certificate.p12 -k build.keychain -P "$MACOS_CERTIFICATE_PWD" -T /usr/bin/codesign
+      #     security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PWD" build.keychain
+      #     codesign --deep --force --verify --verbose --sign "Developer ID Application: YOUR_TEAM" \
+      #       build/macos/Build/Products/Release/Candela.app
+
+      # TODO: Notarization — uncomment when Apple credentials are available.
+      # - name: Notarize
+      #   env:
+      #     APPLE_ID: ${{ secrets.APPLE_ID }}
+      #     APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      #     APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+      #   run: |
+      #     ditto -c -k --keepParent build/macos/Build/Products/Release/Candela.app Candela-unsigned.zip
+      #     xcrun notarytool submit Candela-unsigned.zip --apple-id "$APPLE_ID" \
+      #       --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD" --wait
+      #     xcrun stapler staple build/macos/Build/Products/Release/Candela.app
+
+      - name: Package
+        run: |
+          cd build/macos/Build/Products/Release
+          ditto -c -k --keepParent Candela.app Candela-macos-${{ matrix.arch }}.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-${{ matrix.arch }}
+          path: build/macos/Build/Products/Release/Candela-macos-${{ matrix.arch }}.zip
+
+  # ── Linux Build ──────────────────────────────────────────
+  build-linux:
+    name: Build Linux
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_VERSION }}
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev libstdc++-12-dev
+
+      - run: flutter pub get
+
+      - name: Build Linux release
+        run: flutter build linux --release
+
+      - name: Package
+        run: |
+          cd build/linux/x64/release/bundle
+          tar -czf Candela-linux-x64.tar.gz *
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-x64
+          path: build/linux/x64/release/bundle/Candela-linux-x64.tar.gz
+
+  # ── GitHub Release ───────────────────────────────────────
+  release:
+    name: Create Release
+    needs: [build-macos, build-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Determine release type
+        id: release_type
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [[ "$TAG" == *"-beta"* ]] || [[ "$TAG" == *"-rc"* ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+            echo "channel=beta" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+            echo "channel=stable" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Candela Desktop ${{ github.ref_name }}
+          prerelease: ${{ steps.release_type.outputs.prerelease }}
+          generate_release_notes: true
+          files: |
+            artifacts/macos-arm64/*.zip
+            artifacts/linux-x64/*.tar.gz

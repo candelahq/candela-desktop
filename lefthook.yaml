@@ -17,3 +17,24 @@ pre-push:
   commands:
     flutter-test:
       run: flutter test --no-pub
+
+    # Block tag pushes if pubspec.yaml version doesn't match the tag.
+    # Prevents: pubspec says 0.3.0 but you're pushing v0.3.3.
+    tag-version-check:
+      run: |
+        # Check if HEAD has a version tag.
+        TAG=$(git tag --points-at HEAD 2>/dev/null | grep '^v[0-9]' | head -1)
+
+        # No version tag on HEAD — skip.
+        if [ -z "$TAG" ]; then
+          exit 0
+        fi
+
+        TAG_VERSION="${TAG#v}"
+        PUBSPEC_VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: *//;s/+.*//')
+        if [ "$TAG_VERSION" != "$PUBSPEC_VERSION" ]; then
+          echo "❌ Tag ${TAG} does not match pubspec.yaml version ${PUBSPEC_VERSION}"
+          echo "   Update pubspec.yaml: version: ${TAG_VERSION}+1"
+          exit 1
+        fi
+        echo "✅ Tag ${TAG} matches pubspec.yaml"

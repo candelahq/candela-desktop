@@ -436,99 +436,212 @@ class ConfigCard extends StatelessWidget {
     }
 
     final controller = TextEditingController(text: content);
+    final scrollController = ScrollController();
     String? errorText;
 
     if (!context.mounted) return;
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          backgroundColor: CandelaColors.bgSecondary,
-          title: Row(
-            children: [
-              const Icon(Icons.edit_note, size: 20),
-              const SizedBox(width: 8),
-              const Text('Edit Config'),
-              const Spacer(),
-              Text(config.path.split('/').last,
-                  style: const TextStyle(
-                      fontSize: 12,
-                      fontFamily: 'SF Mono, monospace',
-                      color: CandelaColors.textMuted)),
-            ],
-          ),
-          content: SizedBox(
-            width: 520,
-            height: 400,
-            child: Column(
+        builder: (ctx, setDialogState) {
+          // Recalculate line count on every rebuild.
+          final lineCount = '\n'.allMatches(controller.text).length + 1;
+
+          return AlertDialog(
+            backgroundColor: CandelaColors.bgSecondary,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            titlePadding:
+                const EdgeInsets.only(left: 20, right: 20, top: 16, bottom: 8),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+            actionsPadding:
+                const EdgeInsets.only(right: 16, bottom: 12, top: 8),
+            title: Row(
               children: [
-                Expanded(
-                  child: TextField(
-                    controller: controller,
-                    maxLines: null,
-                    expands: true,
-                    style: const TextStyle(
-                        fontSize: 13,
-                        fontFamily: 'SF Mono, monospace',
-                        height: 1.5),
-                    decoration: InputDecoration(
-                      border: const OutlineInputBorder(),
-                      filled: true,
-                      fillColor: CandelaColors.bgTertiary,
-                      errorText: errorText,
-                      hintText:
-                          '# ~/.candela.yaml\nport: 8181\nproviders:\n  - name: google',
-                      hintStyle: TextStyle(
-                          color:
-                              CandelaColors.textMuted.withValues(alpha: 0.5)),
-                    ),
+                const Icon(Icons.edit_note,
+                    size: 20, color: CandelaColors.accent),
+                const SizedBox(width: 8),
+                const Text('Edit Config',
+                    style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                const Spacer(),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: CandelaColors.bgTertiary,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: CandelaColors.borderSubtle),
                   ),
-                ),
-                const SizedBox(height: 8),
-                const Row(
-                  children: [
-                    Icon(Icons.info_outline,
-                        size: 12, color: CandelaColors.textMuted),
-                    SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                          'Changes are written directly to disk. The app will reload automatically.',
-                          style: TextStyle(
-                              fontSize: 11, color: CandelaColors.textMuted)),
-                    ),
-                  ],
+                  child: Text(config.path.split('/').last,
+                      style: const TextStyle(
+                          fontSize: 11,
+                          fontFamily: 'JetBrains Mono, SF Mono, monospace',
+                          color: CandelaColors.textMuted)),
                 ),
               ],
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel'),
+            content: SizedBox(
+              width: 560,
+              height: 420,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0D1117),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                            color: errorText != null
+                                ? CandelaColors.error.withValues(alpha: 0.6)
+                                : CandelaColors.borderSubtle),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Line number gutter
+                            Container(
+                              width: 40,
+                              padding: const EdgeInsets.only(top: 12, right: 8),
+                              color: const Color(0xFF0A0E14),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: List.generate(
+                                  lineCount,
+                                  (i) => SizedBox(
+                                    height: 19.5, // matches line height
+                                    child: Text(
+                                      '${i + 1}',
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontFamily:
+                                            'JetBrains Mono, SF Mono, monospace',
+                                        color: Color(0xFF3D4551),
+                                        height: 1.5,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // Separator
+                            Container(
+                              width: 1,
+                              color: const Color(0xFF1C2333),
+                            ),
+                            // Editor
+                            Expanded(
+                              child: TextField(
+                                controller: controller,
+                                scrollController: scrollController,
+                                maxLines: null,
+                                expands: true,
+                                textAlignVertical: TextAlignVertical.top,
+                                onChanged: (_) => setDialogState(() {}),
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontFamily:
+                                      'JetBrains Mono, SF Mono, monospace',
+                                  height: 1.5,
+                                  color: Color(0xFFE6EDF3),
+                                ),
+                                cursorColor: CandelaColors.accent,
+                                decoration: InputDecoration(
+                                  border: InputBorder.none,
+                                  contentPadding: const EdgeInsets.all(12),
+                                  hintText:
+                                      '# Candela config\nport: 8181\nproviders:\n  - name: ollama\n    base_url: http://localhost:11434',
+                                  hintStyle: TextStyle(
+                                      fontFamily:
+                                          'JetBrains Mono, SF Mono, monospace',
+                                      fontSize: 13,
+                                      height: 1.5,
+                                      color: CandelaColors.textMuted
+                                          .withValues(alpha: 0.3)),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        errorText != null
+                            ? Icons.error_outline
+                            : Icons.info_outline,
+                        size: 12,
+                        color: errorText != null
+                            ? CandelaColors.error
+                            : CandelaColors.textMuted,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          errorText ??
+                              'Changes are written directly to disk. The app will reload automatically.',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: errorText != null
+                                ? CandelaColors.error
+                                : CandelaColors.textMuted,
+                          ),
+                        ),
+                      ),
+                      // Line count badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: CandelaColors.bgTertiary,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '$lineCount lines',
+                          style: const TextStyle(
+                              fontSize: 10, color: CandelaColors.textMuted),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.save, size: 16),
-              onPressed: () async {
-                final text = controller.text;
-                try {
-                  // Validate YAML before writing.
-                  if (text.trim().isNotEmpty) {
-                    loadYaml(text); // throws YamlException on bad syntax
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.save, size: 16),
+                onPressed: () async {
+                  final text = controller.text;
+                  try {
+                    // Validate YAML before writing.
+                    if (text.trim().isNotEmpty) {
+                      loadYaml(text); // throws YamlException on bad syntax
+                    }
+                    await file.writeAsString(text);
+                    if (ctx.mounted) Navigator.of(ctx).pop();
+                    onConfigReloaded?.call();
+                  } on YamlException catch (e) {
+                    setDialogState(
+                        () => errorText = 'Invalid YAML: ${e.message}');
+                  } catch (e) {
+                    setDialogState(() => errorText = 'Write failed: $e');
                   }
-                  await file.writeAsString(text);
-                  if (ctx.mounted) Navigator.of(ctx).pop();
-                  onConfigReloaded?.call();
-                } on YamlException catch (e) {
-                  setDialogState(
-                      () => errorText = 'Invalid YAML: ${e.message}');
-                } catch (e) {
-                  setDialogState(() => errorText = 'Write failed: $e');
-                }
-              },
-              label: const Text('Save'),
-            ),
-          ],
-        ),
+                },
+                label: const Text('Save'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

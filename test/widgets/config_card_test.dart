@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:candela_desktop/theme/candela_theme.dart';
 import 'package:candela_desktop/models/candela_config.dart';
 import 'package:candela_desktop/screens/auth_debug/config_card.dart';
+import 'package:candela_desktop/services/config_service.dart';
 
 void main() {
   group('ConfigCard', () {
@@ -16,6 +17,7 @@ void main() {
           body: SingleChildScrollView(
             child: ConfigCard(
               config: config,
+              configService: ConfigService(configPath: '/tmp/test-config.yaml'),
               onSwitchToSolo: onSwitchToSolo,
               onSwitchToTeam: onSwitchToTeam,
               onPortChanged: onPortChanged,

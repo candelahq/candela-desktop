@@ -6,6 +6,7 @@ import '../models/provider_status.dart';
 /// Tests connectivity to each LLM provider.
 class ProviderTestService {
   final _client = http.Client();
+  bool _disposed = false;
   static const _timeout = Duration(seconds: 10);
 
   // Pre-compiled regex patterns for sanitizeError.
@@ -24,8 +25,9 @@ class ProviderTestService {
   static String sanitizeError(String error) {
     // Redact Bearer tokens.
     error = error.replaceAll(_bearerRe, 'Bearer [REDACTED]');
-    // Redact API keys in headers.
-    error = error.replaceAll(_apiKeyRe, r'$1: [REDACTED]');
+    // Redact API keys in headers — use replaceAllMapped so the captured
+    // header name ($1) is preserved while the value is redacted.
+    error = error.replaceAllMapped(_apiKeyRe, (m) => '${m[1]}: [REDACTED]');
     return error;
   }
 
@@ -514,5 +516,22 @@ class ProviderTestService {
     return name;
   }
 
-  void dispose() => _client.close();
+  /// Perform a guarded GET request that silently returns null if the
+  /// service has been disposed mid-flight.
+  // ignore: unused_element — available for callers to migrate to
+  Future<http.Response?> _guardedGet(Uri url,
+      {Map<String, String>? headers}) async {
+    if (_disposed) return null;
+    try {
+      return await _client.get(url, headers: headers).timeout(_timeout);
+    } on http.ClientException {
+      if (_disposed) return null;
+      rethrow;
+    }
+  }
+
+  void dispose() {
+    _disposed = true;
+    _client.close();
+  }
 }

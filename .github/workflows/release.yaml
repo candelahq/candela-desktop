@@ -71,6 +71,15 @@ jobs:
       #       --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_PASSWORD" --wait
       #     xcrun stapler staple build/macos/Build/Products/Release/Candela.app
 
+      # Ad-hoc code signing — removes the Gatekeeper quarantine flag so
+      # users can open the app without right-click workarounds.
+      # Replace with Developer ID signing when Apple cert is available (#17).
+      - name: Ad-hoc code sign
+        run: |
+          codesign --deep --force --sign - \
+            build/macos/Build/Products/Release/Candela.app
+          echo "✅ Ad-hoc signed — Gatekeeper quarantine removed"
+
       - name: Package zip
         run: |
           cd build/macos/Build/Products/Release

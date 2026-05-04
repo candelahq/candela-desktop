@@ -1,6 +1,34 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../theme/colors.dart';
 import '../../services/config_service.dart';
+
+/// Validate a remote server URL for Team Mode.
+/// Returns null if valid, or an error message string.
+String? _validateRemoteUrl(String url) {
+  final uri = Uri.tryParse(url);
+  if (uri == null) return 'Invalid URL format';
+  if (uri.scheme != 'https') return 'URL must use https://';
+  if (uri.host.isEmpty) return 'URL must have a host';
+  // Reject private/link-local IP ranges.
+  final host = uri.host;
+  try {
+    final addr = InternetAddress(host);
+    final bytes = addr.rawAddress;
+    if (bytes.length == 4) {
+      if (bytes[0] == 10 ||
+          (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31) ||
+          (bytes[0] == 192 && bytes[1] == 168) ||
+          (bytes[0] == 169 && bytes[1] == 254) ||
+          bytes[0] == 127) {
+        return 'Private/reserved IP addresses are not allowed';
+      }
+    }
+  } on ArgumentError {
+    // Not a raw IP — hostname is fine.
+  }
+  return null;
+}
 
 /// First-run onboarding wizard.
 ///
@@ -221,7 +249,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   bool _canProceedFromDetails() {
     if (_selectedMode == 'team') {
-      return _remoteController.text.trim().isNotEmpty;
+      final url = _remoteController.text.trim();
+      return url.isNotEmpty && _validateRemoteUrl(url) == null;
     }
     return _projectController.text.trim().isNotEmpty;
   }
@@ -308,8 +337,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _skipToDefaults() async {
     setState(() => _saving = true);
     try {
-      // Write a minimal default config.
-      await widget.configService.setPort('port', 8181);
+      // Write a minimal default config via writeInitialConfig (not setPort)
+      // so the file is created atomically and future onboarding attempts
+      // don't fail with "config already exists".
+      await widget.configService.writeInitialConfig({'port': 8181});
       widget.onComplete();
     } catch (e) {
       if (mounted) {

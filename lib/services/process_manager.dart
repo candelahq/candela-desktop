@@ -57,6 +57,13 @@ class ProcessManager extends ChangeNotifier {
     String? proxyPort,
     Map<String, String>? portOverrides,
   }) {
+    // Cancel stale health timers before clearing processes to prevent leaks
+    // when providers are added/removed dynamically.
+    for (final t in _healthTimers.values) {
+      t.cancel();
+    }
+    _healthTimers.clear();
+
     _processes.clear();
 
     // Proxy is always managed.
@@ -117,13 +124,19 @@ class ProcessManager extends ChangeNotifier {
       entries.map((e) async {
         final healthy = await _isHealthy(e.key);
         final installed = healthy || await isInstalled(e.key);
-        return (healthy: healthy, installed: installed);
+        int? pid;
+        if (healthy && e.value.port != null) {
+          final portNum = int.tryParse(e.value.port!);
+          if (portNum != null) pid = await _findPidForPort(portNum);
+        }
+        return (healthy: healthy, installed: installed, pid: pid);
       }),
     );
     for (var i = 0; i < entries.length; i++) {
       final p = entries[i].value;
       if (results[i].healthy) {
         p.state = ProcessState.running;
+        p.pid = results[i].pid;
         // Leave startedAt null — actual start time is unknown.
         _startHealthPolling(entries[i].key);
       } else if (!results[i].installed) {
@@ -175,9 +188,12 @@ class ProcessManager extends ChangeNotifier {
       });
 
       // Wait for health check (poll up to 15 seconds).
+      // Check p.state each iteration for early exit if stop() was called.
       var healthy = false;
       for (var i = 0; i < 30; i++) {
         await Future.delayed(const Duration(milliseconds: 500));
+        // Bail if stop() was called during startup.
+        if (p.state != ProcessState.starting) break;
         if (await _isHealthy(name)) {
           healthy = true;
           break;
@@ -350,6 +366,23 @@ class ProcessManager extends ChangeNotifier {
     while (p.recentLogs.length > ManagedProcess.maxLogLines) {
       p.recentLogs.removeFirst();
     }
+  }
+
+  /// Resolve the PID of a process listening on [port].
+  /// Uses `lsof` on macOS/Linux. Returns null if not found.
+  Future<int?> _findPidForPort(int port) async {
+    try {
+      final result = await Process.run('lsof', ['-ti', ':$port']);
+      if (result.exitCode == 0) {
+        final pid = int.tryParse(
+          (result.stdout as String).trim().split('\n').first,
+        );
+        return pid;
+      }
+    } catch (_) {
+      // lsof not available — PID resolution is best-effort.
+    }
+    return null;
   }
 
   @override

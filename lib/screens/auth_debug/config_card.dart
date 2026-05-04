@@ -1,11 +1,44 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:yaml/yaml.dart';
 import '../../theme/colors.dart';
 import '../../models/candela_config.dart';
+import '../../services/config_service.dart';
+
+/// Validate a remote server URL for Team Mode.
+/// Returns null if valid, or an error message string.
+String? _validateRemoteUrl(String url) {
+  final uri = Uri.tryParse(url);
+  if (uri == null) return 'Invalid URL format';
+  if (uri.scheme != 'https') return 'URL must use https://';
+  if (uri.host.isEmpty) return 'URL must have a host';
+
+  // Reject private/link-local IP ranges to prevent SSRF.
+  final host = uri.host;
+  try {
+    final addr = InternetAddress(host);
+    final bytes = addr.rawAddress;
+    if (bytes.length == 4) {
+      if (bytes[0] == 10) return 'Private IP addresses are not allowed';
+      if (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31) {
+        return 'Private IP addresses are not allowed';
+      }
+      if (bytes[0] == 192 && bytes[1] == 168) {
+        return 'Private IP addresses are not allowed';
+      }
+      if (bytes[0] == 169 && bytes[1] == 254) {
+        return 'Link-local addresses are not allowed';
+      }
+      if (bytes[0] == 127) return 'Loopback addresses are not allowed';
+    }
+  } on ArgumentError {
+    // Not a raw IP — hostname is fine.
+  }
+  return null;
+}
 
 class ConfigCard extends StatelessWidget {
   final CandelaConfig config;
+  final ConfigService configService;
   final VoidCallback? onSwitchToSolo;
   final ValueChanged<String>? onSwitchToTeam;
   final void Function(String field, int port)? onPortChanged;
@@ -13,6 +46,7 @@ class ConfigCard extends StatelessWidget {
   const ConfigCard(
       {super.key,
       required this.config,
+      required this.configService,
       this.onSwitchToSolo,
       this.onSwitchToTeam,
       this.onPortChanged,
@@ -270,10 +304,16 @@ class ConfigCard extends StatelessWidget {
           ElevatedButton(
             onPressed: () {
               final url = controller.text.trim();
-              Navigator.of(ctx).pop();
-              if (url.isNotEmpty && url != 'https://') {
-                onSwitchToTeam?.call(url);
+              if (url.isEmpty || url == 'https://') return;
+              final error = _validateRemoteUrl(url);
+              if (error != null) {
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  SnackBar(content: Text(error)),
+                );
+                return;
               }
+              Navigator.of(ctx).pop();
+              onSwitchToTeam?.call(url);
             },
             child: const Text('Save'),
           ),
@@ -623,16 +663,13 @@ class ConfigCard extends StatelessWidget {
                 onPressed: () async {
                   final text = controller.text;
                   try {
-                    // Validate YAML before writing.
-                    if (text.trim().isNotEmpty) {
-                      loadYaml(text); // throws YamlException on bad syntax
-                    }
-                    await file.writeAsString(text);
+                    // Route through ConfigService write mutex to prevent
+                    // data loss from concurrent modifications.
+                    await configService.writeRawConfig(text);
                     if (ctx.mounted) Navigator.of(ctx).pop();
                     onConfigReloaded?.call();
-                  } on YamlException catch (e) {
-                    setDialogState(
-                        () => errorText = 'Invalid YAML: ${e.message}');
+                  } on FormatException catch (e) {
+                    setDialogState(() => errorText = e.message);
                   } catch (e) {
                     setDialogState(() => errorText = 'Write failed: $e');
                   }

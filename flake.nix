@@ -25,7 +25,10 @@
         "aarch64-linux"  = "Candela-linux-x64.tar.gz";  # best-effort
       }.${system} or (throw "Unsupported system: ${system}");
 
-      version = "0.2.0";
+      # Version must match pubspec.yaml. Update both when cutting a release.
+      # The sha256 hashes below must be updated after each release — run:
+      #   nix-prefetch-url <release-asset-url>
+      version = "0.3.4";
     in {
       schemas = flake-schemas.schemas;
 

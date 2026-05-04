@@ -249,8 +249,11 @@ class ConfigService {
     if (await legacy.exists() && !await modern.exists()) {
       // Ensure target directory exists.
       await modern.parent.create(recursive: true);
-      // Copy to new location.
-      await legacy.copy(modern.path);
+      // Copy to new location — check again after directory creation
+      // to avoid a race if another process migrated concurrently.
+      if (!await modern.exists()) {
+        await legacy.copy(modern.path);
+      }
       // Leave a breadcrumb in the old file.
       await legacy.writeAsString(
         '# Candela config has moved to ~/.config/candela/config.yaml\n'
@@ -260,6 +263,22 @@ class ConfigService {
 
     // Step 2: Remove deprecated fields from the active config.
     await _migrateLegacyFieldsInPlace();
+  }
+
+  /// Write an initial config map in a single atomic operation.
+  ///
+  /// Used by onboarding to avoid N sequential read-modify-write cycles.
+  /// Only writes if the config file does not already exist.
+  Future<void> writeInitialConfig(Map<String, dynamic> config) async {
+    final resolvedPath = _resolveConfigPath();
+    final file = File(resolvedPath);
+    if (await file.exists()) {
+      throw StateError(
+        'Config file already exists at $resolvedPath. '
+        'Use setPort/setMode/addProvider to modify.',
+      );
+    }
+    await _writeYaml(file, config);
   }
 
   Future<void> _migrateLegacyFieldsInPlace() async {

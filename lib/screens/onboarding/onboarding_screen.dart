@@ -307,43 +307,56 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Future<void> _skipToDefaults() async {
     setState(() => _saving = true);
-    // Write a minimal default config.
-    await widget.configService.setPort('port', 8181);
-    widget.onComplete();
+    try {
+      // Write a minimal default config.
+      await widget.configService.setPort('port', 8181);
+      widget.onComplete();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save config: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _saveAndFinish() async {
     setState(() => _saving = true);
+    try {
+      // Build complete config in memory, then write once.
+      final config = <String, dynamic>{};
 
-    // Set mode.
-    if (_selectedMode == 'team') {
-      await widget.configService.setMode(
-        remote: _remoteController.text.trim(),
-        audience: _audienceController.text.trim().isNotEmpty
-            ? _audienceController.text.trim()
-            : null,
-      );
-    } else {
-      await widget.configService.setMode(); // solo
+      // Mode.
+      if (_selectedMode == 'team') {
+        config['remote'] = _remoteController.text.trim();
+        final audience = _audienceController.text.trim();
+        config['audience'] =
+            audience.isNotEmpty ? audience : _remoteController.text.trim();
+      }
+
+      // Port.
+      final port = await ConfigService.findAvailablePort();
+      config['port'] = port;
+
+      // Providers.
+      if (_selectedProviders.isNotEmpty) {
+        config['providers'] =
+            _selectedProviders.map((name) => {'name': name}).toList();
+      }
+
+      // Single atomic write.
+      await widget.configService.writeInitialConfig(config);
+
+      widget.onComplete();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save config: $e')),
+        );
+      }
     }
-
-    // Set vertex_ai for cloud mode.
-    if (_selectedMode == 'soloCloud') {
-      // Write vertex_ai fields via low-level approach.
-      // For now, we just add the providers — vertex_ai config
-      // will be prompted in the Auth & Debug screen.
-    }
-
-    // Find available port.
-    final port = await ConfigService.findAvailablePort();
-    await widget.configService.setPort('port', port);
-
-    // Add selected providers.
-    for (final name in _selectedProviders) {
-      await widget.configService.addProvider(name);
-    }
-
-    widget.onComplete();
   }
 
   // ── Helpers ──

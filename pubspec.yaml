@@ -39,6 +39,7 @@ dependencies:
 
   # Runtime package info (version display)
   package_info_plus: ^8.0.0
+  auto_updater: ^1.0.0
 
 dev_dependencies:
   flutter_test:

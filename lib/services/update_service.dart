@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:auto_updater/auto_updater.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 /// How the app was installed — determines update mechanism.
@@ -19,23 +21,63 @@ enum InstallChannel {
   unknown,
 }
 
-/// Manages version checking and update notifications.
+/// Describes the current update status.
+enum UpdateStatus {
+  /// No update check has been performed yet.
+  idle,
+
+  /// Currently checking for updates.
+  checking,
+
+  /// An update is available.
+  available,
+
+  /// Already on the latest version.
+  upToDate,
+
+  /// Check failed (network error, etc).
+  error,
+}
+
+/// Manages version checking, update notifications, and Sparkle auto-update.
 ///
-/// Detects the install channel and provides appropriate update guidance:
-/// - Direct installs → Sparkle auto-update (macOS) or download prompt
+/// Detects the install channel and provides appropriate update handling:
+/// - Direct installs (macOS) → Sparkle auto-update via `auto_updater`
 /// - Homebrew installs → "run `brew upgrade candela`"
 /// - Nix installs → "run `nix profile upgrade`"
-class UpdateService {
+class UpdateService extends ChangeNotifier {
   static const _releaseFeedUrl =
       'https://api.github.com/repos/candelahq/candela-desktop/releases/latest';
+
+  static const _appcastUrl =
+      'https://github.com/candelahq/candela-desktop/releases/latest/download/appcast.xml';
+
+  /// Scheduled check interval: every 4 hours (in seconds).
+  static const _checkIntervalSeconds = 4 * 60 * 60;
 
   /// Allow injection for testing.
   final http.Client _client;
 
   String? _latestVersion;
   InstallChannel? _cachedChannel;
+  UpdateStatus _status = UpdateStatus.idle;
+
+  void _setStatus(UpdateStatus s) {
+    if (_status != s) {
+      _status = s;
+      notifyListeners();
+    }
+  }
+
+  bool _sparkleInitialized = false;
 
   UpdateService({http.Client? client}) : _client = client ?? http.Client();
+
+  /// Current update status.
+  UpdateStatus get status => _status;
+
+  /// The last known latest version (cached from [checkForUpdate]).
+  String? get latestVersion => _latestVersion;
 
   /// Detect how the app was installed.
   InstallChannel detectChannel() {
@@ -56,34 +98,78 @@ class UpdateService {
     return _cachedChannel!;
   }
 
+  /// Initialize Sparkle auto-updater for direct installs on macOS.
+  ///
+  /// Sets the appcast feed URL and schedules periodic background checks.
+  /// No-op if the install channel is not [InstallChannel.direct] or
+  /// if the platform is not macOS.
+  Future<void> initSparkle() async {
+    if (_sparkleInitialized) return;
+    if (!Platform.isMacOS) return;
+    if (detectChannel() != InstallChannel.direct) return;
+
+    try {
+      await autoUpdater.setFeedURL(_appcastUrl);
+      await autoUpdater.setScheduledCheckInterval(_checkIntervalSeconds);
+      _sparkleInitialized = true;
+    } catch (_) {
+      // Sparkle not available — silent fallback to manual check.
+    }
+  }
+
+  /// Trigger an immediate Sparkle update check (shows native UI dialog).
+  ///
+  /// Only works for direct installs on macOS. Returns false if Sparkle
+  /// is not available (wrong channel, not macOS, etc.).
+  Future<bool> checkForUpdatesViaSparkle() async {
+    if (!_sparkleInitialized) return false;
+    try {
+      await autoUpdater.checkForUpdates();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Check GitHub Releases for a newer version.
   ///
   /// Returns the latest version string (e.g., "0.3.0") if newer than
   /// [currentVersion], or null if already up to date.
   Future<String?> checkForUpdate(String currentVersion) async {
+    _setStatus(UpdateStatus.checking);
     try {
       final response = await _client.get(
         Uri.parse(_releaseFeedUrl),
         headers: {'Accept': 'application/vnd.github.v3+json'},
       ).timeout(const Duration(seconds: 10));
 
-      if (response.statusCode != 200) return null;
+      if (response.statusCode != 200) {
+        _setStatus(UpdateStatus.error);
+        return null;
+      }
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       final tagName = data['tag_name'] as String?;
-      if (tagName == null || tagName.isEmpty) return null;
+      if (tagName == null || tagName.isEmpty) {
+        _setStatus(UpdateStatus.error);
+        return null;
+      }
 
       final latest = tagName.startsWith('v') ? tagName.substring(1) : tagName;
       _latestVersion = latest;
 
-      return isNewer(latest, currentVersion) ? latest : null;
+      if (isNewer(latest, currentVersion)) {
+        _setStatus(UpdateStatus.available);
+        return latest;
+      } else {
+        _setStatus(UpdateStatus.upToDate);
+        return null;
+      }
     } catch (_) {
+      _setStatus(UpdateStatus.error);
       return null; // Network error, don't block the user.
     }
   }
-
-  /// The last known latest version (cached from [checkForUpdate]).
-  String? get latestVersion => _latestVersion;
 
   /// User-facing update instructions based on install channel.
   String updateInstructions(InstallChannel channel) {

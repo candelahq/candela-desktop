@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'theme/candela_theme.dart';
 import 'theme/colors.dart';
+import 'services/update_service.dart';
 import 'widgets/sidebar.dart';
 import 'screens/auth_debug/auth_debug_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
@@ -84,6 +85,7 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> with WindowListener {
   int _selectedIndex = 0;
   bool _hasShownTrayTooltip = false;
+  final _updateService = UpdateService();
 
   static const _pages = <Widget>[
     AuthDebugScreen(),
@@ -148,6 +150,7 @@ class _AppShellState extends State<AppShell> with WindowListener {
           CandelaSidebar(
             selectedIndex: _selectedIndex,
             onItemSelected: (i) => setState(() => _selectedIndex = i),
+            updateService: _updateService,
           ),
           Expanded(
             child: _pages[_selectedIndex],

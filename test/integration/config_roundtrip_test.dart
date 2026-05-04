@@ -68,11 +68,13 @@ void main() {
       File(testConfigPath).writeAsStringSync('port: 8181\n');
 
       // Fire 5 concurrent writes — all should be serialized by the async mutex.
+      // Use local providers (ollama, vllm) to avoid validation errors for
+      // missing vertex_ai.project that cloud providers (google) would trigger.
       await Future.wait([
         service.setPort('port', 1111),
-        service.addProvider('google'),
-        service.setPort('lmstudio_port', 2222),
         service.addProvider('ollama'),
+        service.setPort('lmstudio_port', 2222),
+        service.addProvider('vllm'),
         service.setPort('port', 3333),
       ]);
 

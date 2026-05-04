@@ -141,6 +141,39 @@ jobs:
             echo "channel=stable" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Generate Sparkle appcast.xml
+        run: |
+          TAG="${{ github.ref_name }}"
+          VERSION="${TAG#v}"
+          MAC_ZIP="artifacts/macos-arm64/Candela-macos-arm64.zip"
+          LENGTH=$(stat -c%s "$MAC_ZIP" 2>/dev/null || stat -f%z "$MAC_ZIP")
+          DATE=$(date -u +"%a, %d %b %Y %H:%M:%S +0000")
+
+          cat > artifacts/appcast.xml << EOF
+          <?xml version="1.0" encoding="utf-8"?>
+          <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+            <channel>
+              <title>Candela Desktop</title>
+              <link>https://candelahq.com</link>
+              <description>Candela Desktop updates</description>
+              <language>en</language>
+              <item>
+                <title>Version ${VERSION}</title>
+                <pubDate>${DATE}</pubDate>
+                <sparkle:version>${VERSION}</sparkle:version>
+                <sparkle:shortVersionString>${VERSION}</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>12.0</sparkle:minimumSystemVersion>
+                <enclosure
+                  url="https://github.com/candelahq/candela-desktop/releases/download/${TAG}/Candela-macos-arm64.zip"
+                  length="${LENGTH}"
+                  type="application/octet-stream"
+                />
+              </item>
+            </channel>
+          </rss>
+          EOF
+          echo "Generated appcast.xml for ${TAG} (${LENGTH} bytes)"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -151,3 +184,4 @@ jobs:
           files: |
             artifacts/macos-arm64/*.zip
             artifacts/linux-x64/*.tar.gz
+            artifacts/appcast.xml

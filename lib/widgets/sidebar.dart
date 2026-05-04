@@ -1,16 +1,21 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import '../services/update_service.dart';
 import '../theme/colors.dart';
 
 class CandelaSidebar extends StatefulWidget {
   final int selectedIndex;
   final ValueChanged<int> onItemSelected;
 
+  /// Optional UpdateService — when provided, enables the update badge.
+  final UpdateService? updateService;
+
   const CandelaSidebar({
     super.key,
     required this.selectedIndex,
     required this.onItemSelected,
+    this.updateService,
   });
 
   @override
@@ -19,6 +24,8 @@ class CandelaSidebar extends StatefulWidget {
 
 class _CandelaSidebarState extends State<CandelaSidebar> {
   String _version = '...';
+  String? _newVersion;
+  UpdateStatus _updateStatus = UpdateStatus.idle;
 
   static const _items = [
     _NavItem(
@@ -45,9 +52,58 @@ class _CandelaSidebarState extends State<CandelaSidebar> {
 
   Future<void> _loadVersion() async {
     final info = await PackageInfo.fromPlatform();
-    if (mounted) {
-      setState(() => _version = 'v${info.version}');
+    if (!mounted) return;
+    setState(() => _version = 'v${info.version}');
+
+    // Kick off update check if service is available.
+    final svc = widget.updateService;
+    if (svc != null) {
+      // Initialize Sparkle for direct installs.
+      await svc.initSparkle();
+      // Check for updates.
+      final newer = await svc.checkForUpdate(info.version);
+      if (mounted) {
+        setState(() {
+          _newVersion = newer;
+          _updateStatus = svc.status;
+        });
+      }
     }
+  }
+
+  void _handleUpdateTap() async {
+    final svc = widget.updateService;
+    if (svc == null) return;
+
+    final channel = svc.detectChannel();
+    if (channel == InstallChannel.direct) {
+      // Try Sparkle native update dialog.
+      final launched = await svc.checkForUpdatesViaSparkle();
+      if (!launched && mounted) {
+        // Sparkle not available (not macOS, missing binary, etc.)
+        // Fall back to opening the releases page.
+        _showUpdateSnackBar(
+          'Update available! Download from candelahq.com/releases',
+        );
+      }
+    } else {
+      // Show instructions for managed channels.
+      _showUpdateSnackBar(svc.updateInstructions(channel));
+    }
+  }
+
+  void _showUpdateSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: CandelaColors.bgTertiary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
   }
 
   @override
@@ -114,32 +170,78 @@ class _CandelaSidebarState extends State<CandelaSidebar> {
               ),
             ),
           ),
-          // Footer — version display
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              border:
-                  Border(top: BorderSide(color: CandelaColors.borderSubtle)),
-            ),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: CandelaColors.bgTertiary,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                      radius: 3, backgroundColor: CandelaColors.success),
-                  const SizedBox(width: 8),
-                  Text(_version,
-                      style: const TextStyle(
-                          fontSize: 12, color: CandelaColors.textSecondary)),
-                ],
-              ),
-            ),
-          ),
+          // Footer — version display + update badge
+          _buildVersionFooter(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildVersionFooter() {
+    final hasUpdate = _updateStatus == UpdateStatus.available;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: CandelaColors.borderSubtle)),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: hasUpdate ? _handleUpdateTap : null,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color:
+                hasUpdate ? CandelaColors.accentDim : CandelaColors.bgTertiary,
+            borderRadius: BorderRadius.circular(8),
+            border: hasUpdate
+                ? Border.all(color: CandelaColors.accent.withValues(alpha: 0.3))
+                : null,
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 3,
+                backgroundColor:
+                    hasUpdate ? CandelaColors.accent : CandelaColors.success,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _version,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: CandelaColors.textSecondary,
+                  ),
+                ),
+              ),
+              if (hasUpdate) ...[
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: CandelaColors.accent,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'v$_newVersion',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(
+                  Icons.arrow_upward_rounded,
+                  size: 14,
+                  color: CandelaColors.accent,
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

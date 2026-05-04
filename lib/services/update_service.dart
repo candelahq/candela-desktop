@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:auto_updater/auto_updater.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 /// How the app was installed — determines update mechanism.
@@ -44,7 +45,7 @@ enum UpdateStatus {
 /// - Direct installs (macOS) → Sparkle auto-update via `auto_updater`
 /// - Homebrew installs → "run `brew upgrade candela`"
 /// - Nix installs → "run `nix profile upgrade`"
-class UpdateService {
+class UpdateService extends ChangeNotifier {
   static const _releaseFeedUrl =
       'https://api.github.com/repos/candelahq/candela-desktop/releases/latest';
 
@@ -60,6 +61,14 @@ class UpdateService {
   String? _latestVersion;
   InstallChannel? _cachedChannel;
   UpdateStatus _status = UpdateStatus.idle;
+
+  void _setStatus(UpdateStatus s) {
+    if (_status != s) {
+      _status = s;
+      notifyListeners();
+    }
+  }
+
   bool _sparkleInitialized = false;
 
   UpdateService({http.Client? client}) : _client = client ?? http.Client();
@@ -127,7 +136,7 @@ class UpdateService {
   /// Returns the latest version string (e.g., "0.3.0") if newer than
   /// [currentVersion], or null if already up to date.
   Future<String?> checkForUpdate(String currentVersion) async {
-    _status = UpdateStatus.checking;
+    _setStatus(UpdateStatus.checking);
     try {
       final response = await _client.get(
         Uri.parse(_releaseFeedUrl),
@@ -135,14 +144,14 @@ class UpdateService {
       ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode != 200) {
-        _status = UpdateStatus.error;
+        _setStatus(UpdateStatus.error);
         return null;
       }
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       final tagName = data['tag_name'] as String?;
       if (tagName == null || tagName.isEmpty) {
-        _status = UpdateStatus.error;
+        _setStatus(UpdateStatus.error);
         return null;
       }
 
@@ -150,14 +159,14 @@ class UpdateService {
       _latestVersion = latest;
 
       if (isNewer(latest, currentVersion)) {
-        _status = UpdateStatus.available;
+        _setStatus(UpdateStatus.available);
         return latest;
       } else {
-        _status = UpdateStatus.upToDate;
+        _setStatus(UpdateStatus.upToDate);
         return null;
       }
     } catch (_) {
-      _status = UpdateStatus.error;
+      _setStatus(UpdateStatus.error);
       return null; // Network error, don't block the user.
     }
   }

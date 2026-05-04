@@ -71,27 +71,39 @@ class _CandelaSidebarState extends State<CandelaSidebar> {
     }
   }
 
-  void _handleUpdateTap() {
+  void _handleUpdateTap() async {
     final svc = widget.updateService;
     if (svc == null) return;
 
     final channel = svc.detectChannel();
     if (channel == InstallChannel.direct) {
-      // Trigger Sparkle native update dialog.
-      svc.checkForUpdatesViaSparkle();
+      // Try Sparkle native update dialog.
+      final launched = await svc.checkForUpdatesViaSparkle();
+      if (!launched && mounted) {
+        // Sparkle not available (not macOS, missing binary, etc.)
+        // Fall back to opening the releases page.
+        _showUpdateSnackBar(
+          'Update available! Download from candelahq.com/releases',
+        );
+      }
     } else {
-      // Show instructions for non-direct channels.
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(svc.updateInstructions(channel)),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: CandelaColors.bgTertiary,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-      );
+      // Show instructions for managed channels.
+      _showUpdateSnackBar(svc.updateInstructions(channel));
     }
+  }
+
+  void _showUpdateSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: CandelaColors.bgTertiary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
   }
 
   @override

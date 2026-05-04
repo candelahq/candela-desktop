@@ -179,70 +179,108 @@ class _CandelaSidebarState extends State<CandelaSidebar> {
 
   Widget _buildVersionFooter() {
     final hasUpdate = _updateStatus == UpdateStatus.available;
+    final isChecking = _updateStatus == UpdateStatus.checking;
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: const BoxDecoration(
         border: Border(top: BorderSide(color: CandelaColors.borderSubtle)),
       ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: hasUpdate ? _handleUpdateTap : null,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color:
-                hasUpdate ? CandelaColors.accentDim : CandelaColors.bgTertiary,
-            borderRadius: BorderRadius.circular(8),
-            border: hasUpdate
-                ? Border.all(color: CandelaColors.accent.withValues(alpha: 0.3))
-                : null,
-          ),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 3,
-                backgroundColor:
-                    hasUpdate ? CandelaColors.accent : CandelaColors.success,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  _version,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: CandelaColors.textSecondary,
-                  ),
+      child: hasUpdate
+          ? // ── Update available: prominent banner ──
+          InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: _handleUpdateTap,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: CandelaColors.accentDim,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                      color: CandelaColors.accent.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.upgrade_rounded,
+                        size: 16, color: CandelaColors.accent),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Update available',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: CandelaColors.accent,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '$_version → v$_newVersion',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: CandelaColors.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: CandelaColors.accent,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text(
+                        'Update',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              if (hasUpdate) ...[
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: CandelaColors.accent,
-                    borderRadius: BorderRadius.circular(4),
+            )
+          : // ── Up to date: subtle version label ──
+          Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 3,
+                    backgroundColor: isChecking
+                        ? CandelaColors.textMuted
+                        : CandelaColors.success,
                   ),
-                  child: Text(
-                    'v$_newVersion',
+                  const SizedBox(width: 8),
+                  Text(
+                    _version,
                     style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      fontSize: 12,
+                      color: CandelaColors.textMuted,
                     ),
                   ),
-                ),
-                const SizedBox(width: 4),
-                const Icon(
-                  Icons.arrow_upward_rounded,
-                  size: 14,
-                  color: CandelaColors.accent,
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
+                  if (isChecking) ...[
+                    const SizedBox(width: 8),
+                    const SizedBox(
+                      width: 10,
+                      height: 10,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 1.5,
+                        color: CandelaColors.textMuted,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
     );
   }
 

@@ -3,38 +3,7 @@ import 'package:flutter/material.dart';
 import '../../theme/colors.dart';
 import '../../models/candela_config.dart';
 import '../../services/config_service.dart';
-
-/// Validate a remote server URL for Team Mode.
-/// Returns null if valid, or an error message string.
-String? _validateRemoteUrl(String url) {
-  final uri = Uri.tryParse(url);
-  if (uri == null) return 'Invalid URL format';
-  if (uri.scheme != 'https') return 'URL must use https://';
-  if (uri.host.isEmpty) return 'URL must have a host';
-
-  // Reject private/link-local IP ranges to prevent SSRF.
-  final host = uri.host;
-  try {
-    final addr = InternetAddress(host);
-    final bytes = addr.rawAddress;
-    if (bytes.length == 4) {
-      if (bytes[0] == 10) return 'Private IP addresses are not allowed';
-      if (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31) {
-        return 'Private IP addresses are not allowed';
-      }
-      if (bytes[0] == 192 && bytes[1] == 168) {
-        return 'Private IP addresses are not allowed';
-      }
-      if (bytes[0] == 169 && bytes[1] == 254) {
-        return 'Link-local addresses are not allowed';
-      }
-      if (bytes[0] == 127) return 'Loopback addresses are not allowed';
-    }
-  } on ArgumentError {
-    // Not a raw IP — hostname is fine.
-  }
-  return null;
-}
+import '../../services/url_validator.dart';
 
 class ConfigCard extends StatelessWidget {
   final CandelaConfig config;
@@ -302,17 +271,21 @@ class ConfigCard extends StatelessWidget {
               onPressed: () => Navigator.of(ctx).pop(),
               child: const Text('Cancel')),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               final url = controller.text.trim();
               if (url.isEmpty || url == 'https://') return;
-              final error = _validateRemoteUrl(url);
+              // Use DNS-resolved validation to catch hostnames that
+              // resolve to private/loopback addresses.
+              final error = await UrlValidator.validateWithDnsCheck(url);
               if (error != null) {
-                ScaffoldMessenger.of(ctx).showSnackBar(
-                  SnackBar(content: Text(error)),
-                );
+                if (ctx.mounted) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    SnackBar(content: Text(error)),
+                  );
+                }
                 return;
               }
-              Navigator.of(ctx).pop();
+              if (ctx.mounted) Navigator.of(ctx).pop();
               onSwitchToTeam?.call(url);
             },
             child: const Text('Save'),

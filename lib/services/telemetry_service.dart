@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/budget_info.dart';
@@ -220,14 +221,20 @@ class TelemetryService {
             )
             .timeout(_requestTimeout),
         // GetMyUsage carries budget + active_grants for the waterfall card.
-        // Failure here is non-fatal — spans are still returned.
+        // .catchError ensures this call is truly non-fatal — a failure here
+        // yields a 500 sentinel so spans/summary are still returned normally.
         _client
             .post(
               Uri.parse('$base/candela.v1.DashboardService/GetMyUsage'),
               headers: headers,
               body: jsonEncode({'project_id': '', 'time_range': timeRange}),
             )
-            .timeout(_requestTimeout),
+            .timeout(_requestTimeout)
+            .catchError((Object e) {
+          // Non-fatal: budget display is best-effort. Log for observability.
+          debugPrint('[TelemetryService] GetMyUsage failed (non-fatal): $e');
+          return http.Response('', 500);
+        }),
       ]);
 
       final summaryResp = results[0];
@@ -238,19 +245,19 @@ class TelemetryService {
       if (summaryResp.statusCode == 401) {
         return (
           <SpanRecord>[],
-          TelemetryErrorKind.authExpired as TelemetryErrorKind?,
-          null as BudgetInfo?,
+          TelemetryErrorKind.authExpired,
+          null,
           <GrantInfo>[],
-          null as double?,
+          null
         );
       }
       if (summaryResp.statusCode != 200) {
         return (
           <SpanRecord>[],
-          TelemetryErrorKind.unreachable as TelemetryErrorKind?,
-          null as BudgetInfo?,
+          TelemetryErrorKind.unreachable,
+          null,
           <GrantInfo>[],
-          null as double?,
+          null
         );
       }
 
@@ -259,10 +266,10 @@ class TelemetryService {
           modelsResp.bodyBytes.length > _maxBodyBytes) {
         return (
           <SpanRecord>[],
-          TelemetryErrorKind.unreachable as TelemetryErrorKind?,
-          null as BudgetInfo?,
+          TelemetryErrorKind.unreachable,
+          null,
           <GrantInfo>[],
-          null as double?,
+          null
         );
       }
 
@@ -276,8 +283,15 @@ class TelemetryService {
           final usageJson = jsonDecode(usageResp.body) as Map<String, dynamic>;
           budget = _parseBudget(usageJson['budget']);
           grants = _parseGrants(usageJson['active_grants']);
-          totalRemainingUsd =
+          final rawRemaining =
               (usageJson['total_remaining_usd'] as num?)?.toDouble();
+          // Clamp server value: must be non-negative and finite.
+          // Guards against buggy/malicious responses (NaN, -$n, Infinity).
+          if (rawRemaining != null &&
+              !rawRemaining.isNaN &&
+              !rawRemaining.isInfinite) {
+            totalRemainingUsd = rawRemaining.clamp(0.0, 1e9);
+          }
         } catch (_) {
           // Budget data is display-only — swallow parse errors.
         }
@@ -300,18 +314,18 @@ class TelemetryService {
     } on FormatException {
       return (
         <SpanRecord>[],
-        TelemetryErrorKind.unreachable as TelemetryErrorKind?,
-        null as BudgetInfo?,
+        TelemetryErrorKind.unreachable,
+        null,
         <GrantInfo>[],
-        null as double?,
+        null
       );
     } catch (_) {
       return (
         <SpanRecord>[],
-        TelemetryErrorKind.unreachable as TelemetryErrorKind?,
-        null as BudgetInfo?,
+        TelemetryErrorKind.unreachable,
+        null,
         <GrantInfo>[],
-        null as double?,
+        null
       );
     }
   }
@@ -348,11 +362,13 @@ class TelemetryService {
       try {
         final expiresRaw = item['expires_at'] as String?;
         grants.add(GrantInfo(
-          id: item['id'] as String? ?? '',
+          // Use .toString() for string fields — guards against int IDs from
+          // schema evolution (e.g. proto3 int64 JSON → numeric type).
+          id: item['id']?.toString() ?? '',
           amountUsd: (item['amount_usd'] as num?)?.toDouble() ?? 0.0,
           spentUsd: (item['spent_usd'] as num?)?.toDouble() ?? 0.0,
-          reason: item['reason'] as String? ?? '',
-          grantedBy: item['granted_by'] as String? ?? '',
+          reason: item['reason']?.toString() ?? '',
+          grantedBy: item['granted_by']?.toString() ?? '',
           expiresAt: expiresRaw != null ? DateTime.tryParse(expiresRaw) : null,
         ));
       } catch (_) {

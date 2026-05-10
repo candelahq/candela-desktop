@@ -33,14 +33,31 @@ class _BudgetWaterfallCardState extends State<BudgetWaterfallCard> {
   String? _pinnedGrantId;
 
   List<GrantInfo> get _sortedGrants {
-    if (_pinnedGrantId == null) return widget.grants;
-    final pinned = widget.grants.where((g) => g.id == _pinnedGrantId).toList();
-    final rest = widget.grants.where((g) => g.id != _pinnedGrantId).toList();
-    return [...pinned, ...rest];
+    if (_pinnedGrantId == null || widget.grants.isEmpty) return widget.grants;
+    final grants = List<GrantInfo>.from(widget.grants);
+    final index = grants.indexWhere((g) => g.id == _pinnedGrantId);
+    if (index != -1) {
+      final pinned = grants.removeAt(index);
+      grants.insert(0, pinned);
+    }
+    return grants;
+  }
+
+  @override
+  void didUpdateWidget(BudgetWaterfallCard old) {
+    super.didUpdateWidget(old);
+    // Clear stale pin if the pinned grant has expired and been removed.
+    if (_pinnedGrantId != null &&
+        !widget.grants.any((g) => g.id == _pinnedGrantId)) {
+      _pinnedGrantId = null;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Single clock sample for the entire build — prevents divergence between
+    // resetLabel, isExpiringSoon, and _daysLabel when called on the same frame.
+    final now = DateTime.now().toUtc();
     return Container(
       decoration: BoxDecoration(
         color: CandelaColors.bgSecondary,
@@ -53,10 +70,10 @@ class _BudgetWaterfallCardState extends State<BudgetWaterfallCard> {
         children: [
           _header(),
           const SizedBox(height: 12),
-          _budgetRow(),
+          _budgetRow(now),
           if (widget.grants.isNotEmpty) ...[
             const SizedBox(height: 12),
-            _grantsSection(),
+            _grantsSection(now),
           ],
           const SizedBox(height: 12),
           _footer(),
@@ -134,13 +151,21 @@ class _BudgetWaterfallCardState extends State<BudgetWaterfallCard> {
     );
   }
 
-  Widget _budgetRow() {
+  Widget _budgetRow(DateTime now) {
     final b = widget.budget;
     final barColor = b.isExhausted
         ? CandelaColors.error
         : b.isNearLimit
             ? CandelaColors.warning
             : CandelaColors.success;
+
+    // Compute resetLabel with the build-time clock to stay in sync with grants.
+    final diff = b.periodEnd.toUtc().difference(now);
+    final resetLabel = diff.isNegative
+        ? 'resetting'
+        : diff.inHours >= 1
+            ? 'resets in ${diff.inHours}h ${diff.inMinutes % 60}m'
+            : 'resets in ${diff.inMinutes}m';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -181,7 +206,7 @@ class _BudgetWaterfallCardState extends State<BudgetWaterfallCard> {
         Padding(
           padding: const EdgeInsets.only(left: 88),
           child: Text(
-            b.resetLabel,
+            resetLabel,
             style:
                 const TextStyle(fontSize: 10, color: CandelaColors.textMuted),
           ),
@@ -190,7 +215,7 @@ class _BudgetWaterfallCardState extends State<BudgetWaterfallCard> {
     );
   }
 
-  Widget _grantsSection() {
+  Widget _grantsSection(DateTime now) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -199,13 +224,16 @@ class _BudgetWaterfallCardState extends State<BudgetWaterfallCard> {
           style: TextStyle(fontSize: 11, color: CandelaColors.textMuted),
         ),
         const SizedBox(height: 6),
-        ..._sortedGrants.map((g) => _grantRow(g)),
+        ..._sortedGrants.map((g) => _grantRow(g, now)),
       ],
     );
   }
 
-  Widget _grantRow(GrantInfo g) {
+  Widget _grantRow(GrantInfo g, DateTime now) {
     final isPinned = g.id == _pinnedGrantId;
+    // Use build-time clock for consistent expiry state.
+    final expiringSoon =
+        g.expiresAt != null && g.expiresAt!.difference(now).inDays < 7;
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
@@ -237,11 +265,11 @@ class _BudgetWaterfallCardState extends State<BudgetWaterfallCard> {
                 fontFamily: 'SF Mono, monospace',
                 color: CandelaColors.textSecondary),
           ),
-          if (g.isExpiringSoon) ...[
+          if (expiringSoon) ...[
             const SizedBox(width: 6),
             Tooltip(
               message: g.expiresAt != null
-                  ? 'Expires ${_daysLabel(g.expiresAt!)}'
+                  ? 'Expires ${_daysLabel(g.expiresAt!, now)}'
                   : 'Expiring soon',
               child: const Text(
                 '⚠',
@@ -277,31 +305,24 @@ class _BudgetWaterfallCardState extends State<BudgetWaterfallCard> {
   }
 
   Widget _progressBar(double fraction, Color color) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Container(
-          height: 6,
-          decoration: BoxDecoration(
-            color: CandelaColors.bgTertiary,
-            borderRadius: BorderRadius.circular(3),
-          ),
-          child: FractionallySizedBox(
-            alignment: Alignment.centerLeft,
-            widthFactor: fraction.clamp(0.0, 1.0),
-            child: Container(
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-          ),
-        );
-      },
+    // No LayoutBuilder needed — FractionallySizedBox derives its own
+    // fraction from the Expanded parent, avoiding N+1 layout sub-passes.
+    return SizedBox(
+      height: 6,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(3),
+        child: LinearProgressIndicator(
+          value: fraction.clamp(0.0, 1.0),
+          backgroundColor: CandelaColors.bgTertiary,
+          valueColor: AlwaysStoppedAnimation<Color>(color),
+          minHeight: 6,
+        ),
+      ),
     );
   }
 
-  String _daysLabel(DateTime dt) {
-    final diff = dt.difference(DateTime.now());
+  String _daysLabel(DateTime dt, DateTime now) {
+    final diff = dt.difference(now);
     if (diff.inDays > 0) return 'in ${diff.inDays}d';
     if (diff.inHours > 0) return 'in ${diff.inHours}h';
     return 'soon';

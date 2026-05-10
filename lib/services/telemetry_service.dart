@@ -156,8 +156,10 @@ class TelemetryService {
     // Use a larger limit for longer ranges — 500 is not enough for 7d/30d views.
     final limit = range == TokenTimeRange.h24 ? 500 : 2000;
     try {
-      final uri = Uri.http(
-          'localhost:$port', '/_local/api/traces', {'limit': '$limit'});
+      final uri = Uri.http('localhost:$port', '/_local/api/traces', {
+        'limit': '$limit',
+        'range': range.label, // 24h | 7d | 30d — server adjusts query window
+      });
       final resp = await _client.get(uri).timeout(_localTimeout);
 
       // H1: reject oversized responses before decoding.

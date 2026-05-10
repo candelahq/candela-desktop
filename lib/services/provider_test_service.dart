@@ -5,9 +5,12 @@ import '../models/provider_status.dart';
 
 /// Tests connectivity to each LLM provider.
 class ProviderTestService {
-  final _client = http.Client();
+  final http.Client _client;
   bool _disposed = false;
   static const _timeout = Duration(seconds: 10);
+
+  ProviderTestService({http.Client? client})
+      : _client = client ?? http.Client();
 
   // Pre-compiled regex patterns for sanitizeError.
   static final _bearerRe =

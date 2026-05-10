@@ -2,6 +2,8 @@ PODS:
   - auto_updater_macos (0.0.1):
     - FlutterMacOS
     - Sparkle
+  - flutter_local_notifications (0.0.1):
+    - FlutterMacOS
   - FlutterMacOS (1.0.0)
   - package_info_plus (0.0.1):
     - FlutterMacOS
@@ -20,6 +22,7 @@ PODS:
 
 DEPENDENCIES:
   - auto_updater_macos (from `Flutter/ephemeral/.symlinks/plugins/auto_updater_macos/macos`)
+  - flutter_local_notifications (from `Flutter/ephemeral/.symlinks/plugins/flutter_local_notifications/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
   - package_info_plus (from `Flutter/ephemeral/.symlinks/plugins/package_info_plus/macos`)
   - path_provider_foundation (from `Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin`)
@@ -35,6 +38,8 @@ SPEC REPOS:
 EXTERNAL SOURCES:
   auto_updater_macos:
     :path: Flutter/ephemeral/.symlinks/plugins/auto_updater_macos/macos
+  flutter_local_notifications:
+    :path: Flutter/ephemeral/.symlinks/plugins/flutter_local_notifications/macos
   FlutterMacOS:
     :path: Flutter/ephemeral
   package_info_plus:
@@ -52,6 +57,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   auto_updater_macos: 3e3462c418fe4e731917eacd8d28eef7af84086d
+  flutter_local_notifications: 7062189aabf7f50938a7b8b6614ffa97656eb0bf
   FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
   package_info_plus: 12f1c5c2cfe8727ca46cbd0b26677728972d9a5b
   path_provider_foundation: 0b743cbb62d8e47eab856f09262bb8c1ddcfe6ba

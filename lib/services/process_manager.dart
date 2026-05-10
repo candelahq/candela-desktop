@@ -173,19 +173,22 @@ class ProcessManager extends ChangeNotifier {
       _handles[name] = process;
       p.pid = process.pid;
 
-      // Capture stdout/stderr.
+      // Capture stdout/stderr with error handlers — prevents unhandled
+      // stream errors from invalid UTF-8 (GPU drivers, crash dumps, vLLM).
       process.stdout
           .transform(utf8.decoder)
           .transform(const LineSplitter())
-          .listen((line) {
-        _addLog(p, line);
-      });
+          .listen(
+            (line) => _addLog(p, line),
+            onError: (Object e) => _addLog(p, '[stdout-err] $e'),
+          );
       process.stderr
           .transform(utf8.decoder)
           .transform(const LineSplitter())
-          .listen((line) {
-        _addLog(p, '[err] $line');
-      });
+          .listen(
+            (line) => _addLog(p, '[err] $line'),
+            onError: (Object e) => _addLog(p, '[stderr-err] $e'),
+          );
 
       // Wait for health check (poll up to 15 seconds).
       // Check p.state each iteration for early exit if stop() was called.
@@ -371,7 +374,9 @@ class ProcessManager extends ChangeNotifier {
   /// Resolve the PID of a process listening on [port].
   /// Uses `lsof` on macOS/Linux only. Returns null on Windows or if not found.
   Future<int?> _findPidForPort(int port) async {
-    if (Platform.isWindows) return null; // lsof not available on Windows
+    // CRITICAL-5: validate port is a safe positive integer before shell use.
+    if (port <= 0 || port > 65535) return null;
+    if (Platform.isWindows) return null;
     try {
       final result = await Process.run('lsof', ['-ti', ':$port']);
       if (result.exitCode == 0) {

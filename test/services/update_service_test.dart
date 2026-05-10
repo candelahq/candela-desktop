@@ -148,5 +148,64 @@ void main() {
       final msg = service.updateInstructions(InstallChannel.nix);
       expect(msg, contains('nix profile upgrade'));
     });
+
+    test('CRITICAL-6: unknown channel returns fallback URL message', () {
+      final service = UpdateService();
+      final msg = service.updateInstructions(InstallChannel.unknown);
+      expect(msg, contains('candelahq.com'));
+    });
+  });
+
+  group('UpdateService — status transitions', () {
+    test('initial status is idle', () {
+      final service = UpdateService();
+      expect(service.status, UpdateStatus.idle);
+    });
+
+    test('status transitions to checking then upToDate', () async {
+      final states = <UpdateStatus>[];
+      final mockClient = http_testing.MockClient((request) async {
+        return http.Response(
+          jsonEncode({'tag_name': 'v0.3.4'}),
+          200,
+        );
+      });
+      final service = UpdateService(client: mockClient);
+      service.addListener(() => states.add(service.status));
+      await service.checkForUpdate('0.3.4');
+      expect(states,
+          containsAllInOrder([UpdateStatus.checking, UpdateStatus.upToDate]));
+    });
+
+    test('status transitions to available on newer version', () async {
+      final states = <UpdateStatus>[];
+      final mockClient = http_testing.MockClient((request) async {
+        return http.Response(
+          jsonEncode({'tag_name': 'v1.0.0'}),
+          200,
+        );
+      });
+      final service = UpdateService(client: mockClient);
+      service.addListener(() => states.add(service.status));
+      await service.checkForUpdate('0.3.4');
+      expect(states,
+          containsAllInOrder([UpdateStatus.checking, UpdateStatus.available]));
+    });
+
+    test('status transitions to error on 404', () async {
+      final states = <UpdateStatus>[];
+      final mockClient = http_testing.MockClient((request) async {
+        return http.Response('not found', 404);
+      });
+      final service = UpdateService(client: mockClient);
+      service.addListener(() => states.add(service.status));
+      await service.checkForUpdate('0.3.4');
+      expect(states,
+          containsAllInOrder([UpdateStatus.checking, UpdateStatus.error]));
+    });
+
+    test('latestVersion is null initially', () {
+      expect(UpdateService().latestVersion, isNull);
+    });
   });
 }

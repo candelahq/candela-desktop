@@ -55,11 +55,8 @@ void main() {
       expect(token.email, 'user@example.com');
     });
 
-    // --- Audit v4: new unit tests ---
-
     test('augmentedEnv preserves HOME variable', () {
       final env = service.augmentedEnv;
-      // HOME should be preserved from the host environment.
       expect(env.containsKey('HOME'), isTrue);
     });
 
@@ -84,14 +81,12 @@ void main() {
 
       final token = service.getTokenInfoForTest(fakeToken);
       expect(token, isNotNull);
-      // Should fall back to non-JWT "assume valid" path.
       expect(token!.isValid, isTrue);
     });
 
     test('decodeJwt future-dated expiry returns valid', () {
       final header =
           base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
-      // Year 2099 timestamp.
       final payload = base64Url
           .encode(utf8.encode('{"exp":4070908800,"email":"future@test.com"}'));
       final fakeToken = '$header.$payload.signature';
@@ -101,6 +96,52 @@ void main() {
       expect(token!.isValid, isTrue);
       expect(token.email, 'future@test.com');
       expect(token.timeRemaining.inDays, greaterThan(365));
+    });
+
+    // ── CRITICAL-3: email validation added after security hardening ─────────
+
+    test('CRITICAL-3: rejects non-string email field (int in JSON)', () {
+      final header =
+          base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
+      final payload =
+          base64Url.encode(utf8.encode('{"exp":4102444800,"email":12345}'));
+      final fakeToken = '$header.$payload.signature';
+      final token = service.getTokenInfoForTest(fakeToken);
+      expect(token!.email, isNull);
+    });
+
+    test('CRITICAL-3: rejects email longer than 254 chars', () {
+      final longEmail = '${'a' * 250}@x.com'; // 256 chars
+      final header =
+          base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
+      final payload = base64Url
+          .encode(utf8.encode('{"exp":4102444800,"email":"$longEmail"}'));
+      final fakeToken = '$header.$payload.signature';
+      final token = service.getTokenInfoForTest(fakeToken);
+      expect(token!.email, isNull);
+    });
+
+    test('CRITICAL-3: accepts email at exactly 254 chars', () {
+      // 249 a's + @x.co = exactly 254
+      final okEmail = '${'a' * 249}@x.co';
+      expect(okEmail.length, 254);
+      final header =
+          base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
+      final payload = base64Url
+          .encode(utf8.encode('{"exp":4102444800,"email":"$okEmail"}'));
+      final fakeToken = '$header.$payload.signature';
+      final token = service.getTokenInfoForTest(fakeToken);
+      expect(token!.email, equals(okEmail));
+    });
+
+    test('CRITICAL-3: rejects boolean email field', () {
+      final header =
+          base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
+      final payload =
+          base64Url.encode(utf8.encode('{"exp":4102444800,"email":false}'));
+      final fakeToken = '$header.$payload.signature';
+      final token = service.getTokenInfoForTest(fakeToken);
+      expect(token!.email, isNull);
     });
   });
 }

@@ -1,4 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart' as http_testing;
 import 'package:candela_desktop/services/provider_test_service.dart';
 import 'package:candela_desktop/models/provider_status.dart';
 
@@ -198,6 +202,190 @@ void main() {
         final svc = ProviderTestService();
         svc.dispose();
         expect(() => svc.dispose(), returnsNormally);
+      });
+    });
+
+    group('testGoogle — HTTP paths', () {
+      test('returns ok status on 200 response', () async {
+        final mockClient = http_testing.MockClient((request) async {
+          return http.Response(
+            jsonEncode({
+              'models': [
+                {
+                  'name': 'models/gemini-2.0-flash',
+                  'displayName': 'Gemini Flash'
+                }
+              ]
+            }),
+            200,
+          );
+        });
+        final svc = ProviderTestService(client: mockClient);
+        final result =
+            await svc.testGoogle(project: 'test-proj', accessToken: 'tok');
+        expect(result.state, ProviderState.connected);
+        expect(result.latency, isNotNull);
+        svc.dispose();
+      });
+
+      test('returns error on 401 unauthorized', () async {
+        final mockClient = http_testing.MockClient((request) async {
+          return http.Response('Unauthorized', 401);
+        });
+        final svc = ProviderTestService(client: mockClient);
+        final result =
+            await svc.testGoogle(project: 'test-proj', accessToken: 'bad-tok');
+        expect(result.state, ProviderState.error);
+        svc.dispose();
+      });
+
+      test('returns error on 403 forbidden', () async {
+        final mockClient = http_testing.MockClient((request) async {
+          return http.Response('Forbidden', 403);
+        });
+        final svc = ProviderTestService(client: mockClient);
+        final result =
+            await svc.testGoogle(project: 'test-proj', accessToken: 'tok');
+        expect(result.state, ProviderState.error);
+        svc.dispose();
+      });
+
+      test('returns error on 500 server error', () async {
+        final mockClient = http_testing.MockClient((request) async {
+          return http.Response('Internal Server Error', 500);
+        });
+        final svc = ProviderTestService(client: mockClient);
+        final result =
+            await svc.testGoogle(project: 'test-proj', accessToken: 'tok');
+        expect(result.state, ProviderState.error);
+        svc.dispose();
+      });
+    });
+
+    group('testOpenAI — null-guard paths', () {
+      test('returns notConfigured when accessToken is null', () async {
+        final svc = ProviderTestService();
+        final result = await svc.testOpenAI();
+        expect(result.name, 'openai');
+        expect(result.state,
+            anyOf(ProviderState.error, ProviderState.notConfigured));
+        svc.dispose();
+      });
+    });
+
+    group('testAnthropic — HTTP paths', () {
+      test('returns connected on 200 models response', () async {
+        final mockClient = http_testing.MockClient((request) async {
+          return http.Response('{}', 200);
+        });
+        final svc = ProviderTestService(client: mockClient);
+        final result =
+            await svc.testAnthropic(project: 'proj', accessToken: 'tok');
+        expect(result.state, ProviderState.connected);
+        svc.dispose();
+      });
+
+      test('returns connected on 400 (model API validation error = reachable)',
+          () async {
+        final mockClient = http_testing.MockClient((request) async {
+          return http.Response('{}', 400);
+        });
+        final svc = ProviderTestService(client: mockClient);
+        final result =
+            await svc.testAnthropic(project: 'proj', accessToken: 'tok');
+        expect(result.state, ProviderState.connected);
+        svc.dispose();
+      });
+
+      test('returns error on 403 not enabled', () async {
+        final mockClient = http_testing.MockClient((request) async {
+          return http.Response('Forbidden', 403);
+        });
+        final svc = ProviderTestService(client: mockClient);
+        final result =
+            await svc.testAnthropic(project: 'proj', accessToken: 'tok');
+        expect(result.state, ProviderState.error);
+        svc.dispose();
+      });
+    });
+
+    group('testProxy — HTTP paths', () {
+      test('returns connected when proxy health + models both 200', () async {
+        final mockClient = http_testing.MockClient((request) async {
+          if (request.url.path == '/v1/models') {
+            return http.Response(
+              jsonEncode({
+                'data': [
+                  {'id': 'gemini-2.0-flash'},
+                  {'id': 'claude-3-5-sonnet'},
+                ]
+              }),
+              200,
+            );
+          }
+          // health check
+          return http.Response('ok', 200);
+        });
+        final svc = ProviderTestService(client: mockClient);
+        final result = await svc.testProxy(port: 8181);
+        expect(result.state, ProviderState.connected);
+        expect(result.models, isNotEmpty);
+        svc.dispose();
+      });
+
+      test('returns error when proxy health check fails', () async {
+        final mockClient = http_testing.MockClient((request) async {
+          return http.Response('Service Unavailable', 503);
+        });
+        final svc = ProviderTestService(client: mockClient);
+        final result = await svc.testProxy(port: 8181);
+        expect(result.state, ProviderState.error);
+        svc.dispose();
+      });
+
+      test('returns connected when models endpoint fails gracefully', () async {
+        int callCount = 0;
+        final mockClient = http_testing.MockClient((request) async {
+          callCount++;
+          if (callCount == 1) return http.Response('ok', 200); // health
+          return http.Response('Internal Error', 500); // models
+        });
+        final svc = ProviderTestService(client: mockClient);
+        final result = await svc.testProxy(port: 8181);
+        // Proxy is reachable even if models listing fails.
+        expect(result.state, ProviderState.connected);
+        svc.dispose();
+      });
+    });
+
+    group('testOllama — HTTP paths', () {
+      test('returns connected when ollama API returns 200 with models',
+          () async {
+        final mockClient = http_testing.MockClient((request) async {
+          return http.Response(
+            jsonEncode({
+              'models': [
+                {'name': 'llama3.2:latest'},
+                {'name': 'mistral:latest'},
+              ]
+            }),
+            200,
+          );
+        });
+        final svc = ProviderTestService(client: mockClient);
+        final result = await svc.testOllama(host: 'http://localhost:11434');
+        expect(result.state, ProviderState.connected);
+        svc.dispose();
+      });
+
+      test('returns error when ollama returns non-200', () async {
+        final mockClient = http_testing.MockClient((request) async {
+          return http.Response('Not Found', 404);
+        });
+        final svc = ProviderTestService(client: mockClient);
+        final result = await svc.testOllama(host: 'http://localhost:11434');
+        expect(result.state, isNot(ProviderState.connected));
+        svc.dispose();
       });
     });
   });

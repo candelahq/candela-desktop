@@ -99,18 +99,16 @@ class GCloudService {
 
   /// Check if a GCP API is enabled for the given project.
   Future<bool> isApiEnabled(String project, String api) async {
+    // CRITICAL-2: use _run() for augmented PATH + consistent timeout,
+    // not a bare Process.run which silently fails when gcloud isn't on PATH.
     try {
-      final result = await Process.run(
-              'gcloud',
-              [
-                'services',
-                'list',
-                '--project=$project',
-                '--filter=config.name:$api',
-                '--format=value(config.name)',
-              ],
-              environment: augmentedEnv)
-          .timeout(const Duration(seconds: 15));
+      final result = await _run([
+        'services',
+        'list',
+        '--project=$project',
+        '--filter=config.name:$api',
+        '--format=value(config.name)',
+      ]);
       return (result.stdout as String).trim().contains(api);
     } catch (_) {
       return false;
@@ -125,7 +123,11 @@ class GCloudService {
         final payload = json.decode(utf8.decode(base64Url.decode(normalized)))
             as Map<String, dynamic>;
         final exp = payload['exp'] as int?;
-        final email = payload['email'] as String?;
+        // CRITICAL-3: validate email before storing — cap length and ensure
+        // it is a plain string (guards against crafted/poisoned token caches).
+        final rawEmail = payload['email'];
+        final email =
+            rawEmail is String && rawEmail.length <= 254 ? rawEmail : null;
 
         if (exp != null) {
           final expiresAt =

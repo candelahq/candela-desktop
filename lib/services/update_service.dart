@@ -181,6 +181,10 @@ class UpdateService extends ChangeNotifier {
       case InstallChannel.nix:
         return 'Run: nix profile upgrade';
       case InstallChannel.unknown:
+        // CRITICAL-6: unknown channel is silent in production — log for
+        // diagnostics (CI artifacts, custom installs, App Store builds).
+        debugPrint(
+            '[UpdateService] Unknown install channel for: ${Platform.resolvedExecutable}');
         return 'Visit candelahq.com/releases for the latest version.';
     }
   }

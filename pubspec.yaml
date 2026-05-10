@@ -41,6 +41,9 @@ dependencies:
   package_info_plus: ^8.0.0
   auto_updater: ^1.0.0
 
+  # Budget threshold notifications (macOS/Linux/Windows banners)
+  flutter_local_notifications: ^18.0.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../models/candela_config.dart';
 import '../../models/span_stats.dart';
+import '../../services/budget_notification_service.dart';
 import '../../services/gcloud_service.dart';
 import '../../services/telemetry_service.dart';
 import '../../theme/colors.dart';
@@ -36,6 +37,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _initialized = false;
   Timer? _autoRefresh;
   TelemetryService? _svc;
+  final BudgetNotificationService _notifSvc = BudgetNotificationService();
+
+  // Team-mode token refresh state.
+  GCloudService? _gcloud;
+  String? _remoteUrl;
+  int? _proxyPort;
+  DateTime? _tokenExpiresAt;
+  static const _tokenRefreshBuffer = Duration(minutes: 5);
 
   @override
   void initState() {
@@ -63,6 +72,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         remoteUrl: config.remote,
         authToken: tokenInfo?.accessToken,
       );
+      // Store refresh state so _refreshTokenIfNeeded() can update the token.
+      _gcloud = gcloud;
+      _remoteUrl = config.remote;
+      _proxyPort = config.port;
+      _tokenExpiresAt = tokenInfo?.expiresAt;
     } else {
       svc = TelemetryService(port: config.port);
     }
@@ -74,10 +88,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
 
     await _fetch();
+    unawaited(_notifSvc.init());
     _autoRefresh = Timer.periodic(const Duration(seconds: 30), (_) => _fetch());
   }
 
+  /// Re-fetches the ADC token and rebuilds the TelemetryService when the
+  /// token is within [_tokenRefreshBuffer] of expiry. No-op in local mode.
+  Future<void> _refreshTokenIfNeeded() async {
+    if (_gcloud == null || _remoteUrl == null) return; // local mode
+    final expiresAt = _tokenExpiresAt;
+    if (expiresAt != null &&
+        expiresAt.difference(DateTime.now().toUtc()) > _tokenRefreshBuffer) {
+      return; // still plenty of time left
+    }
+    // Token is expired or close to expiry — fetch a fresh one.
+    final tokenInfo = await _gcloud!.getTokenInfo();
+    if (!mounted) return;
+    final oldSvc = _svc;
+    _svc = TelemetryService(
+      port: _proxyPort ?? 8181,
+      remoteUrl: _remoteUrl,
+      authToken: tokenInfo?.accessToken,
+    );
+    _tokenExpiresAt = tokenInfo?.expiresAt;
+    oldSvc?.dispose();
+  }
+
   Future<void> _fetch() async {
+    if (!mounted || _svc == null) return;
+    await _refreshTokenIfNeeded();
     if (!mounted || _svc == null) return;
     setState(() => _loading = true);
     final result = await _svc!.fetch(_range);
@@ -87,6 +126,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _loading = false;
       _error = _errorMessage(result);
     });
+    // Fire threshold notifications when budget data is available.
+    if (result?.budget != null) {
+      unawaited(_notifSvc.evaluate(result!.budget!));
+    }
   }
 
   String? _errorMessage(TelemetryResult? result) {
@@ -116,7 +159,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void dispose() {
     _autoRefresh?.cancel();
-    _svc?.dispose(); // Close HTTP connection pool.
+    _svc?.dispose();
+    unawaited(_notifSvc.cancelAll());
     super.dispose();
   }
 

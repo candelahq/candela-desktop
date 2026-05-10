@@ -76,8 +76,9 @@ jobs:
           fi
           COVERAGE=$(lcov --summary coverage/lcov.info 2>&1 | grep 'lines' | sed 's/.*: //' | sed 's/%.*//')
           echo "Line coverage: ${COVERAGE}%"
-          # Fail if coverage drops below 40% (ratchet up over time).
-          if (( $(echo "$COVERAGE < 40" | bc -l) )); then
-            echo "::error::Coverage ${COVERAGE}% is below minimum threshold of 40%"
+          # Ratchet: fail if coverage drops below 45%.
+          # Raise this as coverage improves.
+          if (( $(echo "$COVERAGE < 45" | bc -l) )); then
+            echo "::error::Coverage ${COVERAGE}% is below minimum threshold of 45%"
             exit 1
           fi

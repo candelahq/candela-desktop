@@ -31,6 +31,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _loading = true;
   String? _error;
   bool _isTeamMode = false;
+  // C6: track whether init has already run to prevent re-entrant timer creation.
+  bool _initialized = false;
   Timer? _autoRefresh;
   TelemetryService? _svc;
 
@@ -41,6 +43,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _initService() async {
+    // C6: guard against re-entrant calls if widget is rebuilt before async completes.
+    if (_initialized) return;
+    _initialized = true;
+
     final config = await configService.load();
     final isTeam = config.mode == CandelaMode.team &&
         config.remote != null &&
@@ -78,12 +84,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       _result = result;
       _loading = false;
-      _error = result == null
-          ? _isTeamMode
-              ? 'Could not reach the team backend. Check your network and auth.'
-              : 'Could not reach the Candela proxy. Is it running?'
-          : null;
+      _error = _errorMessage(result);
     });
+  }
+
+  String? _errorMessage(TelemetryResult? result) {
+    if (result == null) {
+      return _isTeamMode
+          ? 'Could not reach the team backend. Check your network and auth.'
+          : 'Could not reach the Candela proxy. Is it running?';
+    }
+    // TelemetryResult.empty() means connected but no calls yet — not an error.
+    if (!result.hasData && result.error == null) return null;
+    if (result.error == TelemetryErrorKind.authExpired) {
+      return 'Session expired \u2014 run: gcloud auth application-default login';
+    }
+    if (result.error == TelemetryErrorKind.unreachable) {
+      return _isTeamMode
+          ? 'Team backend unreachable. Check your network.'
+          : 'Candela proxy unreachable. Is it running?';
+    }
+    return null;
   }
 
   void _setRange(TokenTimeRange r) {
@@ -94,6 +115,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void dispose() {
     _autoRefresh?.cancel();
+    _svc?.dispose(); // Close HTTP connection pool.
     super.dispose();
   }
 

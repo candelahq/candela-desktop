@@ -369,8 +369,9 @@ class ProcessManager extends ChangeNotifier {
   }
 
   /// Resolve the PID of a process listening on [port].
-  /// Uses `lsof` on macOS/Linux. Returns null if not found.
+  /// Uses `lsof` on macOS/Linux only. Returns null on Windows or if not found.
   Future<int?> _findPidForPort(int port) async {
+    if (Platform.isWindows) return null; // lsof not available on Windows
     try {
       final result = await Process.run('lsof', ['-ti', ':$port']);
       if (result.exitCode == 0) {

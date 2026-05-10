@@ -1,6 +1,21 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
+
 import '../models/span_stats.dart';
+
+// ── Error kinds ───────────────────────────────────────────────────────────────
+
+/// Typed errors surfaced from [TelemetryService.fetch].
+enum TelemetryErrorKind {
+  /// Server returned 401 — token is expired or missing.
+  authExpired,
+
+  /// Network / timeout / parse failure.
+  unreachable,
+}
+
+// ── Service ───────────────────────────────────────────────────────────────────
 
 /// Fetches token/cost telemetry for the dashboard.
 ///
@@ -12,9 +27,10 @@ import '../models/span_stats.dart';
 /// **Team mode** (`remoteUrl != null`)
 ///   Calls ConnectRPC `GetUsageSummary` + `GetModelBreakdown` on the
 ///   candela-analysis server. Uses a gcloud ADC Bearer token.
-///   This is the primary path — team mode is the majority of users.
+///
+/// Inject [httpClient] in tests to avoid real network calls.
 class TelemetryService {
-  /// Local proxy port (default 8181). Used in local mode only.
+  /// Local proxy port. Must be 1–65535. Used in local mode only.
   final int port;
 
   /// ConnectRPC base URL, e.g. `https://candela.example.com`.
@@ -24,54 +40,126 @@ class TelemetryService {
   /// ADC Bearer token for team mode requests.
   final String? authToken;
 
-  const TelemetryService({
+  // H5: injectable client enables testing without network.
+  final http.Client _client;
+
+  // Security / resource limits.
+  static const _maxSyntheticSpans = 1000; // C4: cap OOM loop
+  static const _maxBodyBytes = 5 * 1024 * 1024; // C5/H1: 5 MB response cap
+  static const _requestTimeout = Duration(seconds: 10);
+  static const _localTimeout = Duration(seconds: 5);
+
+  TelemetryService({
     this.port = 8181,
     this.remoteUrl,
     this.authToken,
-  });
+    http.Client? httpClient,
+  }) : _client = httpClient ?? http.Client() {
+    // H6: validate port range at construction time.
+    if (port <= 0 || port > 65535) {
+      throw ArgumentError.value(port, 'port', 'Must be 1–65535');
+    }
+  }
 
   bool get isTeamMode => remoteUrl != null;
 
-  // ── Public API ────────────────────────────────────────────────────────────
+  /// Release the underlying HTTP connection pool.
+  /// Call when the service is no longer needed (e.g., in dispose()).
+  void dispose() => _client.close();
 
+  /// Validate that [url] has a safe scheme and non-empty host (C2: SSRF guard).
+  static bool isSafeUrl(String url) {
+    final uri = Uri.tryParse(url);
+    return uri != null &&
+        (uri.scheme == 'https' || uri.scheme == 'http') &&
+        uri.host.isNotEmpty;
+  }
+
+  // ── Public API ──────────────────────────────────────────────────────────────
+
+  /// Fetch telemetry for [range]. Returns `null` when no data is available.
+  ///
+  /// The returned [TelemetryResult] may carry a [TelemetryErrorKind] to let
+  /// the UI show actionable error messages (e.g. "token expired").
   Future<TelemetryResult?> fetch(TokenTimeRange range) async {
-    final spans = isTeamMode ? await _fetchRemote(range) : await _fetchLocal();
+    // C2: reject unsafe remote URLs before making any request.
+    if (remoteUrl != null && !isSafeUrl(remoteUrl!)) {
+      return const TelemetryResult.withError(
+        isTeamMode: true,
+        error: TelemetryErrorKind.unreachable,
+      );
+    }
 
-    if (spans.isEmpty) return null;
+    // H3: single stable `now` reference used throughout this fetch cycle.
+    final now = DateTime.now();
 
-    final cutoff = DateTime.now().subtract(range.duration);
+    final (spans, errorKind) =
+        isTeamMode ? await _fetchRemote(range, now) : await _fetchLocal(range);
+
+    if (spans.isEmpty) {
+      if (errorKind != null) {
+        return TelemetryResult.withError(
+            isTeamMode: isTeamMode, error: errorKind);
+      }
+      // Return zeroed summary rather than null so the UI shows an empty state
+      // ("no calls yet") rather than a misleading "cannot reach backend" error.
+      return TelemetryResult.empty(isTeamMode: isTeamMode);
+    }
+
+    final cutoff = now.subtract(range.duration);
     final filtered = spans.where((s) => s.timestamp.isAfter(cutoff)).toList();
 
+    // Return empty-state result if all spans fall outside the requested window.
+    if (filtered.isEmpty) {
+      return errorKind != null
+          ? TelemetryResult.withError(isTeamMode: isTeamMode, error: errorKind)
+          : TelemetryResult.empty(isTeamMode: isTeamMode);
+    }
+
     return TelemetryResult(
-      summary: _buildSummary(filtered, range),
+      summary: _buildSummary(filtered, range, now),
       models: _buildModelBreakdown(filtered),
       spans: filtered,
       isTeamMode: isTeamMode,
     );
   }
 
-  // ── Local ─────────────────────────────────────────────────────────────────
+  // ── Local ───────────────────────────────────────────────────────────────────
 
-  Future<List<SpanRecord>> _fetchLocal() async {
+  Future<(List<SpanRecord>, TelemetryErrorKind?)> _fetchLocal(
+      TokenTimeRange range) async {
+    // Use a larger limit for longer ranges — 500 is not enough for 7d/30d views.
+    final limit = range == TokenTimeRange.h24 ? 500 : 2000;
     try {
-      final uri =
-          Uri.http('localhost:$port', '/_local/api/traces', {'limit': '500'});
-      final resp = await http.get(uri).timeout(const Duration(seconds: 5));
-      if (resp.statusCode != 200) return [];
+      final uri = Uri.http(
+          'localhost:$port', '/_local/api/traces', {'limit': '$limit'});
+      final resp = await _client.get(uri).timeout(_localTimeout);
+
+      // H1: reject oversized responses before decoding.
+      if (resp.bodyBytes.length > _maxBodyBytes) {
+        return (<SpanRecord>[], TelemetryErrorKind.unreachable);
+      }
+      // Non-200 means the proxy endpoint is missing/wrong version —
+      // treat as unreachable so the UI shows an actionable error.
+      if (resp.statusCode != 200) {
+        return (<SpanRecord>[], TelemetryErrorKind.unreachable);
+      }
+
       final body = jsonDecode(resp.body) as Map<String, dynamic>;
-      return (body['spans'] as List<dynamic>? ?? [])
+      final spans = (body['spans'] as List<dynamic>? ?? [])
           .map((e) => SpanRecord.fromJson(e as Map<String, dynamic>))
           .toList();
+      return (spans, null);
     } catch (_) {
-      return [];
+      return (<SpanRecord>[], TelemetryErrorKind.unreachable);
     }
   }
 
-  // ── Team / ConnectRPC ─────────────────────────────────────────────────────
+  // ── Team / ConnectRPC ───────────────────────────────────────────────────────
 
-  Future<List<SpanRecord>> _fetchRemote(TokenTimeRange range) async {
+  Future<(List<SpanRecord>, TelemetryErrorKind?)> _fetchRemote(
+      TokenTimeRange range, DateTime now) async {
     final base = remoteUrl!.replaceAll(RegExp(r'/$'), '');
-    final now = DateTime.now();
     final start = now.subtract(range.duration);
 
     final headers = {
@@ -86,55 +174,71 @@ class TelemetryService {
     };
 
     try {
-      // Fetch summary + model breakdown in parallel.
       final results = await Future.wait([
-        http
+        _client
             .post(
               Uri.parse('$base/candela.v1.DashboardService/GetUsageSummary'),
               headers: headers,
               body: jsonEncode({'project_id': '', 'time_range': timeRange}),
             )
-            .timeout(const Duration(seconds: 10)),
-        http
+            .timeout(_requestTimeout),
+        _client
             .post(
               Uri.parse('$base/candela.v1.DashboardService/GetModelBreakdown'),
               headers: headers,
               body: jsonEncode({'project_id': '', 'time_range': timeRange}),
             )
-            .timeout(const Duration(seconds: 10)),
+            .timeout(_requestTimeout),
       ]);
 
       final summaryResp = results[0];
       final modelsResp = results[1];
 
-      if (summaryResp.statusCode != 200) return [];
+      // C1/C3: distinguish 401 (auth expired) from other errors.
+      if (summaryResp.statusCode == 401) {
+        return (<SpanRecord>[], TelemetryErrorKind.authExpired);
+      }
+      if (summaryResp.statusCode != 200) {
+        return (<SpanRecord>[], TelemetryErrorKind.unreachable);
+      }
 
-      // Prefer model-level breakdown for accurate per-model numbers.
+      // H1: enforce response body size limit before decoding.
+      if (summaryResp.bodyBytes.length > _maxBodyBytes ||
+          modelsResp.bodyBytes.length > _maxBodyBytes) {
+        return (<SpanRecord>[], TelemetryErrorKind.unreachable);
+      }
+
       if (modelsResp.statusCode == 200) {
         final modelsJson = jsonDecode(modelsResp.body) as Map<String, dynamic>;
-        return _spansFromModelBreakdown(
+        final spans = _spansFromModelBreakdown(
             modelsJson['models'] as List<dynamic>? ?? [], start, now);
+        return (spans, null);
       }
 
       // Fallback: synthesize from summary time series.
       final summaryJson = jsonDecode(summaryResp.body) as Map<String, dynamic>;
-      return _spansFromTimeSeries(
-          summaryJson['cost_over_time'] as List<dynamic>? ?? [],
-          summaryJson['tokens_over_time'] as List<dynamic>? ?? []);
+      final spans = _spansFromTimeSeries(
+        summaryJson['cost_over_time'] as List<dynamic>? ?? [],
+        summaryJson['tokens_over_time'] as List<dynamic>? ?? [],
+      );
+      return (spans, null);
+    } on FormatException {
+      return (<SpanRecord>[], TelemetryErrorKind.unreachable);
     } catch (_) {
-      return [];
+      return (<SpanRecord>[], TelemetryErrorKind.unreachable);
     }
   }
 
-  /// Synthesize one SpanRecord per call from GetModelBreakdown rows.
-  /// Spreads calls evenly across the time window so the time-series
-  /// chart buckets fill in realistically.
+  // ── Synthesis helpers ───────────────────────────────────────────────────────
+
   List<SpanRecord> _spansFromModelBreakdown(
       List<dynamic> models, DateTime start, DateTime end) {
     final spans = <SpanRecord>[];
     for (final m in models) {
       final map = m as Map<String, dynamic>;
-      final callCount = (map['call_count'] as num?)?.toInt() ?? 1;
+      // C4: cap callCount to prevent OOM loop from malicious server response.
+      final callCount = ((map['call_count'] as num?)?.toInt() ?? 1)
+          .clamp(1, _maxSyntheticSpans);
       final inputTok = (map['input_tokens'] as num?)?.toInt() ?? 0;
       final outputTok = (map['output_tokens'] as num?)?.toInt() ?? 0;
       final cost = (map['cost_usd'] as num?)?.toDouble() ?? 0.0;
@@ -162,7 +266,6 @@ class TelemetryService {
     return spans;
   }
 
-  /// Fallback: one synthetic span per cost-series bucket.
   List<SpanRecord> _spansFromTimeSeries(
       List<dynamic> costSeries, List<dynamic> tokenSeries) {
     final tokenMap = {
@@ -191,15 +294,21 @@ class TelemetryService {
     }).toList();
   }
 
+  /// Spread span [i] of [total] evenly across [start]–[end].
+  /// H4: when total==1, place at window midpoint so it lands in a middle bucket.
   DateTime _spread(DateTime start, DateTime end, int i, int total) {
-    if (total <= 1) return start;
     final ms = end.difference(start).inMilliseconds;
+    if (total <= 1) {
+      return start.add(Duration(milliseconds: ms ~/ 2));
+    }
     return start.add(Duration(milliseconds: (ms / total * i).round()));
   }
 
-  // ── Aggregation ───────────────────────────────────────────────────────────
+  // ── Aggregation ─────────────────────────────────────────────────────────────
 
-  UsageSummary _buildSummary(List<SpanRecord> spans, TokenTimeRange range) {
+  /// H3: [now] is passed in from [fetch] to ensure consistent bucket alignment.
+  UsageSummary _buildSummary(
+      List<SpanRecord> spans, TokenTimeRange range, DateTime now) {
     int totalIn = 0, totalOut = 0;
     double totalCost = 0, totalMs = 0;
     for (final s in spans) {
@@ -214,9 +323,10 @@ class TelemetryService {
       totalOutputTokens: totalOut,
       totalCostUsd: totalCost,
       avgLatencyMs: spans.isEmpty ? 0.0 : totalMs / spans.length,
-      costOverTime: _series(spans, range, (s) => s.costUsd),
-      tokensOverTime: _series(spans, range, (s) => s.totalTokens.toDouble()),
-      callsOverTime: _series(spans, range, (_) => 1.0),
+      costOverTime: _series(spans, range, now, (s) => s.costUsd),
+      tokensOverTime:
+          _series(spans, range, now, (s) => s.totalTokens.toDouble()),
+      callsOverTime: _series(spans, range, now, (_) => 1.0),
     );
   }
 
@@ -245,13 +355,14 @@ class TelemetryService {
       ..sort((a, b) => b.costUsd.compareTo(a.costUsd));
   }
 
+  /// H3: [now] is passed in to ensure bucket timestamps are stable.
   List<TimeSeriesPoint> _series(
     List<SpanRecord> spans,
     TokenTimeRange range,
+    DateTime now,
     double Function(SpanRecord) val,
   ) {
     const n = 24;
-    final now = DateTime.now();
     final start = now.subtract(range.duration);
     final bucketMs = range.duration.inMilliseconds ~/ n;
 
@@ -285,27 +396,49 @@ class TelemetryService {
       'Sep',
       'Oct',
       'Nov',
-      'Dec'
+      'Dec',
     ];
     return '${mo[t.month - 1]} ${t.day}';
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Result ────────────────────────────────────────────────────────────────────
 
 class TelemetryResult {
-  final UsageSummary summary;
+  final UsageSummary? summary;
   final List<ModelBreakdown> models;
   final List<SpanRecord> spans;
   final bool isTeamMode;
+  // C1/C3: typed error so UI can show actionable messages.
+  final TelemetryErrorKind? error;
 
   const TelemetryResult({
     required this.summary,
     required this.models,
     required this.spans,
     required this.isTeamMode,
+    this.error,
   });
+
+  /// Convenience constructor for error-only results.
+  const TelemetryResult.withError({
+    required this.isTeamMode,
+    required TelemetryErrorKind this.error,
+  })  : summary = null,
+        models = const [],
+        spans = const [];
+
+  /// Connected successfully but no spans in the selected time range.
+  const TelemetryResult.empty({required this.isTeamMode})
+      : summary = null,
+        models = const [],
+        spans = const [],
+        error = null;
+
+  bool get hasData => summary != null;
 }
+
+// ── Internal accumulator ──────────────────────────────────────────────────────
 
 class _Accum {
   final String model;

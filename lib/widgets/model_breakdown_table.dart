@@ -17,8 +17,24 @@ enum _SortCol { cost, calls, tokens, latency }
 class _ModelBreakdownTableState extends State<ModelBreakdownTable> {
   _SortCol _sortCol = _SortCol.cost;
   bool _ascending = false;
+  // H7: cache sorted list + maxCost together so bar proportions are consistent
+  // across frames (avoids recomputing in build() after partial widget updates).
+  late List<ModelBreakdown> _cachedSorted;
+  late double _cachedMaxCost;
 
-  List<ModelBreakdown> get _sorted {
+  @override
+  void initState() {
+    super.initState();
+    _recompute();
+  }
+
+  @override
+  void didUpdateWidget(ModelBreakdownTable old) {
+    super.didUpdateWidget(old);
+    if (old.models != widget.models) _recompute();
+  }
+
+  void _recompute() {
     final list = List.of(widget.models);
     list.sort((a, b) {
       int cmp;
@@ -34,12 +50,15 @@ class _ModelBreakdownTableState extends State<ModelBreakdownTable> {
       }
       return _ascending ? cmp : -cmp;
     });
-    return list;
+    _cachedSorted = list;
+    _cachedMaxCost = list.isEmpty
+        ? 0.0
+        : list.map((m) => m.costUsd).reduce((a, b) => a > b ? a : b);
   }
 
   @override
   Widget build(BuildContext context) {
-    final sorted = _sorted;
+    final sorted = _cachedSorted;
     if (sorted.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(48),
@@ -69,9 +88,6 @@ class _ModelBreakdownTableState extends State<ModelBreakdownTable> {
         ),
       );
     }
-
-    final maxCost =
-        sorted.map((m) => m.costUsd).reduce((a, b) => a > b ? a : b);
 
     return Container(
       decoration: BoxDecoration(
@@ -136,7 +152,7 @@ class _ModelBreakdownTableState extends State<ModelBreakdownTable> {
           const Divider(height: 1, color: CandelaColors.border),
 
           // Rows
-          ...sorted.map((m) => _ModelRow(m: m, maxCost: maxCost)),
+          ...sorted.map((m) => _ModelRow(m: m, maxCost: _cachedMaxCost)),
         ],
       ),
     );
@@ -150,6 +166,7 @@ class _ModelBreakdownTableState extends State<ModelBreakdownTable> {
         _sortCol = col;
         _ascending = false;
       }
+      _recompute();
     });
   }
 }

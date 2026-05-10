@@ -91,6 +91,7 @@
             gh                   # GitHub CLI (PRs, issues, etc.)
             lefthook
             jq                   # handy for JSON config inspection
+            lcov                 # coverage reporting (includes genhtml)
           ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
             # ── macOS native build tooling ─────────────────────
             cocoapods            # CocoaPods for macOS Runner dependencies

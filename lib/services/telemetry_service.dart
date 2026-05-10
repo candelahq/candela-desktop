@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../models/budget_info.dart';
 import '../models/span_stats.dart';
 
 // ── Error kinds ───────────────────────────────────────────────────────────────
@@ -25,8 +26,8 @@ enum TelemetryErrorKind {
 ///   Reads from `/_local/api/traces` on the candela sidecar (SQLite).
 ///
 /// **Team mode** (`remoteUrl != null`)
-///   Calls ConnectRPC `GetUsageSummary` + `GetModelBreakdown` on the
-///   candela-analysis server. Uses a gcloud ADC Bearer token.
+///   Calls ConnectRPC `GetUsageSummary` + `GetModelBreakdown` + `GetMyUsage`
+///   on the candela-analysis server. Uses a gcloud ADC Bearer token.
 ///
 /// Inject [httpClient] in tests to avoid real network calls.
 class TelemetryService {
@@ -93,8 +94,18 @@ class TelemetryService {
     // H3: single stable `now` reference used throughout this fetch cycle.
     final now = DateTime.now();
 
-    final (spans, errorKind) =
-        isTeamMode ? await _fetchRemote(range, now) : await _fetchLocal(range);
+    List<SpanRecord> spans;
+    TelemetryErrorKind? errorKind;
+    BudgetInfo? budget;
+    List<GrantInfo> grants = [];
+    double? totalRemainingUsd;
+
+    if (isTeamMode) {
+      (spans, errorKind, budget, grants, totalRemainingUsd) =
+          await _fetchRemote(range, now);
+    } else {
+      (spans, errorKind) = await _fetchLocal(range);
+    }
 
     if (spans.isEmpty) {
       if (errorKind != null) {
@@ -103,7 +114,12 @@ class TelemetryService {
       }
       // Return zeroed summary rather than null so the UI shows an empty state
       // ("no calls yet") rather than a misleading "cannot reach backend" error.
-      return TelemetryResult.empty(isTeamMode: isTeamMode);
+      return TelemetryResult.empty(
+        isTeamMode: isTeamMode,
+        budget: budget,
+        activeGrants: grants,
+        totalRemainingUsd: totalRemainingUsd,
+      );
     }
 
     final cutoff = now.subtract(range.duration);
@@ -113,7 +129,12 @@ class TelemetryService {
     if (filtered.isEmpty) {
       return errorKind != null
           ? TelemetryResult.withError(isTeamMode: isTeamMode, error: errorKind)
-          : TelemetryResult.empty(isTeamMode: isTeamMode);
+          : TelemetryResult.empty(
+              isTeamMode: isTeamMode,
+              budget: budget,
+              activeGrants: grants,
+              totalRemainingUsd: totalRemainingUsd,
+            );
     }
 
     return TelemetryResult(
@@ -121,6 +142,9 @@ class TelemetryService {
       models: _buildModelBreakdown(filtered),
       spans: filtered,
       isTeamMode: isTeamMode,
+      budget: budget,
+      activeGrants: grants,
+      totalRemainingUsd: totalRemainingUsd,
     );
   }
 
@@ -157,8 +181,14 @@ class TelemetryService {
 
   // ── Team / ConnectRPC ───────────────────────────────────────────────────────
 
-  Future<(List<SpanRecord>, TelemetryErrorKind?)> _fetchRemote(
-      TokenTimeRange range, DateTime now) async {
+  Future<
+      (
+        List<SpanRecord>,
+        TelemetryErrorKind?,
+        BudgetInfo?,
+        List<GrantInfo>,
+        double?
+      )> _fetchRemote(TokenTimeRange range, DateTime now) async {
     final base = remoteUrl!.replaceAll(RegExp(r'/$'), '');
     final start = now.subtract(range.duration);
 
@@ -189,30 +219,75 @@ class TelemetryService {
               body: jsonEncode({'project_id': '', 'time_range': timeRange}),
             )
             .timeout(_requestTimeout),
+        // GetMyUsage carries budget + active_grants for the waterfall card.
+        // Failure here is non-fatal — spans are still returned.
+        _client
+            .post(
+              Uri.parse('$base/candela.v1.DashboardService/GetMyUsage'),
+              headers: headers,
+              body: jsonEncode({'project_id': '', 'time_range': timeRange}),
+            )
+            .timeout(_requestTimeout),
       ]);
 
       final summaryResp = results[0];
       final modelsResp = results[1];
+      final usageResp = results[2];
 
       // C1/C3: distinguish 401 (auth expired) from other errors.
       if (summaryResp.statusCode == 401) {
-        return (<SpanRecord>[], TelemetryErrorKind.authExpired);
+        return (
+          <SpanRecord>[],
+          TelemetryErrorKind.authExpired as TelemetryErrorKind?,
+          null as BudgetInfo?,
+          <GrantInfo>[],
+          null as double?,
+        );
       }
       if (summaryResp.statusCode != 200) {
-        return (<SpanRecord>[], TelemetryErrorKind.unreachable);
+        return (
+          <SpanRecord>[],
+          TelemetryErrorKind.unreachable as TelemetryErrorKind?,
+          null as BudgetInfo?,
+          <GrantInfo>[],
+          null as double?,
+        );
       }
 
       // H1: enforce response body size limit before decoding.
       if (summaryResp.bodyBytes.length > _maxBodyBytes ||
           modelsResp.bodyBytes.length > _maxBodyBytes) {
-        return (<SpanRecord>[], TelemetryErrorKind.unreachable);
+        return (
+          <SpanRecord>[],
+          TelemetryErrorKind.unreachable as TelemetryErrorKind?,
+          null as BudgetInfo?,
+          <GrantInfo>[],
+          null as double?,
+        );
+      }
+
+      // Parse budget/grant data from GetMyUsage (non-fatal if missing/error).
+      BudgetInfo? budget;
+      List<GrantInfo> grants = [];
+      double? totalRemainingUsd;
+      if (usageResp.statusCode == 200 &&
+          usageResp.bodyBytes.length <= _maxBodyBytes) {
+        try {
+          final usageJson = jsonDecode(usageResp.body) as Map<String, dynamic>;
+          budget = _parseBudget(usageJson['budget']);
+          grants = _parseGrants(usageJson['active_grants']);
+          totalRemainingUsd =
+              (usageJson['total_remaining_usd'] as num?)?.toDouble();
+        } catch (_) {
+          // Budget data is display-only — swallow parse errors.
+        }
       }
 
       if (modelsResp.statusCode == 200) {
         final modelsJson = jsonDecode(modelsResp.body) as Map<String, dynamic>;
         final spans = _spansFromModelBreakdown(
             modelsJson['models'] as List<dynamic>? ?? [], start, now);
-        return (spans, null);
+        return (spans, null, budget, grants, totalRemainingUsd);
       }
 
       // Fallback: synthesize from summary time series.
@@ -221,12 +296,70 @@ class TelemetryService {
         summaryJson['cost_over_time'] as List<dynamic>? ?? [],
         summaryJson['tokens_over_time'] as List<dynamic>? ?? [],
       );
-      return (spans, null);
+      return (spans, null, budget, grants, totalRemainingUsd);
     } on FormatException {
-      return (<SpanRecord>[], TelemetryErrorKind.unreachable);
+      return (
+        <SpanRecord>[],
+        TelemetryErrorKind.unreachable as TelemetryErrorKind?,
+        null as BudgetInfo?,
+        <GrantInfo>[],
+        null as double?,
+      );
     } catch (_) {
-      return (<SpanRecord>[], TelemetryErrorKind.unreachable);
+      return (
+        <SpanRecord>[],
+        TelemetryErrorKind.unreachable as TelemetryErrorKind?,
+        null as BudgetInfo?,
+        <GrantInfo>[],
+        null as double?,
+      );
     }
+  }
+
+  // ── Budget/grant parsers ─────────────────────────────────────────────────────
+
+  static BudgetInfo? _parseBudget(dynamic raw) {
+    if (raw is! Map<String, dynamic>) return null;
+    try {
+      final limitUsd = (raw['limit_usd'] as num?)?.toDouble() ?? 0.0;
+      final spentUsd = (raw['spent_usd'] as num?)?.toDouble() ?? 0.0;
+      final tokensUsed = (raw['tokens_used'] as num?)?.toInt() ?? 0;
+      final periodEndRaw = raw['period_end'] as String?;
+      final periodEnd = periodEndRaw != null
+          ? DateTime.tryParse(periodEndRaw) ?? DateTime.now().toUtc()
+          : DateTime.now().toUtc().add(const Duration(days: 1));
+      return BudgetInfo(
+        limitUsd: limitUsd,
+        spentUsd: spentUsd,
+        tokensUsed: tokensUsed,
+        period: BudgetPeriodKind.daily,
+        periodEnd: periodEnd,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static List<GrantInfo> _parseGrants(dynamic raw) {
+    if (raw is! List) return [];
+    final grants = <GrantInfo>[];
+    for (final item in raw) {
+      if (item is! Map<String, dynamic>) continue;
+      try {
+        final expiresRaw = item['expires_at'] as String?;
+        grants.add(GrantInfo(
+          id: item['id'] as String? ?? '',
+          amountUsd: (item['amount_usd'] as num?)?.toDouble() ?? 0.0,
+          spentUsd: (item['spent_usd'] as num?)?.toDouble() ?? 0.0,
+          reason: item['reason'] as String? ?? '',
+          grantedBy: item['granted_by'] as String? ?? '',
+          expiresAt: expiresRaw != null ? DateTime.tryParse(expiresRaw) : null,
+        ));
+      } catch (_) {
+        continue;
+      }
+    }
+    return grants;
   }
 
   // ── Synthesis helpers ───────────────────────────────────────────────────────
@@ -412,12 +545,25 @@ class TelemetryResult {
   // C1/C3: typed error so UI can show actionable messages.
   final TelemetryErrorKind? error;
 
+  /// Budget for the current period. Null in solo/local mode or when not
+  /// configured on the server.
+  final BudgetInfo? budget;
+
+  /// Active grants (earliest-expiry first, matching server deduction order).
+  final List<GrantInfo> activeGrants;
+
+  /// Server-computed total remaining across budget + all grants.
+  final double? totalRemainingUsd;
+
   const TelemetryResult({
     required this.summary,
     required this.models,
     required this.spans,
     required this.isTeamMode,
     this.error,
+    this.budget,
+    this.activeGrants = const [],
+    this.totalRemainingUsd,
   });
 
   /// Convenience constructor for error-only results.
@@ -426,11 +572,18 @@ class TelemetryResult {
     required TelemetryErrorKind this.error,
   })  : summary = null,
         models = const [],
-        spans = const [];
+        spans = const [],
+        budget = null,
+        activeGrants = const [],
+        totalRemainingUsd = null;
 
   /// Connected successfully but no spans in the selected time range.
-  const TelemetryResult.empty({required this.isTeamMode})
-      : summary = null,
+  const TelemetryResult.empty({
+    required this.isTeamMode,
+    this.budget,
+    this.activeGrants = const [],
+    this.totalRemainingUsd,
+  })  : summary = null,
         models = const [],
         spans = const [],
         error = null;

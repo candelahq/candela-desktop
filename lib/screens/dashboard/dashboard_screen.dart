@@ -6,6 +6,7 @@ import '../../services/gcloud_service.dart';
 import '../../services/telemetry_service.dart';
 import '../../theme/colors.dart';
 import '../../widgets/area_chart.dart';
+import '../../widgets/budget_waterfall_card.dart';
 import '../../widgets/model_breakdown_table.dart';
 import '../../widgets/stat_card.dart';
 import '../../widgets/time_range_selector.dart';
@@ -294,6 +295,14 @@ class _Body extends StatelessWidget {
           if (error != null) ...[
             _ErrorBanner(message: error!),
             const SizedBox(height: 16),
+          ],
+          if (result?.budget != null) ...[
+            BudgetWaterfallCard(
+              budget: result!.budget!,
+              grants: result!.activeGrants,
+              totalRemainingUsd: result!.totalRemainingUsd,
+            ),
+            const SizedBox(height: 20),
           ],
           _StatGrid(summary: result?.summary, loading: loading),
           const SizedBox(height: 20),

@@ -4,16 +4,7 @@
 /// `/_local/api/traces` endpoint (see traces_handler.go).
 library;
 
-import 'dart:math' show min;
-
 // ── Raw span from the server ────────────────────────────────────────────────
-
-/// Maximum length for string fields read from remote JSON.
-/// Prevents arbitrarily long model/provider names from crashing the layout.
-const _kMaxFieldLen = 200;
-
-String _truncate(String s) =>
-    s.length > _kMaxFieldLen ? s.substring(0, _kMaxFieldLen) : s;
 
 class SpanRecord {
   final String spanId;
@@ -45,20 +36,19 @@ class SpanRecord {
   });
 
   factory SpanRecord.fromJson(Map<String, dynamic> j) => SpanRecord(
-        spanId: _truncate(j['span_id'] as String? ?? ''),
-        traceId: _truncate(j['trace_id'] as String? ?? ''),
-        // H2: truncate all string fields to prevent layout overflow
-        model: _truncate(j['model'] as String? ?? 'unknown'),
-        provider: _truncate(j['provider'] as String? ?? 'local'),
+        spanId: j['span_id'] as String? ?? '',
+        traceId: j['trace_id'] as String? ?? '',
+        model: j['model'] as String? ?? 'unknown',
+        provider: j['provider'] as String? ?? 'local',
         inputTokens: (j['input_tokens'] as num?)?.toInt() ?? 0,
         outputTokens: (j['output_tokens'] as num?)?.toInt() ?? 0,
         totalTokens: (j['total_tokens'] as num?)?.toInt() ?? 0,
         costUsd: (j['cost_usd'] as num?)?.toDouble() ?? 0.0,
         durationMs: (j['duration_ms'] as num?)?.toDouble() ?? 0.0,
-        status: _truncate(j['status'] as String? ?? 'unset'),
+        status: j['status'] as String? ?? 'unset',
         timestamp: DateTime.tryParse(j['timestamp'] as String? ?? '') ??
             DateTime.now(),
-        name: _truncate(j['name'] as String? ?? ''),
+        name: j['name'] as String? ?? '',
       );
 }
 
@@ -130,7 +120,3 @@ enum TokenTimeRange {
   final Duration duration;
   const TokenTimeRange(this.label, this.duration);
 }
-
-// Suppress unused import warning — min is used by _truncate indirectly.
-// ignore: unused_element
-int _useMin(int a, int b) => min(a, b);

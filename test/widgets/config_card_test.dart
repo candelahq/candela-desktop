@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:candela_desktop/theme/candela_theme.dart';
 import 'package:candela_desktop/models/candela_config.dart';
 import 'package:candela_desktop/screens/auth_debug/config_card.dart';
+import 'package:candela_desktop/services/config_service.dart';
 
 void main() {
   group('ConfigCard', () {
@@ -16,6 +17,7 @@ void main() {
           body: SingleChildScrollView(
             child: ConfigCard(
               config: config,
+              configService: ConfigService(configPath: '/tmp/test-config.yaml'),
               onSwitchToSolo: onSwitchToSolo,
               onSwitchToTeam: onSwitchToTeam,
               onPortChanged: onPortChanged,
@@ -113,6 +115,97 @@ void main() {
       );
       await tester.pumpWidget(buildApp(config));
       expect(find.text('5/2 14:30'), findsOneWidget);
+    });
+
+    testWidgets('tapping mode badge opens Switch Mode dialog',
+        (WidgetTester tester) async {
+      const config = CandelaConfig(path: '/test', mode: CandelaMode.solo);
+      await tester.pumpWidget(buildApp(config));
+      // The mode badge (InkWell containing mode label) is tappable.
+      await tester.tap(find.text('Solo Mode'));
+      await tester.pumpAndSettle();
+      // Dialog should appear with Switch Mode title.
+      expect(find.text('Switch Mode'), findsOneWidget);
+      expect(find.text('Solo / Dev Mode'), findsOneWidget);
+      expect(find.text('Team Mode'), findsOneWidget);
+    });
+
+    testWidgets('Switch Mode dialog shows Cancel button',
+        (WidgetTester tester) async {
+      const config = CandelaConfig(path: '/test', mode: CandelaMode.solo);
+      await tester.pumpWidget(buildApp(config));
+      await tester.tap(find.text('Solo Mode'));
+      await tester.pumpAndSettle();
+      expect(find.text('Cancel'), findsOneWidget);
+    });
+
+    testWidgets('Switch Mode dialog can be dismissed via Cancel',
+        (WidgetTester tester) async {
+      const config = CandelaConfig(path: '/test', mode: CandelaMode.solo);
+      await tester.pumpWidget(buildApp(config));
+      await tester.tap(find.text('Solo Mode'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      // Dialog dismissed — Solo Mode badge is back.
+      expect(find.text('Switch Mode'), findsNothing);
+      expect(find.text('Solo Mode'), findsOneWidget);
+    });
+
+    testWidgets('shows info issues', (WidgetTester tester) async {
+      const config = CandelaConfig(
+        path: '/test',
+        issues: [
+          ConfigIssue(severity: IssueSeverity.info, message: 'Info message'),
+        ],
+      );
+      await tester.pumpWidget(buildApp(config));
+      expect(find.text('Info message'), findsOneWidget);
+    });
+
+    testWidgets('shows edit icon for port chip when onPortChanged is set',
+        (WidgetTester tester) async {
+      const config =
+          CandelaConfig(path: '/test', port: 8181, lmStudioPort: 1234);
+      await tester.pumpWidget(buildApp(config, onPortChanged: (_, __) {}));
+      expect(find.byIcon(Icons.edit), findsWidgets);
+    });
+
+    testWidgets('tapping port chip opens port editor dialog',
+        (WidgetTester tester) async {
+      const config = CandelaConfig(path: '/test', port: 8181);
+      await tester.pumpWidget(buildApp(config, onPortChanged: (_, __) {}));
+      await tester.tap(find.text('API :8181'));
+      await tester.pumpAndSettle();
+      expect(find.text('Edit API Port'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+    });
+
+    testWidgets('port editor dialog can be dismissed',
+        (WidgetTester tester) async {
+      const config = CandelaConfig(path: '/test', port: 8181);
+      await tester.pumpWidget(buildApp(config, onPortChanged: (_, __) {}));
+      await tester.tap(find.text('API :8181'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(find.text('Edit API Port'), findsNothing);
+    });
+
+    testWidgets('Team Mode dialog shows current remote URL',
+        (WidgetTester tester) async {
+      const config = CandelaConfig(
+        path: '/test',
+        mode: CandelaMode.team,
+        remote: 'https://team.example.com',
+      );
+      await tester.pumpWidget(buildApp(config));
+      await tester.tap(find.text('Team Mode'));
+      await tester.pumpAndSettle();
+      // Dialog shows both options
+      expect(find.text('Switch Mode'), findsOneWidget);
+      expect(find.textContaining('Current: https://team.example.com'),
+          findsOneWidget);
     });
   });
 }

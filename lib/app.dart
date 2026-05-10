@@ -5,6 +5,7 @@ import 'theme/colors.dart';
 import 'services/update_service.dart';
 import 'widgets/sidebar.dart';
 import 'screens/auth_debug/auth_debug_screen.dart';
+import 'screens/dashboard/dashboard_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'main.dart' show trayService, configService;
 
@@ -87,11 +88,11 @@ class _AppShellState extends State<AppShell> with WindowListener {
   bool _hasShownTrayTooltip = false;
   final _updateService = UpdateService();
 
-  static const _pages = <Widget>[
-    AuthDebugScreen(),
-    _ComingSoon(title: 'Dashboard'),
-    _ComingSoon(title: 'Traces'),
-    _ComingSoon(title: 'Models'),
+  static final _pages = <Widget>[
+    const AuthDebugScreen(),
+    const DashboardScreen(),
+    const _ComingSoon(title: 'Traces'),
+    const _ComingSoon(title: 'Models'),
   ];
 
   @override

@@ -243,16 +243,21 @@ class ConfigService {
       return _migrateLegacyFieldsInPlace();
     }
 
-    // Step 1: Migrate file location.
+    // Step 1: Migrate file location using atomic rename to prevent data
+    // loss if two Candela instances launch simultaneously.
     final legacy = File(legacyConfigPath());
     final modern = File(defaultConfigPath());
     if (await legacy.exists() && !await modern.exists()) {
       // Ensure target directory exists.
       await modern.parent.create(recursive: true);
-      // Copy to new location — check again after directory creation
-      // to avoid a race if another process migrated concurrently.
-      if (!await modern.exists()) {
-        await legacy.copy(modern.path);
+      // Atomic migration: copy to temp, then rename (POSIX atomic).
+      final tempFile = File('${modern.path}.migrating');
+      try {
+        await legacy.copy(tempFile.path);
+        await tempFile.rename(modern.path);
+      } on FileSystemException {
+        // Another process already migrated — clean up temp if it exists.
+        if (await tempFile.exists()) await tempFile.delete();
       }
       // Leave a breadcrumb in the old file.
       await legacy.writeAsString(
@@ -279,6 +284,42 @@ class ConfigService {
       );
     }
     await _writeYaml(file, config);
+  }
+
+  /// Write raw YAML content to the config file, routed through the write
+  /// mutex to prevent data loss from concurrent modifications.
+  ///
+  /// Validates YAML syntax before writing. Throws [FormatException] on
+  /// invalid YAML.
+  Future<void> writeRawConfig(String yamlContent) async {
+    // Validate YAML before acquiring the lock.
+    if (yamlContent.trim().isNotEmpty) {
+      try {
+        loadYaml(yamlContent);
+      } on YamlException catch (e) {
+        throw FormatException('Invalid YAML: ${e.message}');
+      }
+    }
+    final resolvedPath = _resolveConfigPath();
+    final file = File(resolvedPath);
+
+    // Chain through the write mutex.
+    final previous = _writeLock;
+    final completer = Completer<void>();
+    _writeLock = completer.future;
+    try {
+      if (previous != null) await previous;
+      await file.parent.create(recursive: true);
+      await file.writeAsString(yamlContent);
+      if (!Platform.isWindows) {
+        try {
+          await Process.run('chmod', ['600', file.path]);
+        } catch (_) {}
+      }
+    } finally {
+      completer.complete();
+      if (_writeLock == completer.future) _writeLock = null;
+    }
   }
 
   Future<void> _migrateLegacyFieldsInPlace() async {

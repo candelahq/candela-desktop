@@ -146,5 +146,86 @@ void main() {
       await tester.pumpWidget(buildApp(status));
       expect(find.text('export OPENAI_API_KEY=...'), findsOneWidget);
     });
+
+    testWidgets('shows Fix → button when fixUrl is set',
+        (WidgetTester tester) async {
+      const status = ProviderStatus(
+        name: 'anthropic',
+        displayName: 'Anthropic',
+        state: ProviderState.error,
+        statusMessage: '403',
+        fixUrl: 'https://console.cloud.google.com/vertex-ai/model-garden',
+        icon: 'A',
+      );
+      await tester.pumpWidget(buildApp(status));
+      expect(find.text('Fix →'), findsOneWidget);
+    });
+
+    testWidgets('tapping card with models opens detail dialog',
+        (WidgetTester tester) async {
+      const status = ProviderStatus(
+        name: 'google',
+        displayName: 'Google / Vertex AI',
+        state: ProviderState.connected,
+        statusMessage: 'Connected',
+        models: ['gemini-2.0-flash', 'gemini-1.5-pro'],
+        icon: 'G',
+      );
+      await tester.pumpWidget(buildApp(status));
+      await tester.tap(find.byType(InkWell).first);
+      await tester.pumpAndSettle();
+      // Detail dialog should show with model list.
+      expect(find.text('Available Models'), findsOneWidget);
+      expect(find.text('gemini-2.0-flash'), findsOneWidget);
+    });
+
+    testWidgets('detail dialog shows latency when set', (tester) async {
+      final status = const ProviderStatus(
+        name: 'google',
+        displayName: 'Google',
+        state: ProviderState.connected,
+        models: ['gemini-2.0-flash'],
+        latency: Duration(milliseconds: 250),
+        icon: 'G',
+      );
+      await tester.pumpWidget(buildApp(status));
+      await tester.tap(find.byType(InkWell).first);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('250ms'), findsOneWidget);
+    });
+
+    testWidgets('detail dialog Close button dismisses it', (tester) async {
+      const status = ProviderStatus(
+        name: 'google',
+        displayName: 'Google',
+        state: ProviderState.connected,
+        models: ['gemini-2.0-flash'],
+        icon: 'G',
+      );
+      await tester.pumpWidget(buildApp(status));
+      await tester.tap(find.byType(InkWell).first);
+      await tester.pumpAndSettle();
+      expect(find.text('Available Models'), findsOneWidget);
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+      expect(find.text('Available Models'), findsNothing);
+    });
+
+    testWidgets('detail dialog shows project and region rows', (tester) async {
+      const status = ProviderStatus(
+        name: 'anthropic',
+        displayName: 'Anthropic',
+        state: ProviderState.connected,
+        models: ['claude-sonnet-4'],
+        project: 'my-proj',
+        region: 'us-east1',
+        icon: 'A',
+      );
+      await tester.pumpWidget(buildApp(status));
+      await tester.tap(find.byType(InkWell).first);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('my-proj'), findsAtLeast(1));
+      expect(find.textContaining('us-east1'), findsAtLeast(1));
+    });
   });
 }

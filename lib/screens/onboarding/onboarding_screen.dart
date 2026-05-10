@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/colors.dart';
 import '../../services/config_service.dart';
+import '../../services/url_validator.dart';
 
 /// First-run onboarding wizard.
 ///
@@ -221,7 +222,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   bool _canProceedFromDetails() {
     if (_selectedMode == 'team') {
-      return _remoteController.text.trim().isNotEmpty;
+      final url = _remoteController.text.trim();
+      return url.isNotEmpty && UrlValidator.validate(url) == null;
     }
     return _projectController.text.trim().isNotEmpty;
   }
@@ -308,8 +310,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _skipToDefaults() async {
     setState(() => _saving = true);
     try {
-      // Write a minimal default config.
-      await widget.configService.setPort('port', 8181);
+      // Write a minimal default config via writeInitialConfig (not setPort)
+      // so the file is created atomically and future onboarding attempts
+      // don't fail with "config already exists".
+      await widget.configService.writeInitialConfig({'port': 8181});
       widget.onComplete();
     } catch (e) {
       if (mounted) {

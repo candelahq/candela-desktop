@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:candela_desktop/services/provider_test_service.dart';
+import 'package:candela_desktop/models/provider_status.dart';
 
 void main() {
   group('ProviderTestService', () {
@@ -126,6 +127,77 @@ void main() {
         final regex = RegExp(r'@latest$');
         expect('model@latest'.replaceAll(regex, ''), 'model');
         expect('model@v2'.replaceAll(regex, ''), 'model@v2');
+      });
+    });
+    group('testGoogle — null-guard paths', () {
+      test('returns error status when project is null', () async {
+        final svc = ProviderTestService();
+        final result = await svc.testGoogle();
+        expect(result.name, 'google');
+        expect(result.state, ProviderState.error);
+        expect(result.statusMessage, contains('project'));
+        svc.dispose();
+      });
+
+      test('returns error status when accessToken is null', () async {
+        final svc = ProviderTestService();
+        final result = await svc.testGoogle(project: 'my-proj');
+        expect(result.name, 'google');
+        expect(result.state, ProviderState.error);
+        expect(result.project, 'my-proj');
+        svc.dispose();
+      });
+    });
+
+    group('testAnthropic — null-guard paths', () {
+      test('returns error when project is null', () async {
+        final svc = ProviderTestService();
+        final result = await svc.testAnthropic(accessToken: 'tok');
+        expect(result.name, 'anthropic');
+        expect(result.state, ProviderState.error);
+        expect(result.statusMessage, contains('project'));
+        svc.dispose();
+      });
+
+      test('returns error when accessToken is null', () async {
+        final svc = ProviderTestService();
+        final result = await svc.testAnthropic(project: 'my-proj');
+        expect(result.name, 'anthropic');
+        expect(result.state, ProviderState.error);
+        expect(result.project, 'my-proj');
+        svc.dispose();
+      });
+
+      test('returns error when both project and token are null', () async {
+        final svc = ProviderTestService();
+        final result = await svc.testAnthropic();
+        expect(result.name, 'anthropic');
+        expect(result.state, ProviderState.error);
+        svc.dispose();
+      });
+    });
+
+    group('modelCategory — edge cases', () {
+      test('o2 is not classified as openai (no o2 model exists)', () {
+        // o1/o3 are valid, o2 is not — should fall through to other
+        expect(ProviderTestService.modelCategory('o2'), 'other');
+      });
+
+      test('empty string is classified as other', () {
+        expect(ProviderTestService.modelCategory(''), 'other');
+      });
+    });
+
+    group('dispose', () {
+      test('can be called without crash', () {
+        final svc = ProviderTestService();
+        expect(() => svc.dispose(), returnsNormally);
+      });
+
+      test('double dispose does not throw', () {
+        final svc = ProviderTestService();
+        svc.dispose();
+        expect(() => svc.dispose(), returnsNormally);
       });
     });
   });

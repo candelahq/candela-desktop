@@ -36,6 +36,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
   // ignore: unused_field — stored for switch-back-to-team feature
   String? _lastRemoteUrl;
   bool _loading = true;
+  bool _disposed = false;
   int _loadGeneration = 0; // cancellation guard
 
   @override
@@ -52,7 +53,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
 
   Future<void> _loadAll() async {
     final gen = ++_loadGeneration;
-    setState(() => _loading = true);
+    if (!_disposed) setState(() => _loading = true);
 
     // Parallelize independent gcloud subprocess calls (~800ms savings).
     final installed = await _gcloud.isInstalled();
@@ -287,6 +288,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
 
   @override
   void dispose() {
+    _disposed = true;
     _diagnostics.dispose();
     _providerTest.dispose();
     super.dispose();
@@ -335,6 +337,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
                       if (_config != null)
                         ConfigCard(
                           config: _config!,
+                          configService: _configService,
                           onSwitchToSolo: () async {
                             // Preserve remote URL for easy switch-back.
                             _lastRemoteUrl = _config?.remote;

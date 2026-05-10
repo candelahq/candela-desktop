@@ -1,11 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:yaml/yaml.dart';
 import '../../theme/colors.dart';
 import '../../models/candela_config.dart';
+import '../../services/config_service.dart';
+import '../../services/url_validator.dart';
 
 class ConfigCard extends StatelessWidget {
   final CandelaConfig config;
+  final ConfigService configService;
   final VoidCallback? onSwitchToSolo;
   final ValueChanged<String>? onSwitchToTeam;
   final void Function(String field, int port)? onPortChanged;
@@ -13,6 +15,7 @@ class ConfigCard extends StatelessWidget {
   const ConfigCard(
       {super.key,
       required this.config,
+      required this.configService,
       this.onSwitchToSolo,
       this.onSwitchToTeam,
       this.onPortChanged,
@@ -268,12 +271,22 @@ class ConfigCard extends StatelessWidget {
               onPressed: () => Navigator.of(ctx).pop(),
               child: const Text('Cancel')),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               final url = controller.text.trim();
-              Navigator.of(ctx).pop();
-              if (url.isNotEmpty && url != 'https://') {
-                onSwitchToTeam?.call(url);
+              if (url.isEmpty || url == 'https://') return;
+              // Use DNS-resolved validation to catch hostnames that
+              // resolve to private/loopback addresses.
+              final error = await UrlValidator.validateWithDnsCheck(url);
+              if (error != null) {
+                if (ctx.mounted) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    SnackBar(content: Text(error)),
+                  );
+                }
+                return;
               }
+              if (ctx.mounted) Navigator.of(ctx).pop();
+              onSwitchToTeam?.call(url);
             },
             child: const Text('Save'),
           ),
@@ -623,16 +636,13 @@ class ConfigCard extends StatelessWidget {
                 onPressed: () async {
                   final text = controller.text;
                   try {
-                    // Validate YAML before writing.
-                    if (text.trim().isNotEmpty) {
-                      loadYaml(text); // throws YamlException on bad syntax
-                    }
-                    await file.writeAsString(text);
+                    // Route through ConfigService write mutex to prevent
+                    // data loss from concurrent modifications.
+                    await configService.writeRawConfig(text);
                     if (ctx.mounted) Navigator.of(ctx).pop();
                     onConfigReloaded?.call();
-                  } on YamlException catch (e) {
-                    setDialogState(
-                        () => errorText = 'Invalid YAML: ${e.message}');
+                  } on FormatException catch (e) {
+                    setDialogState(() => errorText = e.message);
                   } catch (e) {
                     setDialogState(() => errorText = 'Write failed: $e');
                   }

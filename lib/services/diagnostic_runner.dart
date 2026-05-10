@@ -42,22 +42,27 @@ class DiagnosticRunner {
       return _runCompleter!.future;
     }
     _running = true;
-    _runCompleter = Completer<DiagnosticSummary>();
+    final completer = Completer<DiagnosticSummary>();
+    _runCompleter = completer;
     try {
       final result = await _runAllImpl();
-      _runCompleter!.complete(result);
+      completer.complete(result);
       return result;
     } catch (e, st) {
-      _runCompleter!.completeError(e, st);
+      completer.completeError(e, st);
       rethrow;
     } finally {
       _running = false;
-      _runCompleter = null;
+      // Only clear if we're still the active completer — a new run may have
+      // already replaced it.
+      if (_runCompleter == completer) _runCompleter = null;
     }
   }
 
   Future<DiagnosticSummary> _runAllImpl() async {
-    history.clear();
+    // Replace history list contents instead of clearing, to avoid
+    // ConcurrentModificationError in DiagnosticLog's ListView.
+    history.replaceRange(0, history.length, []);
     int passed = 0, failed = 0, warned = 0;
 
     // 1. gcloud CLI

@@ -141,10 +141,12 @@ class GCloudService {
         // Token is not a JWT (e.g., opaque token). Still valid.
       }
     }
-    // Non-JWT token — assume valid since gcloud returned it.
+    // Non-JWT token (opaque) — assume valid since gcloud returned it, but
+    // use a conservative 15-minute TTL. We can't know the real expiry, so
+    // a short TTL forces re-acquisition before it's likely to have expired.
     return TokenInfo(
       accessToken: token,
-      expiresAt: DateTime.now().add(const Duration(hours: 1)),
+      expiresAt: DateTime.now().add(const Duration(minutes: 15)),
       isValid: true,
     );
   }

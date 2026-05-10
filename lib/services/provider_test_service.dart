@@ -6,6 +6,7 @@ import '../models/provider_status.dart';
 /// Tests connectivity to each LLM provider.
 class ProviderTestService {
   final _client = http.Client();
+  bool _disposed = false;
   static const _timeout = Duration(seconds: 10);
 
   // Pre-compiled regex patterns for sanitizeError.
@@ -24,8 +25,9 @@ class ProviderTestService {
   static String sanitizeError(String error) {
     // Redact Bearer tokens.
     error = error.replaceAll(_bearerRe, 'Bearer [REDACTED]');
-    // Redact API keys in headers.
-    error = error.replaceAll(_apiKeyRe, r'$1: [REDACTED]');
+    // Redact API keys in headers — use replaceAllMapped so the captured
+    // header name ($1) is preserved while the value is redacted.
+    error = error.replaceAllMapped(_apiKeyRe, (m) => '${m[1]}: [REDACTED]');
     return error;
   }
 
@@ -52,11 +54,12 @@ class ProviderTestService {
     }
     try {
       final sw = Stopwatch()..start();
-      final resp = await _client.get(
+      final resp = await _guardedGet(
         Uri.parse('https://generativelanguage.googleapis.com/v1beta/models'),
         headers: {'Authorization': 'Bearer $accessToken'},
-      ).timeout(_timeout);
+      );
       sw.stop();
+      if (resp == null) return _disposedStatus('google', 'Google / Vertex AI');
       if (resp.statusCode == 200) {
         final body = json.decode(resp.body) as Map<String, dynamic>;
         final models = (body['models'] as List?)
@@ -116,9 +119,12 @@ class ProviderTestService {
       final sw = Stopwatch()..start();
       final endpoint =
           'https://$region-aiplatform.googleapis.com/v1/projects/$project/locations/$region/publishers/anthropic/models/claude-sonnet-4-20250514';
-      final resp = await _client.get(Uri.parse(endpoint),
-          headers: {'Authorization': 'Bearer $accessToken'}).timeout(_timeout);
+      final resp = await _guardedGet(Uri.parse(endpoint),
+          headers: {'Authorization': 'Bearer $accessToken'});
       sw.stop();
+      if (resp == null) {
+        return _disposedStatus('anthropic', 'Anthropic (Vertex)');
+      }
       if (resp.statusCode == 200 || resp.statusCode == 400) {
         return ProviderStatus(
             name: 'anthropic',
@@ -176,10 +182,11 @@ class ProviderTestService {
     }
     try {
       final sw = Stopwatch()..start();
-      final resp = await _client.get(
+      final resp = await _guardedGet(
           Uri.parse('https://api.openai.com/v1/models'),
-          headers: {'Authorization': 'Bearer $apiKey'}).timeout(_timeout);
+          headers: {'Authorization': 'Bearer $apiKey'});
       sw.stop();
+      if (resp == null) return _disposedStatus('openai', 'OpenAI');
       if (resp.statusCode == 200) {
         final body = json.decode(resp.body) as Map<String, dynamic>;
         final models = (body['data'] as List?)
@@ -371,8 +378,8 @@ class ProviderTestService {
       }
 
       // Proxy is running — try listing models through it.
-      final modelsResp =
-          await _client.get(Uri.parse('$proxyUrl/v1/models')).timeout(_timeout);
+      final modelsResp = await _guardedGet(Uri.parse('$proxyUrl/v1/models'));
+      if (modelsResp == null) return _disposedStatus('proxy', 'Candela Proxy');
 
       List<String> models = [];
       if (modelsResp.statusCode == 200) {
@@ -514,5 +521,31 @@ class ProviderTestService {
     return name;
   }
 
-  void dispose() => _client.close();
+  /// Perform a guarded GET request that silently returns null if the
+  /// service has been disposed mid-flight.
+  Future<http.Response?> _guardedGet(Uri url,
+      {Map<String, String>? headers}) async {
+    if (_disposed) return null;
+    try {
+      return await _client.get(url, headers: headers).timeout(_timeout);
+    } on http.ClientException {
+      if (_disposed) return null;
+      rethrow;
+    }
+  }
+
+  /// Return a safe error status when the service was disposed mid-request.
+  static ProviderStatus _disposedStatus(String name, String displayName) {
+    return ProviderStatus(
+      name: name,
+      displayName: displayName,
+      state: ProviderState.error,
+      statusMessage: 'Cancelled',
+    );
+  }
+
+  void dispose() {
+    _disposed = true;
+    _client.close();
+  }
 }

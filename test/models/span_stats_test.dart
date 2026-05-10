@@ -51,28 +51,28 @@ void main() {
       expect(s.name, '');
     });
 
-    test('truncates model string longer than 200 chars (H2)', () {
+    test('preserves model string longer than 200 chars', () {
       final longModel = 'a' * 300;
       final s = SpanRecord.fromJson({'model': longModel});
-      expect(s.model.length, 200);
+      expect(s.model.length, 300);
     });
 
-    test('truncates provider string longer than 200 chars (H2)', () {
+    test('preserves provider string longer than 200 chars', () {
       final longProvider = 'b' * 250;
       final s = SpanRecord.fromJson({'provider': longProvider});
-      expect(s.provider.length, 200);
+      expect(s.provider.length, 250);
     });
 
-    test('truncates name string longer than 200 chars (H2)', () {
+    test('preserves name string longer than 200 chars', () {
       final longName = 'c' * 201;
       final s = SpanRecord.fromJson({'name': longName});
-      expect(s.name.length, 200);
+      expect(s.name.length, 201);
     });
 
-    test('leaves strings at exactly 200 chars untouched', () {
-      final exactly200 = 'd' * 200;
-      final s = SpanRecord.fromJson({'model': exactly200});
-      expect(s.model.length, 200);
+    test('preserves strings of any length untouched', () {
+      final long = 'd' * 500;
+      final s = SpanRecord.fromJson({'model': long});
+      expect(s.model.length, 500);
     });
 
     test('handles num values for token/cost fields', () {

@@ -37,7 +37,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _initialized = false;
   Timer? _autoRefresh;
   TelemetryService? _svc;
-  final BudgetNotificationService _notifSvc = BudgetNotificationService();
+  // Static so the notification service (and its de-duplication state) survives
+  // widget tree rebuilds and navigation away from/back to the dashboard.
+  static final BudgetNotificationService _notifSvc =
+      BudgetNotificationService();
 
   // Team-mode token refresh state.
   GCloudService? _gcloud;
@@ -87,8 +90,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _isTeamMode = isTeam;
     });
 
+    // Init notifications before first fetch so no threshold crossing is missed.
+    await _notifSvc.init();
     await _fetch();
-    unawaited(_notifSvc.init());
     _autoRefresh = Timer.periodic(const Duration(seconds: 30), (_) => _fetch());
   }
 
@@ -160,7 +164,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void dispose() {
     _autoRefresh?.cancel();
     _svc?.dispose();
-    unawaited(_notifSvc.cancelAll());
+    // Do NOT cancel notifications on dispose: the user may navigate away and
+    // back — clearing alerts here would wipe banners they haven't dismissed.
     super.dispose();
   }
 

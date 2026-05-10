@@ -1,10 +1,116 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart' as http_testing;
+
+import 'package:candela_desktop/models/candela_config.dart';
 import 'package:candela_desktop/models/diagnostic_entry.dart';
-import 'package:candela_desktop/services/diagnostic_runner.dart';
-import 'package:candela_desktop/services/config_service.dart';
-import 'package:candela_desktop/services/gcloud_service.dart';
+import 'package:candela_desktop/models/identity_state.dart';
 import 'package:candela_desktop/services/adc_service.dart';
+import 'package:candela_desktop/services/config_service.dart';
+import 'package:candela_desktop/services/diagnostic_runner.dart';
+import 'package:candela_desktop/services/gcloud_service.dart';
 import 'package:candela_desktop/services/provider_test_service.dart';
+
+// ── Fake helpers ──────────────────────────────────────────────────────────────
+
+/// Subclass ConfigService, override [load] to return a synthetic config.
+class FakeConfigService extends ConfigService {
+  final CandelaConfig _config;
+  FakeConfigService(this._config);
+
+  @override
+  Future<CandelaConfig> load() async => _config;
+}
+
+/// Subclass GCloudService to override the methods that hit the real CLI.
+class FakeGCloudService extends GCloudService {
+  final bool installed;
+  final TokenInfo? token;
+  final String? project;
+
+  FakeGCloudService({
+    this.installed = true,
+    this.token,
+    this.project,
+  });
+
+  @override
+  Future<bool> isInstalled() async => installed;
+
+  @override
+  Future<TokenInfo?> getTokenInfo() async => token;
+
+  @override
+  Future<String?> getProject() async => project;
+}
+
+/// Subclass AdcService to return a synthetic ADC file result.
+class FakeAdcService extends AdcService {
+  final AdcInfo? adc;
+  FakeAdcService(this.adc);
+
+  @override
+  Future<AdcInfo?> readAdcFile() async => adc;
+}
+
+// ── Builders ──────────────────────────────────────────────────────────────────
+
+CandelaConfig _soloConfig({List<ConfigIssue> issues = const []}) {
+  return CandelaConfig(
+    mode: CandelaMode.solo,
+    port: 8181,
+    providers: const [],
+    path: '/tmp/fake.yaml',
+    issues: issues,
+  );
+}
+
+AdcInfo _fakeAdc() => const AdcInfo(
+      path: '/tmp/adc.json',
+      type: 'authorized_user',
+      clientEmail: null,
+      quotaProject: null,
+    );
+
+TokenInfo _validToken() => TokenInfo(
+      accessToken: 'fake-token-abc',
+      email: 'user@example.com',
+      expiresAt: DateTime.now().toUtc().add(const Duration(hours: 1)),
+      isValid: true,
+    );
+
+TokenInfo _expiredToken() => TokenInfo(
+      accessToken: 'old-token',
+      email: 'user@example.com',
+      expiresAt: DateTime.now().toUtc().subtract(const Duration(hours: 1)),
+      isValid: false,
+    );
+
+// Helper: build a runner with all parts controllable.
+DiagnosticRunner _runner({
+  CandelaConfig? config,
+  bool gcloudInstalled = true,
+  TokenInfo? token,
+  String? project,
+  AdcInfo? adc,
+  http.Client? httpClient,
+}) {
+  final proxyAndMockClient = httpClient ??
+      http_testing.MockClient((_) async => http.Response('ok', 200));
+
+  return DiagnosticRunner(
+    config: FakeConfigService(config ?? _soloConfig()),
+    gcloud: FakeGCloudService(
+      installed: gcloudInstalled,
+      token: token,
+      project: project,
+    ),
+    adc: FakeAdcService(adc),
+    providers: ProviderTestService(client: proxyAndMockClient),
+  );
+}
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
 
 void main() {
   group('DiagnosticRunner', () {
@@ -32,7 +138,6 @@ void main() {
     });
 
     test('entries stream is broadcast', () {
-      // Should be able to listen multiple times.
       final sub1 = runner.entries.listen((_) {});
       final sub2 = runner.entries.listen((_) {});
       sub1.cancel();
@@ -41,7 +146,7 @@ void main() {
 
     test('dispose can be called multiple times', () {
       runner.dispose();
-      runner.dispose(); // should not throw
+      runner.dispose();
     });
   });
 
@@ -96,6 +201,228 @@ void main() {
       const summary = DiagnosticSummary(passed: 0, failed: 0, warned: 0);
       expect(summary.allPassed, isTrue);
       expect(summary.total, 0);
+    });
+  });
+
+  // ── runAll() path coverage ──────────────────────────────────────────────────
+
+  group('DiagnosticRunner runAll — gcloud not installed (early exit)', () {
+    late DiagnosticRunner runner;
+    setUp(() => runner = _runner(gcloudInstalled: false));
+    tearDown(() => runner.dispose());
+
+    test('returns failed summary immediately', () async {
+      final summary = await runner.runAll();
+      expect(summary.failed, greaterThanOrEqualTo(1));
+      expect(summary.passed, 0);
+    });
+
+    test('emits fail entry for gcloud CLI', () async {
+      await runner.runAll();
+      // Check history (same source as stream) since broadcast events
+      // may be missed if listener registation races the synchronous emit.
+      expect(
+        runner.history.any((e) =>
+            e.status == DiagnosticStatus.fail && e.message.contains('gcloud')),
+        isTrue,
+      );
+    });
+
+    test('history is populated after runAll', () async {
+      await runner.runAll();
+      expect(runner.history, isNotEmpty);
+    });
+
+    test('isRunning is false after runAll completes', () async {
+      await runner.runAll();
+      expect(runner.isRunning, isFalse);
+    });
+  });
+
+  group('DiagnosticRunner runAll — gcloud ok, no ADC', () {
+    late DiagnosticRunner runner;
+    setUp(() => runner = _runner(
+          gcloudInstalled: true,
+          token: null,
+          adc: null,
+        ));
+    tearDown(() => runner.dispose());
+
+    test('emits fail for missing ADC', () async {
+      await runner.runAll();
+      expect(
+        runner.history.any((e) =>
+            e.status == DiagnosticStatus.fail &&
+            (e.message.contains('ADC') || e.message.contains('No ADC'))),
+        isTrue,
+      );
+    });
+
+    test('emits fail for missing token', () async {
+      await runner.runAll();
+      expect(
+        runner.history.any((e) =>
+            e.status == DiagnosticStatus.fail &&
+            (e.message.contains('token') || e.message.contains('Token'))),
+        isTrue,
+      );
+    });
+  });
+
+  group('DiagnosticRunner runAll — gcloud ok, expired token', () {
+    late DiagnosticRunner runner;
+    setUp(() => runner = _runner(
+          gcloudInstalled: true,
+          token: _expiredToken(),
+          adc: _fakeAdc(),
+        ));
+    tearDown(() => runner.dispose());
+
+    test('emits token-expired fail', () async {
+      await runner.runAll();
+      expect(
+        runner.history.any((e) =>
+            e.status == DiagnosticStatus.fail && e.message.contains('expired')),
+        isTrue,
+      );
+    });
+  });
+
+  group('DiagnosticRunner runAll — gcloud ok, valid token, proxy up', () {
+    late DiagnosticRunner runner;
+    setUp(() => runner = _runner(
+          gcloudInstalled: true,
+          token: _validToken(),
+          adc: _fakeAdc(),
+          project: 'my-gcp-project',
+          httpClient: http_testing.MockClient((req) async {
+            if (req.url.path == '/v1/models') {
+              return http.Response(
+                '{"data":[{"id":"gemini-2.0-flash"}]}',
+                200,
+              );
+            }
+            return http.Response('ok', 200);
+          }),
+        ));
+    tearDown(() => runner.dispose());
+
+    test('runAll completes without throwing', () async {
+      expect(() => runner.runAll(), returnsNormally);
+      await runner.runAll();
+    });
+
+    test('history is cleared and repopulated on second run', () async {
+      await runner.runAll();
+      final firstCount = runner.history.length;
+      await runner.runAll();
+      // History is replaced, not accumulated.
+      expect(runner.history.length, firstCount);
+    });
+
+    test('emits gcloud pass entry', () async {
+      await runner.runAll();
+      expect(
+        runner.history.any(
+          (e) =>
+              e.status == DiagnosticStatus.pass && e.message.contains('gcloud'),
+        ),
+        isTrue,
+      );
+    });
+
+    test('emits token valid pass entry', () async {
+      await runner.runAll();
+      expect(
+        runner.history.any(
+          (e) =>
+              e.status == DiagnosticStatus.pass &&
+              e.message.contains('Token valid'),
+        ),
+        isTrue,
+      );
+    });
+
+    test('emits project pass entry', () async {
+      await runner.runAll();
+      expect(
+        runner.history.any(
+          (e) =>
+              e.status == DiagnosticStatus.pass &&
+              e.message.contains('my-gcp-project'),
+        ),
+        isTrue,
+      );
+    });
+
+    test('summary has at least 2 passed checks', () async {
+      final summary = await runner.runAll();
+      expect(summary.passed, greaterThanOrEqualTo(2));
+    });
+  });
+
+  group('DiagnosticRunner runAll — no project configured', () {
+    late DiagnosticRunner runner;
+    setUp(() => runner = _runner(
+          gcloudInstalled: true,
+          token: _validToken(),
+          adc: _fakeAdc(),
+          project: null, // no project
+        ));
+    tearDown(() => runner.dispose());
+
+    test('emits project warning', () async {
+      await runner.runAll();
+      expect(
+        runner.history.any((e) =>
+            e.status == DiagnosticStatus.warn && e.message.contains('project')),
+        isTrue,
+      );
+    });
+  });
+
+  group('DiagnosticRunner runAll — concurrent call returns same future', () {
+    test('second runAll while running returns same result', () async {
+      final runner = _runner(
+        gcloudInstalled: true,
+        token: _validToken(),
+        adc: _fakeAdc(),
+      );
+      final f1 = runner.runAll();
+      final f2 = runner.runAll();
+      final results = await Future.wait([f1, f2]);
+      // Both futures should resolve — they share the same underlying run.
+      expect(results[0].total, equals(results[1].total));
+      runner.dispose();
+    });
+  });
+
+  group('DiagnosticRunner runAll — config with errors', () {
+    test('emits fail entries for config errors', () async {
+      final runner = _runner(
+        gcloudInstalled: true,
+        token: _validToken(),
+        adc: _fakeAdc(),
+        config: const CandelaConfig(
+          mode: CandelaMode.solo,
+          port: 8181,
+          providers: [],
+          path: '/tmp/fake.yaml',
+          issues: [
+            ConfigIssue(
+              severity: IssueSeverity.error,
+              message: 'Invalid proxy port',
+            ),
+          ],
+        ),
+      );
+      await runner.runAll();
+      expect(
+        runner.history.any((e) =>
+            e.status == DiagnosticStatus.fail && e.message.contains('Config')),
+        isTrue,
+      );
+      runner.dispose();
     });
   });
 }

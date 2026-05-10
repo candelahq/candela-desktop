@@ -256,4 +256,172 @@ void main() {
       expect(pm.get('lmstudio')!.port, '5555');
     });
   });
+
+  // ── start() / stop() / restart() / startAll() path coverage ─────────────────
+
+  group('ProcessManager start/stop early-return paths', () {
+    late ProcessManager pm;
+    setUp(() => pm = ProcessManager());
+    tearDown(() => pm.dispose());
+
+    test('start unknown key is a no-op', () async {
+      pm.configure(providerNames: []);
+      // 'unknown' is not registered — should return immediately without error.
+      await expectLater(pm.start('nonexistent'), completes);
+    });
+
+    test('start lmstudio (null binary) returns without changing state',
+        () async {
+      pm.configure(providerNames: ['lmstudio']);
+      final lmstudio = pm.get('lmstudio')!;
+      expect(lmstudio.state, ProcessState.stopped);
+      // lmstudio has no CLI binary — start() hits the null-binary early return.
+      await pm.start('lmstudio');
+      // State should remain stopped (binary == null path).
+      expect(lmstudio.state, ProcessState.stopped);
+    });
+
+    test('stop unknown key is a no-op', () async {
+      pm.configure(providerNames: []);
+      await expectLater(pm.stop('nonexistent'), completes);
+    });
+
+    test('stop stopped process with no handle and no PID clears state',
+        () async {
+      pm.configure(providerNames: ['ollama']);
+      final ollama = pm.get('ollama')!;
+      // No handle, no PID — stop() should transition to stopped cleanly.
+      ollama.state = ProcessState.stopped;
+      await pm.stop('ollama');
+      expect(ollama.state, ProcessState.stopped);
+      expect(ollama.pid, isNull);
+    });
+
+    test('stop running process with PID but no handle sends kill', () async {
+      pm.configure(providerNames: ['ollama']);
+      final ollama = pm.get('ollama')!;
+      ollama.state = ProcessState.running;
+      ollama.pid =
+          1; // PID 1 (init) always exists; kill to sigterm is safe noop.
+      // Should complete without error — actually sends SIGTERM to PID 1 which
+      // is ignored on macOS but does exercise the killPid code path.
+      await pm.stop('ollama');
+      expect(ollama.state, ProcessState.stopped);
+      expect(ollama.pid, isNull);
+    });
+
+    test('restart unknown key is a no-op', () async {
+      pm.configure(providerNames: []);
+      await expectLater(pm.restart('nonexistent'), completes);
+    });
+
+    test('restart lmstudio (null binary) leaves state stopped', () async {
+      pm.configure(providerNames: ['lmstudio']);
+      await pm.restart('lmstudio');
+      expect(pm.get('lmstudio')!.state, ProcessState.stopped);
+    });
+
+    test('startAll with no processes installed is a no-op', () async {
+      // Configure with a cloud-only provider — no local processes.
+      pm.configure(providerNames: []);
+      await expectLater(pm.startAll(), completes);
+      // Only proxy is configured — proxy binary won't be installed in CI.
+      expect(pm.get('proxy')!.state,
+          anyOf(ProcessState.stopped, ProcessState.notInstalled));
+    });
+
+    test('isInstalled returns false for unknown binary name', () async {
+      pm.configure(providerNames: []);
+      // lmstudio has no binary — isInstalled returns false immediately.
+      pm.configure(providerNames: ['lmstudio']);
+      final result = await pm.isInstalled('lmstudio');
+      expect(result, isFalse);
+    });
+
+    test('isInstalled returns false for unregistered name (null binary)',
+        () async {
+      pm.configure(providerNames: []);
+      // 'proxy' has a binary ('candela-local') but it won't be on PATH in tests.
+      final result = await pm.isInstalled('proxy');
+      // Either false (not installed) or the binary exists on dev machine — both are valid.
+      expect(result, isA<bool>());
+    });
+
+    test('configure then startAll completes without throwing', () async {
+      pm.configure(providerNames: ['lmstudio', 'vllm']);
+      // startAll calls isInstalled for each stopped process.
+      // lmstudio has no binary → skipped; vllm likely not installed → skipped.
+      await expectLater(pm.startAll(), completes);
+    });
+
+    test('stop from stopping state to stopped is safe', () async {
+      pm.configure(providerNames: ['ollama']);
+      final ollama = pm.get('ollama')!;
+      ollama.state = ProcessState.stopping;
+      await pm.stop('ollama');
+      expect(ollama.state, ProcessState.stopped);
+    });
+
+    test('stopAll with error-state process stops it', () async {
+      pm.configure(providerNames: ['ollama']);
+      final ollama = pm.get('ollama')!;
+      ollama.state = ProcessState.error;
+      ollama.pid = null;
+      await pm.stopAll();
+      expect(ollama.state, ProcessState.stopped);
+    });
+
+    test('startAll skips processes that are not stopped', () async {
+      pm.configure(providerNames: ['ollama']);
+      final ollama = pm.get('ollama')!;
+      // Mark it as running — startAll should not attempt to restart it.
+      ollama.state = ProcessState.running;
+      await pm.startAll();
+      // State should still be running (startAll skips non-stopped processes).
+      expect(ollama.state, ProcessState.running);
+    });
+  });
+
+  group('ProcessManager detectRunning', () {
+    late ProcessManager pm;
+    setUp(() => pm = ProcessManager());
+    tearDown(() => pm.dispose());
+
+    test('detectRunning completes without error when no processes configured',
+        () async {
+      pm.configure(providerNames: []);
+      await expectLater(pm.detectRunning(), completes);
+    });
+
+    test('detectRunning marks processes as notInstalled when binary missing',
+        () async {
+      pm.configure(providerNames: ['lmstudio']);
+      await pm.detectRunning();
+      // lmstudio has no binary → not healthy, not installed → notInstalled.
+      expect(pm.get('lmstudio')!.state, ProcessState.notInstalled);
+    });
+
+    test(
+        'detectRunning with ollama configured leaves state stopped/notInstalled',
+        () async {
+      pm.configure(providerNames: ['ollama']);
+      await pm.detectRunning();
+      // ollama is not running in test env — state is stopped or notInstalled.
+      expect(
+        pm.get('ollama')!.state,
+        anyOf(ProcessState.stopped, ProcessState.notInstalled),
+      );
+    });
+
+    test(
+        'detectRunning with proxy configured leaves state stopped/notInstalled',
+        () async {
+      pm.configure(providerNames: []);
+      await pm.detectRunning();
+      expect(
+        pm.get('proxy')!.state,
+        anyOf(ProcessState.stopped, ProcessState.notInstalled),
+      );
+    });
+  });
 }

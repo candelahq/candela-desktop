@@ -60,10 +60,10 @@ class _RealAdapter implements BudgetNotifAdapter {
 
 // ── Service ───────────────────────────────────────────────────────────────────
 
-/// Manages macOS/Linux/Windows system notifications for budget thresholds.
+/// Manages desktop system notifications for budget thresholds.
 ///
 /// **De-duplication**: Each threshold (80%, 100%) fires at most once per budget
-/// period reset. The service tracks the last notified fraction and only emits
+/// period. The service tracks the last notified threshold and only emits
 /// a notification when the threshold is newly crossed upward.
 ///
 /// **Display-only**: This service never influences billing or deduction order.

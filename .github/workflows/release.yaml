@@ -263,14 +263,42 @@ jobs:
             artifacts/appcast.xml
 
   # ── Update Homebrew Cask ──────────────────────────────────
+  # Pushes an updated Casks/candela.rb to candelahq/homebrew-tap.
+  #
+  # TROUBLESHOOTING — if this job fails:
+  #   1. Token expired/revoked → Regenerate a fine-grained PAT at:
+  #      https://github.com/settings/personal-access-tokens/new
+  #      Scope: candelahq/homebrew-tap, Contents: Read and Write
+  #   2. Update the secret:
+  #      gh secret set HOMEBREW_TAP_TOKEN --repo candelahq/candela-desktop
+  #   3. Re-run this workflow (the GitHub Release is already created).
+  #
+  # TODO: Replace personal token with a fine-grained PAT scoped to
+  #       only candelahq/homebrew-tap with Contents: Read and Write.
+  #       Current token is a personal gh auth token (overpowered).
   update-homebrew-cask:
     name: Update Homebrew Cask
     needs: [release]
     runs-on: ubuntu-latest
+    # Don't block the release if the cask update fails (token issues, etc).
+    continue-on-error: true
     # Skip cask updates for pre-releases.
     if: ${{ !contains(github.ref_name, '-beta') && !contains(github.ref_name, '-rc') }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Validate HOMEBREW_TAP_TOKEN
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          if [ -z "$HOMEBREW_TAP_TOKEN" ]; then
+            echo "::error::HOMEBREW_TAP_TOKEN secret is not set. The Homebrew cask will NOT be updated."
+            echo "::error::To fix: create a fine-grained PAT (https://github.com/settings/personal-access-tokens/new)"
+            echo "::error::Scope it to candelahq/homebrew-tap with Contents: Read and Write."
+            echo "::error::Then run: gh secret set HOMEBREW_TAP_TOKEN --repo candelahq/candela-desktop"
+            exit 1
+          fi
+          echo "✅ HOMEBREW_TAP_TOKEN is set"
 
       - name: Download macOS DMG artifact
         uses: actions/download-artifact@v4
@@ -291,7 +319,13 @@ jobs:
           echo "SHA256:  $SHA256"
 
           # Clone the homebrew-tap repo.
-          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/candelahq/homebrew-tap.git" tap
+          # If this fails, the token is likely expired or revoked.
+          if ! git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/candelahq/homebrew-tap.git" tap 2>&1; then
+            echo "::error::Failed to clone candelahq/homebrew-tap — HOMEBREW_TAP_TOKEN may be expired or revoked."
+            echo "::error::Regenerate at: https://github.com/settings/personal-access-tokens/new"
+            echo "::error::Then: gh secret set HOMEBREW_TAP_TOKEN --repo candelahq/candela-desktop"
+            exit 1
+          fi
           cd tap
 
           mkdir -p Casks
@@ -305,5 +339,12 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Casks/candela.rb
           git commit -m "candela ${VERSION}" || echo "No changes to commit"
-          git push
+
+          if ! git push 2>&1; then
+            echo "::error::Failed to push to candelahq/homebrew-tap — HOMEBREW_TAP_TOKEN may lack write permission."
+            echo "::error::Ensure the token has Contents: Read and Write on candelahq/homebrew-tap."
+            exit 1
+          fi
+
+          echo "✅ Homebrew cask updated to ${VERSION}"
 

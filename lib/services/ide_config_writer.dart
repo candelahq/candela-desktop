@@ -23,9 +23,8 @@ class IdeConfigWriter {
     Map<String, dynamic> config = {};
     if (await file.exists()) {
       try {
-        config =
-            (jsonDecode(await file.readAsString()) as Map<String, dynamic>?) ??
-                {};
+        final decoded = jsonDecode(await file.readAsString());
+        config = decoded is Map<String, dynamic> ? decoded : {};
       } on FormatException {
         // Corrupt file — start fresh.
         config = {};
@@ -66,9 +65,8 @@ class IdeConfigWriter {
     Map<String, dynamic> settings = {};
     if (await file.exists()) {
       try {
-        settings =
-            (jsonDecode(await file.readAsString()) as Map<String, dynamic>?) ??
-                {};
+        final decoded = jsonDecode(await file.readAsString());
+        settings = decoded is Map<String, dynamic> ? decoded : {};
       } on FormatException {
         settings = {};
       }
@@ -122,9 +120,8 @@ class IdeConfigWriter {
     Map<String, dynamic> config = {};
     if (await file.exists()) {
       try {
-        config =
-            (jsonDecode(await file.readAsString()) as Map<String, dynamic>?) ??
-                {};
+        final decoded = jsonDecode(await file.readAsString());
+        config = decoded is Map<String, dynamic> ? decoded : {};
       } on FormatException {
         config = {};
       }

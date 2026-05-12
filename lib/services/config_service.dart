@@ -177,15 +177,18 @@ class ConfigService {
     final issues = <ConfigIssue>[];
 
     // Parse fields.
-    final configVersion = yaml['config_version'] as int? ?? 0;
+    final configVersion =
+        yaml['config_version'] is int ? yaml['config_version'] as int : 0;
     final remote = yaml['remote']?.toString();
     final audience = yaml['audience']?.toString();
-    final port = yaml['port'] as int? ?? 8181;
-    final lmStudioPort = yaml['lmstudio_port'] as int? ?? 1234;
+    final port = yaml['port'] is int ? yaml['port'] as int : 8181;
+    final lmStudioPort =
+        yaml['lmstudio_port'] is int ? yaml['lmstudio_port'] as int : 1234;
 
     // Parse providers.
     final providers = <ProviderConfig>[];
-    final providersYaml = yaml['providers'] as YamlList?;
+    final providersYaml =
+        yaml['providers'] is YamlList ? yaml['providers'] as YamlList : null;
     if (providersYaml != null) {
       for (final p in providersYaml) {
         if (p is YamlMap) {
@@ -200,7 +203,8 @@ class ConfigService {
 
     // Parse vertex_ai.
     VertexAIConfig? vertexAI;
-    final vtx = yaml['vertex_ai'] as YamlMap?;
+    final vtx =
+        yaml['vertex_ai'] is YamlMap ? yaml['vertex_ai'] as YamlMap : null;
     if (vtx != null) {
       vertexAI = VertexAIConfig(
         project: vtx['project'] as String?,
@@ -210,9 +214,12 @@ class ConfigService {
 
     // Parse pricing.
     PricingConfig? pricing;
-    final pricingYaml = yaml['pricing'] as YamlMap?;
+    final pricingYaml =
+        yaml['pricing'] is YamlMap ? yaml['pricing'] as YamlMap : null;
     if (pricingYaml != null) {
-      final modelsYaml = pricingYaml['models'] as YamlList?;
+      final modelsYaml = pricingYaml['models'] is YamlList
+          ? pricingYaml['models'] as YamlList
+          : null;
       if (modelsYaml != null) {
         final modelPricing = <ModelPricing>[];
         for (final m in modelsYaml) {

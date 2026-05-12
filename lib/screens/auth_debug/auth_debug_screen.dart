@@ -368,9 +368,9 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
                                   fontSize: 15, fontWeight: FontWeight.w600)),
                           const Spacer(),
                           ListenableBuilder(
-                            listenable: ref.read(processManagerProvider),
+                            listenable: ref.watch(processManagerProvider),
                             builder: (_, __) {
-                              final pm = ref.read(processManagerProvider);
+                              final pm = ref.watch(processManagerProvider);
                               final running = pm.all
                                   .where((p) => p.state == ProcessState.running)
                                   .length;
@@ -396,9 +396,9 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
                       ),
                       const SizedBox(height: 12),
                       ListenableBuilder(
-                        listenable: ref.read(processManagerProvider),
+                        listenable: ref.watch(processManagerProvider),
                         builder: (context, _) {
-                          final pm = ref.read(processManagerProvider);
+                          final pm = ref.watch(processManagerProvider);
                           return LayoutBuilder(
                             builder: (context, constraints) {
                               final crossCount =

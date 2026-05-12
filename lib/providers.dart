@@ -46,17 +46,23 @@ Stream<CandelaConfig> _configStream(ConfigService service) async* {
 final processManagerProvider = Provider<ProcessManager>((ref) {
   final pm = ProcessManager();
 
+  void configure(CandelaConfig config) {
+    pm.configure(
+      providerNames: config.providers.map((p) => p.name).toList(),
+      proxyPort: config.port.toString(),
+      portOverrides: {
+        'lmstudio': config.lmStudioPort.toString(),
+      },
+    );
+  }
+
+  // Configure with current value if already available (prevents missed
+  // initial state when configProvider was read earlier during app startup).
+  ref.read(configProvider).whenData(configure);
+
   // Reconfigure whenever config changes.
-  ref.listen(configProvider, (prev, next) {
-    next.whenData((config) {
-      pm.configure(
-        providerNames: config.providers.map((p) => p.name).toList(),
-        proxyPort: config.port.toString(),
-        portOverrides: {
-          'lmstudio': config.lmStudioPort.toString(),
-        },
-      );
-    });
+  ref.listen<AsyncValue<CandelaConfig>>(configProvider, (prev, next) {
+    next.whenData(configure);
   });
 
   ref.onDispose(() => pm.dispose());

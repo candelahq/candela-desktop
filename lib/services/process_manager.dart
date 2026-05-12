@@ -89,17 +89,26 @@ class ProcessManager extends ChangeNotifier {
   }
 
   static ManagedProcess? _runtimeInfo(String name) => switch (name) {
-        'ollama' => ManagedProcess(
-            name: 'ollama', displayName: 'Ollama', icon: '🦙', port: '11434'),
-        'vllm' => ManagedProcess(
-            name: 'vllm', displayName: 'vLLM', icon: 'V', port: '8000'),
-        'lmstudio' => ManagedProcess(
-            name: 'lmstudio',
-            displayName: 'LM Studio',
-            icon: 'L',
-            port: '1234'),
-        _ => null,
-      };
+    'ollama' => ManagedProcess(
+      name: 'ollama',
+      displayName: 'Ollama',
+      icon: '🦙',
+      port: '11434',
+    ),
+    'vllm' => ManagedProcess(
+      name: 'vllm',
+      displayName: 'vLLM',
+      icon: 'V',
+      port: '8000',
+    ),
+    'lmstudio' => ManagedProcess(
+      name: 'lmstudio',
+      displayName: 'LM Studio',
+      icon: 'L',
+      port: '1234',
+    ),
+    _ => null,
+  };
 
   List<ManagedProcess> get all => _processes.values.toList();
   ManagedProcess? get(String name) => _processes[name];
@@ -168,8 +177,11 @@ class ProcessManager extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final process =
-          await Process.start(binary, args, environment: _env(name));
+      final process = await Process.start(
+        binary,
+        args,
+        environment: _env(name),
+      );
       _handles[name] = process;
       p.pid = process.pid;
 
@@ -295,33 +307,34 @@ class ProcessManager extends ChangeNotifier {
   // --- Private helpers ---
 
   String? _binaryName(String name) => switch (name) {
-        'ollama' => 'ollama',
-        'proxy' => 'candela-local',
-        'vllm' => 'vllm',
-        'lmstudio' => null, // LM Studio is a GUI app, can't start from CLI
-        _ => null,
-      };
+    'ollama' => 'ollama',
+    'proxy' => 'candela',
+    'vllm' => 'vllm',
+    'lmstudio' => null, // LM Studio is a GUI app, can't start from CLI
+    _ => null,
+  };
 
   List<String> _binaryArgs(String name) => switch (name) {
-        'ollama' => ['serve'],
-        'proxy' => [],
-        'vllm' => ['serve'],
-        _ => [],
-      };
+    'ollama' => ['serve'],
+    'proxy' => ['run'], // `candela run` = foreground mode
+    'vllm' => ['serve'],
+    _ => [],
+  };
 
   Map<String, String>? _env(String name) => switch (name) {
-        'ollama' => {
-            'OLLAMA_HOST': '0.0.0.0:${_processes['ollama']?.port ?? '11434'}'
-          },
-        _ => null,
-      };
+    'ollama' => {
+      'OLLAMA_HOST': '0.0.0.0:${_processes['ollama']?.port ?? '11434'}',
+    },
+    _ => null,
+  };
 
   Future<bool> _isHealthy(String name) async {
     final url = _healthUrl(name);
     if (url == null) return false;
     try {
-      final resp =
-          await _client.get(Uri.parse(url)).timeout(const Duration(seconds: 2));
+      final resp = await _client
+          .get(Uri.parse(url))
+          .timeout(const Duration(seconds: 2));
       return resp.statusCode == 200;
     } catch (_) {
       return false;
@@ -341,8 +354,9 @@ class ProcessManager extends ChangeNotifier {
 
   void _startHealthPolling(String name) {
     _healthTimers[name]?.cancel();
-    _healthTimers[name] =
-        Timer.periodic(const Duration(seconds: 10), (_) async {
+    _healthTimers[name] = Timer.periodic(const Duration(seconds: 10), (
+      _,
+    ) async {
       final p = _processes[name];
       if (p == null) return;
       // Only poll processes that are running or in recoverable error.

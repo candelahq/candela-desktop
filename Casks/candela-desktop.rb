@@ -2,12 +2,11 @@
 # Auto-updated by the release workflow via the update-cask job.
 #
 # Manual install:
-#   brew tap candelahq/tap
-#   brew install --cask candela
+#   brew install --cask candelahq/tap/candela-desktop
 #
-# This file lives in candelahq/homebrew-tap → Casks/candela.rb
+# This file lives in candelahq/homebrew-tap → Casks/candela-desktop.rb
 
-cask "candela" do
+cask "candela-desktop" do
   version "0.3.4"
   sha256 "b7f0ae7efd79560b1b2895165b5ff5be5290624c75202a5b8e6ca8f135ab3ec5"
 
@@ -19,6 +18,9 @@ cask "candela" do
   # Only Apple Silicon for now (release matrix only builds arm64).
   # Intel Macs can run via Rosetta 2.
   depends_on arch: :arm64
+
+  # Once the `candela` CLI formula is published (via GoReleaser),
+  # users can install it separately: brew install candelahq/tap/candela
 
   app "Candela.app"
 

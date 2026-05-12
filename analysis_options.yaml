@@ -12,6 +12,8 @@ analyzer:
     # Treat these as errors (fail CI).
     missing_return: error
     dead_code: warning
+    # Pre-existing across the codebase — suppress until bulk-fixed.
+    override_on_non_overriding_member: ignore
   exclude:
     - "**/*.g.dart"
     - "**/*.freezed.dart"

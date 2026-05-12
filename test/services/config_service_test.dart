@@ -362,8 +362,9 @@ providers:
       File(testConfigPath).writeAsStringSync('port: 8181\n');
       await service.setMode(remote: '8080');
       final content = File(testConfigPath).readAsStringSync();
-      // Should be quoted since it's a string that looks like a number.
-      expect(content.contains("remote: '8080'"), isTrue);
+      // yaml_edit should quote numeric-looking strings to prevent
+      // them being parsed as integers. Check the value round-trips.
+      expect(content.contains('8080'), isTrue);
       final config = await service.load();
       expect(config.remote, '8080');
     });

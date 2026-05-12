@@ -6,7 +6,6 @@ import 'config_service.dart';
 import 'gcloud_service.dart';
 import 'adc_service.dart';
 import 'provider_test_service.dart';
-import '../main.dart' show configService;
 
 /// Orchestrates all diagnostic checks sequentially, streaming results.
 class DiagnosticRunner {
@@ -26,11 +25,11 @@ class DiagnosticRunner {
   Completer<DiagnosticSummary>? _runCompleter;
 
   DiagnosticRunner({
-    ConfigService? config,
+    required ConfigService config,
     GCloudService? gcloud,
     AdcService? adc,
     ProviderTestService? providers,
-  })  : _config = config ?? configService,
+  })  : _config = config,
         _gcloud = gcloud ?? GCloudService(),
         _adc = adc ?? AdcService(),
         _providers = providers ?? ProviderTestService();

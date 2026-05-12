@@ -2,16 +2,9 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 import 'app.dart';
-import 'services/process_manager.dart';
-import 'services/tray_service.dart';
-import 'services/config_service.dart';
-
-/// Global singletons for process management and tray.
-final processManager = ProcessManager();
-late final ConfigService configService;
-late final TrayService trayService;
 
 void main() async {
   // Global error boundary — prevents unhandled exceptions from crashing the
@@ -47,26 +40,9 @@ void main() async {
       await windowManager.focus();
     });
 
-    // Load config and configure process manager.
-    configService = ConfigService();
-    await configService.migrateLegacyFields();
-    final config = await configService.load();
-    processManager.configure(
-      providerNames: config.providers.map((p) => p.name).toList(),
-      proxyPort: config.port.toString(),
-      portOverrides: {
-        'lmstudio': config.lmStudioPort.toString(),
-      },
-    );
-
-    // Detect already-running processes.
-    await processManager.detectRunning();
-
-    // Initialize system tray.
-    trayService = TrayService(processManager: processManager);
-    await trayService.init();
-
-    runApp(const CandelaApp());
+    // Riverpod manages all service lifecycle (config, process manager, tray).
+    // No more global singletons — everything is scoped via ProviderScope.
+    runApp(const ProviderScope(child: CandelaApp()));
   }, (error, stack) {
     // Catch-all for unhandled async exceptions in the zone.
     stderr.writeln('[Candela] Unhandled: $error\n$stack');

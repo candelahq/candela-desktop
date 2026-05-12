@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 import 'theme/candela_theme.dart';
 import 'theme/colors.dart';
+import 'providers.dart';
 import 'services/update_service.dart';
 import 'widgets/sidebar.dart';
 import 'screens/auth_debug/auth_debug_screen.dart';
 import 'screens/dashboard/dashboard_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
-import 'main.dart' show trayService, configService;
 
 class CandelaApp extends StatelessWidget {
   const CandelaApp({super.key});
@@ -24,14 +25,14 @@ class CandelaApp extends StatelessWidget {
 }
 
 /// Decides whether to show onboarding or the main app shell.
-class _AppRouter extends StatefulWidget {
+class _AppRouter extends ConsumerStatefulWidget {
   const _AppRouter();
 
   @override
-  State<_AppRouter> createState() => _AppRouterState();
+  ConsumerState<_AppRouter> createState() => _AppRouterState();
 }
 
-class _AppRouterState extends State<_AppRouter> {
+class _AppRouterState extends ConsumerState<_AppRouter> {
   bool _loading = true;
   bool _needsOnboarding = false;
 
@@ -42,6 +43,7 @@ class _AppRouterState extends State<_AppRouter> {
   }
 
   Future<void> _checkConfig() async {
+    final configService = ref.read(configServiceProvider);
     final exists = await configService.configExists();
     if (mounted) {
       setState(() {
@@ -67,7 +69,7 @@ class _AppRouterState extends State<_AppRouter> {
 
     if (_needsOnboarding) {
       return OnboardingScreen(
-        configService: configService,
+        configService: ref.read(configServiceProvider),
         onComplete: _onOnboardingComplete,
       );
     }
@@ -76,17 +78,18 @@ class _AppRouterState extends State<_AppRouter> {
   }
 }
 
-class AppShell extends StatefulWidget {
+class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key});
 
   @override
-  State<AppShell> createState() => _AppShellState();
+  ConsumerState<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> with WindowListener {
+class _AppShellState extends ConsumerState<AppShell> with WindowListener {
   int _selectedIndex = 0;
   bool _hasShownTrayTooltip = false;
   final _updateService = UpdateService();
+  bool _trayInitialized = false;
 
   static final _pages = <Widget>[
     const AuthDebugScreen(),
@@ -101,8 +104,21 @@ class _AppShellState extends State<AppShell> with WindowListener {
     windowManager.addListener(this);
     windowManager.setPreventClose(true);
 
-    // Wire tray "Show Window" action.
-    trayService.onShowWindow = _showWindow;
+    _initServices();
+  }
+
+  Future<void> _initServices() async {
+    // Initialize tray and wire show-window action.
+    final tray = ref.read(trayServiceProvider);
+    if (!_trayInitialized) {
+      await tray.init();
+      tray.onShowWindow = _showWindow;
+      _trayInitialized = true;
+    }
+
+    // Detect already-running processes.
+    final pm = ref.read(processManagerProvider);
+    await pm.detectRunning();
   }
 
   @override

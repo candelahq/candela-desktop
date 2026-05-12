@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/colors.dart';
 import '../../services/gcloud_service.dart';
 import '../../services/adc_service.dart';
@@ -8,7 +9,8 @@ import '../../services/process_manager.dart';
 import '../../models/identity_state.dart';
 import '../../models/candela_config.dart';
 import '../../models/provider_status.dart';
-import '../../main.dart' show processManager, configService;
+import '../../providers.dart';
+import '../../services/config_service.dart';
 
 import 'identity_card.dart';
 import 'config_card.dart';
@@ -16,17 +18,17 @@ import 'provider_card.dart';
 import 'runtime_control_card.dart';
 import 'diagnostic_log.dart';
 
-class AuthDebugScreen extends StatefulWidget {
+class AuthDebugScreen extends ConsumerStatefulWidget {
   const AuthDebugScreen({super.key});
 
   @override
-  State<AuthDebugScreen> createState() => _AuthDebugScreenState();
+  ConsumerState<AuthDebugScreen> createState() => _AuthDebugScreenState();
 }
 
-class _AuthDebugScreenState extends State<AuthDebugScreen> {
+class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
   final _gcloud = GCloudService();
   final _adc = AdcService();
-  final _configService = configService;
+  late final ConfigService _configService;
   final _providerTest = ProviderTestService();
   late final DiagnosticRunner _diagnostics;
 
@@ -42,6 +44,7 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
   @override
   void initState() {
     super.initState();
+    _configService = ref.read(configServiceProvider);
     _diagnostics = DiagnosticRunner(
       config: _configService,
       gcloud: _gcloud,
@@ -85,14 +88,15 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
     });
 
     // Sync process manager with config.
-    processManager.configure(
+    final pm = ref.read(processManagerProvider);
+    pm.configure(
       providerNames: config.providers.map((p) => p.name).toList(),
       proxyPort: config.port.toString(),
       portOverrides: {
         'lmstudio': config.lmStudioPort.toString(),
       },
     );
-    await processManager.detectRunning();
+    await pm.detectRunning();
     if (gen != _loadGeneration) return;
 
     // Run provider tests.
@@ -364,9 +368,10 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
                                   fontSize: 15, fontWeight: FontWeight.w600)),
                           const Spacer(),
                           ListenableBuilder(
-                            listenable: processManager,
+                            listenable: ref.watch(processManagerProvider),
                             builder: (_, __) {
-                              final running = processManager.all
+                              final pm = ref.watch(processManagerProvider);
+                              final running = pm.all
                                   .where((p) => p.state == ProcessState.running)
                                   .length;
                               if (running > 0) {
@@ -391,8 +396,9 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
                       ),
                       const SizedBox(height: 12),
                       ListenableBuilder(
-                        listenable: processManager,
+                        listenable: ref.watch(processManagerProvider),
                         builder: (context, _) {
+                          final pm = ref.watch(processManagerProvider);
                           return LayoutBuilder(
                             builder: (context, constraints) {
                               final crossCount =
@@ -408,18 +414,14 @@ class _AuthDebugScreenState extends State<AuthDebugScreen> {
                                   for (final s in _providerStatuses)
                                     _isLocalProvider(s.name)
                                         ? RuntimeControlCard(
-                                            process: processManager
-                                                    .get(s.name) ??
+                                            process: pm.get(s.name) ??
                                                 ManagedProcess(
                                                     name: s.name,
                                                     displayName: s.displayName,
                                                     icon: s.icon ?? '?'),
-                                            onStart: () =>
-                                                processManager.start(s.name),
-                                            onStop: () =>
-                                                processManager.stop(s.name),
-                                            onRestart: () =>
-                                                processManager.restart(s.name),
+                                            onStart: () => pm.start(s.name),
+                                            onStop: () => pm.stop(s.name),
+                                            onRestart: () => pm.restart(s.name),
                                             onRemove:
                                                 _isRemovableProvider(s.name)
                                                     ? () =>

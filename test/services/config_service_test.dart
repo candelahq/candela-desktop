@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:candela_desktop/services/config_service.dart';
@@ -362,8 +363,9 @@ providers:
       File(testConfigPath).writeAsStringSync('port: 8181\n');
       await service.setMode(remote: '8080');
       final content = File(testConfigPath).readAsStringSync();
-      // Should be quoted since it's a string that looks like a number.
-      expect(content.contains("remote: '8080'"), isTrue);
+      // yaml_edit should quote numeric-looking strings to prevent
+      // them being parsed as integers. Check the value round-trips.
+      expect(content.contains('8080'), isTrue);
       final config = await service.load();
       expect(config.remote, '8080');
     });
@@ -428,6 +430,245 @@ providers:
         () => service.setPort('port', -1),
         throwsA(isA<ArgumentError>()),
       );
+    });
+
+    // --- Config hardening: new feature tests ---
+
+    group('config_version', () {
+      test('load parses config_version', () async {
+        File(testConfigPath).writeAsStringSync('''
+config_version: 1
+port: 8181
+''');
+        final config = await service.load();
+        expect(config.configVersion, 1);
+      });
+
+      test('load defaults config_version to 0 when missing', () async {
+        File(testConfigPath).writeAsStringSync('port: 8181\n');
+        final config = await service.load();
+        expect(config.configVersion, 0);
+      });
+    });
+
+    group('pricing', () {
+      test('load parses pricing with model rates', () async {
+        File(testConfigPath).writeAsStringSync('''
+port: 8181
+pricing:
+  models:
+    - provider: openai
+      model: gpt-4o
+      input_per_million: 2.50
+      output_per_million: 10.00
+    - provider: google
+      model: gemini-2.5-pro
+      input_per_million: 1.25
+      output_per_million: 5.00
+''');
+        final config = await service.load();
+        expect(config.pricing, isNotNull);
+        expect(config.pricing!.models.length, 2);
+
+        final gpt4o = config.pricing!.models[0];
+        expect(gpt4o.provider, 'openai');
+        expect(gpt4o.model, 'gpt-4o');
+        expect(gpt4o.inputPerMillion, 2.50);
+        expect(gpt4o.outputPerMillion, 10.00);
+
+        final gemini = config.pricing!.models[1];
+        expect(gemini.provider, 'google');
+        expect(gemini.model, 'gemini-2.5-pro');
+        expect(gemini.inputPerMillion, 1.25);
+        expect(gemini.outputPerMillion, 5.00);
+      });
+
+      test('load handles pricing with empty models list', () async {
+        File(testConfigPath).writeAsStringSync('''
+port: 8181
+pricing:
+  models: []
+''');
+        final config = await service.load();
+        expect(config.pricing, isNotNull);
+        expect(config.pricing!.models, isEmpty);
+      });
+
+      test('load handles config without pricing section', () async {
+        File(testConfigPath).writeAsStringSync('port: 8181\n');
+        final config = await service.load();
+        expect(config.pricing, isNull);
+      });
+
+      test('load handles pricing model with zero rates', () async {
+        File(testConfigPath).writeAsStringSync('''
+port: 8181
+pricing:
+  models:
+    - provider: ollama
+      model: llama3
+      input_per_million: 0
+      output_per_million: 0
+''');
+        final config = await service.load();
+        expect(config.pricing!.models[0].inputPerMillion, 0.0);
+        expect(config.pricing!.models[0].outputPerMillion, 0.0);
+      });
+    });
+
+    group('writeInitialConfig', () {
+      test('includes config_version and schema header', () async {
+        await service.writeInitialConfig({'port': 9090});
+        final content = File(testConfigPath).readAsStringSync();
+
+        // Should have the yaml-language-server schema comment.
+        expect(content, contains('yaml-language-server'));
+        expect(content, contains('config.v1.json'));
+
+        // Should include config_version: 1.
+        final config = await service.load();
+        expect(config.configVersion, 1);
+        expect(config.port, 9090);
+      });
+
+      test('throws when config file already exists', () async {
+        File(testConfigPath).writeAsStringSync('port: 8181\n');
+        expect(
+          () => service.writeInitialConfig({'port': 9090}),
+          throwsA(isA<StateError>()),
+        );
+      });
+
+      test('sets chmod 600 on created file', () async {
+        await service.writeInitialConfig({'port': 8181});
+        final stat = File(testConfigPath).statSync();
+        // On macOS/Linux, 600 = owner rw only.
+        final mode = stat.mode & 0x1FF; // last 9 bits
+        expect(mode, 0x180); // 0o600
+      });
+    });
+
+    group('writeRawConfig', () {
+      test('writes valid YAML content', () async {
+        await File(testConfigPath).create(recursive: true);
+        await service.writeRawConfig('port: 9999\n');
+        final config = await service.load();
+        expect(config.port, 9999);
+      });
+
+      test('rejects invalid YAML', () async {
+        await File(testConfigPath).create(recursive: true);
+        expect(
+          () => service.writeRawConfig('port: [invalid'),
+          throwsA(isA<FormatException>()),
+        );
+      });
+
+      test('allows empty content', () async {
+        await File(testConfigPath).create(recursive: true);
+        await service.writeRawConfig('');
+        final config = await service.load();
+        expect(config.issues, isNotEmpty);
+        expect(config.issues.first.message, contains('empty'));
+      });
+    });
+
+    group('yaml_edit comment preservation', () {
+      test('setPort preserves user comments', () async {
+        File(testConfigPath).writeAsStringSync('''
+# My Candela config
+port: 8181
+# This is my proxy
+providers:
+  - name: google
+''');
+        await service.setPort('port', 9999);
+        final content = File(testConfigPath).readAsStringSync();
+        // Comments should survive the edit.
+        expect(content, contains('# My Candela config'));
+        expect(content, contains('# This is my proxy'));
+        // Value should be updated.
+        expect(content, contains('9999'));
+      });
+
+      test('addProvider preserves existing comments', () async {
+        File(testConfigPath).writeAsStringSync('''
+# Primary config
+port: 8181
+providers:
+  - name: google  # cloud provider
+''');
+        await service.addProvider('ollama');
+        final content = File(testConfigPath).readAsStringSync();
+        expect(content, contains('# Primary config'));
+        expect(content, contains('ollama'));
+      });
+
+      test('removeProvider preserves other comments', () async {
+        File(testConfigPath).writeAsStringSync('''
+# Config with multiple providers
+port: 8181
+providers:
+  - name: google
+  - name: ollama
+''');
+        await service.removeProvider('ollama');
+        final content = File(testConfigPath).readAsStringSync();
+        expect(content, contains('# Config with multiple providers'));
+        expect(content, contains('google'));
+        expect(content, isNot(contains('ollama')));
+      });
+    });
+
+    group('watchForChanges', () {
+      test('returns null when config directory does not exist', () {
+        final svc = ConfigService(configPath: '/nonexistent/path/config.yaml');
+        final stream = svc.watchForChanges();
+        expect(stream, isNull);
+      });
+
+      test('returns a stream when config directory exists', () async {
+        await File(testConfigPath).create(recursive: true);
+        final stream = service.watchForChanges();
+        expect(stream, isNotNull);
+      });
+
+      test('emits event when config file is modified', () async {
+        final file = File(testConfigPath);
+        await file.writeAsString('port: 8181\n');
+
+        final stream = service.watchForChanges();
+        expect(stream, isNotNull);
+
+        // Listen for an event, then modify the file.
+        final gotEvent = stream!.first.timeout(
+          const Duration(seconds: 3),
+          onTimeout: () => throw TimeoutException('No event received'),
+        );
+
+        // Small delay to ensure watcher is set up.
+        await Future.delayed(const Duration(milliseconds: 100));
+        await file.writeAsString('port: 9999\n');
+
+        // Should receive the event without timeout.
+        await expectLater(gotEvent, completes);
+      });
+    });
+
+    group('removeProvider edge cases', () {
+      test('removes last provider and cleans up providers key', () async {
+        File(testConfigPath).writeAsStringSync('''
+port: 8181
+providers:
+  - name: ollama
+''');
+        await service.removeProvider('ollama');
+        final content = File(testConfigPath).readAsStringSync();
+        // providers key should be removed entirely.
+        expect(content, isNot(contains('providers')));
+        final config = await service.load();
+        expect(config.providers, isEmpty);
+      });
     });
   });
 }

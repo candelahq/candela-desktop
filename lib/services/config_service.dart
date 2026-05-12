@@ -3,10 +3,13 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 import 'package:yaml/yaml.dart';
+import 'package:yaml_edit/yaml_edit.dart';
 
 import '../models/candela_config.dart';
 
-/// Reads, parses, and validates ~/.config/candela/config.yaml.
+/// Reads, parses, validates, and modifies ~/.config/candela/config.yaml.
+///
+/// Uses [yaml_edit] for all modifications to preserve comments and formatting.
 class ConfigService {
   final String? configPath;
   Future<void>? _writeLock;
@@ -83,11 +86,40 @@ class ConfigService {
   }
 
   /// Watch the config file for changes.
-  Stream<FileSystemEvent>? watchForChanges() {
+  ///
+  /// Returns a debounced stream that emits after file modifications settle.
+  /// Editors often write to temp files then rename, causing multiple events —
+  /// the 500ms debounce collapses these into a single reload.
+  Stream<void>? watchForChanges() {
     final configPath = _resolveConfigPath();
-    final file = File(configPath);
-    if (!file.existsSync()) return null;
-    return file.watch(events: FileSystemEvent.modify | FileSystemEvent.delete);
+    final dir = File(configPath).parent;
+    if (!dir.existsSync()) return null;
+
+    // Watch the directory (not the file) to catch atomic rename writes.
+    final raw = dir.watch(
+      events: FileSystemEvent.modify | FileSystemEvent.create,
+    );
+
+    // Filter to only our config file and debounce.
+    // ignore: close_sinks — closed via onCancel below.
+    final controller = StreamController<void>.broadcast();
+    Timer? debounce;
+    final basename = path.basename(configPath);
+
+    final sub = raw.listen((event) {
+      if (path.basename(event.path) != basename) return;
+      debounce?.cancel();
+      debounce = Timer(const Duration(milliseconds: 500), () {
+        controller.add(null);
+      });
+    });
+
+    controller.onCancel = () {
+      debounce?.cancel();
+      sub.cancel();
+    };
+
+    return controller.stream;
   }
 
   /// The default config path using XDG convention.
@@ -145,14 +177,18 @@ class ConfigService {
     final issues = <ConfigIssue>[];
 
     // Parse fields.
+    final configVersion =
+        yaml['config_version'] is int ? yaml['config_version'] as int : 0;
     final remote = yaml['remote']?.toString();
     final audience = yaml['audience']?.toString();
-    final port = yaml['port'] as int? ?? 8181;
-    final lmStudioPort = yaml['lmstudio_port'] as int? ?? 1234;
+    final port = yaml['port'] is int ? yaml['port'] as int : 8181;
+    final lmStudioPort =
+        yaml['lmstudio_port'] is int ? yaml['lmstudio_port'] as int : 1234;
 
     // Parse providers.
     final providers = <ProviderConfig>[];
-    final providersYaml = yaml['providers'] as YamlList?;
+    final providersYaml =
+        yaml['providers'] is YamlList ? yaml['providers'] as YamlList : null;
     if (providersYaml != null) {
       for (final p in providersYaml) {
         if (p is YamlMap) {
@@ -167,12 +203,39 @@ class ConfigService {
 
     // Parse vertex_ai.
     VertexAIConfig? vertexAI;
-    final vtx = yaml['vertex_ai'] as YamlMap?;
+    final vtx =
+        yaml['vertex_ai'] is YamlMap ? yaml['vertex_ai'] as YamlMap : null;
     if (vtx != null) {
       vertexAI = VertexAIConfig(
         project: vtx['project'] as String?,
         region: vtx['region'] as String?,
       );
+    }
+
+    // Parse pricing.
+    PricingConfig? pricing;
+    final pricingYaml =
+        yaml['pricing'] is YamlMap ? yaml['pricing'] as YamlMap : null;
+    if (pricingYaml != null) {
+      final modelsYaml = pricingYaml['models'] is YamlList
+          ? pricingYaml['models'] as YamlList
+          : null;
+      if (modelsYaml != null) {
+        final modelPricing = <ModelPricing>[];
+        for (final m in modelsYaml) {
+          if (m is YamlMap) {
+            modelPricing.add(ModelPricing(
+              provider: m['provider'] as String? ?? '',
+              model: m['model'] as String? ?? '',
+              inputPerMillion:
+                  (m['input_per_million'] as num?)?.toDouble() ?? 0.0,
+              outputPerMillion:
+                  (m['output_per_million'] as num?)?.toDouble() ?? 0.0,
+            ));
+          }
+        }
+        pricing = PricingConfig(models: modelPricing);
+      }
     }
 
     // Detect mode.
@@ -221,12 +284,14 @@ class ConfigService {
     return CandelaConfig(
       path: configPath,
       lastModified: lastModified,
+      configVersion: configVersion,
       remote: remote,
       audience: audience,
       port: port,
       lmStudioPort: lmStudioPort,
       providers: providers,
       vertexAI: vertexAI,
+      pricing: pricing,
       mode: mode,
       issues: issues,
     );
@@ -283,7 +348,12 @@ class ConfigService {
         'Use setPort/setMode/addProvider to modify.',
       );
     }
-    await _writeYaml(file, config);
+    // Prepend config_version and schema comment for initial configs.
+    final fullConfig = <String, dynamic>{
+      'config_version': 1,
+      ...config,
+    };
+    await _writeYaml(file, fullConfig);
   }
 
   /// Write raw YAML content to the config file, routed through the write
@@ -323,27 +393,30 @@ class ConfigService {
   }
 
   Future<void> _migrateLegacyFieldsInPlace() async {
-    final configPath = _resolveConfigPath();
-    final file = File(configPath);
+    final resolvedPath = _resolveConfigPath();
+    final file = File(resolvedPath);
     if (!await file.exists()) return;
 
     final content = await file.readAsString();
     final parsed = loadYaml(content);
     if (parsed is! YamlMap) return;
 
-    final yamlMap = _yamlMapToMap(parsed);
+    // Use yaml_edit for surgical removal — preserves comments.
+    final editor = YamlEditor(content);
     var changed = false;
     for (final field in [
       'runtime_backend',
       'runtime_config',
       'runtime_manage'
     ]) {
-      if (yamlMap.containsKey(field)) {
-        yamlMap.remove(field);
+      if (parsed.containsKey(field)) {
+        editor.remove([field]);
         changed = true;
       }
     }
-    if (changed) await _writeYaml(file, yamlMap);
+    if (changed) {
+      await _writeRaw(file, editor.toString());
+    }
   }
 
   /// Set a port field (port or lmstudio_port) in the config.
@@ -356,140 +429,152 @@ class ConfigService {
       throw ArgumentError('Port must be 1-65535, got $port');
     }
 
-    final configPath = _resolveConfigPath();
-    final file = File(configPath);
+    final resolvedPath = _resolveConfigPath();
+    final file = File(resolvedPath);
 
-    Map<String, dynamic> yamlMap = {};
     if (await file.exists()) {
       final content = await file.readAsString();
-      final parsed = loadYaml(content);
-      if (parsed is YamlMap) yamlMap = _yamlMapToMap(parsed);
+      final editor = YamlEditor(content);
+      editor.update([field], port);
+      await _writeRaw(file, editor.toString());
+    } else {
+      await _writeYaml(file, {'config_version': 1, field: port});
     }
-
-    yamlMap[field] = port;
-    await _writeYaml(file, yamlMap);
   }
 
   /// Set mode: team (with remote URL) or solo (remove remote).
   Future<void> setMode({String? remote, String? audience}) async {
-    final configPath = _resolveConfigPath();
-    final file = File(configPath);
+    final resolvedPath = _resolveConfigPath();
+    final file = File(resolvedPath);
 
-    Map<String, dynamic> yamlMap = {};
     if (await file.exists()) {
       final content = await file.readAsString();
-      final parsed = loadYaml(content);
-      if (parsed is YamlMap) yamlMap = _yamlMapToMap(parsed);
-    }
-
-    if (remote != null && remote.isNotEmpty) {
-      yamlMap['remote'] = remote;
-      yamlMap['audience'] = audience ?? remote;
+      final editor = YamlEditor(content);
+      if (remote != null && remote.isNotEmpty) {
+        editor.update(['remote'], remote);
+        editor.update(['audience'], audience ?? remote);
+      } else {
+        final parsed = loadYaml(content);
+        if (parsed is YamlMap) {
+          if (parsed.containsKey('remote')) editor.remove(['remote']);
+          if (parsed.containsKey('audience')) editor.remove(['audience']);
+        }
+      }
+      await _writeRaw(file, editor.toString());
     } else {
-      yamlMap.remove('remote');
-      yamlMap.remove('audience');
+      final config = <String, dynamic>{'config_version': 1};
+      if (remote != null && remote.isNotEmpty) {
+        config['remote'] = remote;
+        config['audience'] = audience ?? remote;
+      }
+      await _writeYaml(file, config);
     }
-
-    await _writeYaml(file, yamlMap);
   }
 
   /// Add a provider to the config file.
   Future<void> addProvider(String providerName,
       {List<String> models = const []}) async {
-    final configPath = _resolveConfigPath();
-    final file = File(configPath);
+    final resolvedPath = _resolveConfigPath();
+    final file = File(resolvedPath);
 
-    Map<String, dynamic> yamlMap = {};
     if (await file.exists()) {
       final content = await file.readAsString();
       final parsed = loadYaml(content);
       if (parsed is YamlMap) {
-        yamlMap = _yamlMapToMap(parsed);
+        // Check for duplicates.
+        final existing = parsed['providers'] as YamlList?;
+        if (existing != null) {
+          for (final p in existing) {
+            if (p is YamlMap && p['name'] == providerName) return;
+          }
+        }
       }
+      final editor = YamlEditor(content);
+      final entry = <String, dynamic>{
+        'name': providerName,
+        if (models.isNotEmpty) 'models': models,
+      };
+      // If providers list exists, append; otherwise create it.
+      if (parsed is YamlMap && parsed.containsKey('providers')) {
+        final list = parsed['providers'] as YamlList?;
+        editor.insertIntoList(['providers'], list?.length ?? 0, entry);
+      } else {
+        editor.update(['providers'], [entry]);
+      }
+      await _writeRaw(file, editor.toString());
+    } else {
+      await _writeYaml(file, {
+        'config_version': 1,
+        'providers': [
+          {'name': providerName, if (models.isNotEmpty) 'models': models}
+        ],
+      });
     }
-
-    // Get or create providers list.
-    final providers =
-        (yamlMap['providers'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-
-    // Don't add duplicate.
-    if (providers.any((p) => p['name'] == providerName)) return;
-
-    providers
-        .add({'name': providerName, if (models.isNotEmpty) 'models': models});
-    yamlMap['providers'] = providers;
-
-    await _writeYaml(file, yamlMap);
   }
 
   /// Remove a provider from the config file.
   Future<void> removeProvider(String providerName) async {
-    final configPath = _resolveConfigPath();
-    final file = File(configPath);
+    final resolvedPath = _resolveConfigPath();
+    final file = File(resolvedPath);
     if (!await file.exists()) return;
 
     final content = await file.readAsString();
     final parsed = loadYaml(content);
     if (parsed is! YamlMap) return;
 
-    final yamlMap = _yamlMapToMap(parsed);
-    final providers =
-        (yamlMap['providers'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-    providers.removeWhere((p) => p['name'] == providerName);
+    final providers = parsed['providers'] as YamlList?;
+    if (providers == null) return;
 
-    if (providers.isEmpty) {
-      yamlMap.remove('providers');
-    } else {
-      yamlMap['providers'] = providers;
-    }
-
-    await _writeYaml(file, yamlMap);
-  }
-
-  /// Convert YamlMap to a plain Dart Map (deep).
-  Map<String, dynamic> _yamlMapToMap(YamlMap yaml) {
-    final map = <String, dynamic>{};
-    for (final key in yaml.keys) {
-      final value = yaml[key];
-      if (value is YamlMap) {
-        map[key.toString()] = _yamlMapToMap(value);
-      } else if (value is YamlList) {
-        map[key.toString()] =
-            value.map((e) => e is YamlMap ? _yamlMapToMap(e) : e).toList();
-      } else {
-        map[key.toString()] = value;
+    // Find the index of the provider to remove.
+    int? removeIdx;
+    for (var i = 0; i < providers.length; i++) {
+      final p = providers[i];
+      if (p is YamlMap && p['name'] == providerName) {
+        removeIdx = i;
+        break;
       }
     }
-    return map;
+    if (removeIdx == null) return;
+
+    final editor = YamlEditor(content);
+    if (providers.length == 1) {
+      // Remove the entire providers key when it would become empty.
+      editor.remove(['providers']);
+    } else {
+      editor.remove(['providers', removeIdx]);
+    }
+    await _writeRaw(file, editor.toString());
   }
 
-  /// Write a map back as YAML (serialized via async mutex).
-  Future<void> _writeYaml(File file, Map<String, dynamic> data) async {
-    // Chain writes: each waits for the previous to finish.
+  // ── Write helpers ────────────────────────────────────────────────────────
+
+  /// Write raw content through the async mutex with chmod 600.
+  Future<void> _writeRaw(File file, String content) async {
     final previous = _writeLock;
     final completer = Completer<void>();
     _writeLock = completer.future;
     try {
       if (previous != null) await previous;
-      // Ensure parent directory exists (for first-time config creation).
       await file.parent.create(recursive: true);
-      final sb = StringBuffer();
-      _writeYamlMap(sb, data, 0);
-      await file.writeAsString(sb.toString());
-      // Restrict permissions to owner-only (0600) since config may contain
-      // sensitive project/audience data.
+      await file.writeAsString(content);
       if (!Platform.isWindows) {
         try {
           await Process.run('chmod', ['600', file.path]);
-        } catch (_) {
-          // chmod not available — best-effort.
-        }
+        } catch (_) {}
       }
     } finally {
       completer.complete();
-      // Only clear if we're still the latest writer.
       if (_writeLock == completer.future) _writeLock = null;
     }
+  }
+
+  /// Write a map as YAML through the async mutex (for initial config creation).
+  Future<void> _writeYaml(File file, Map<String, dynamic> data) async {
+    final sb = StringBuffer();
+    sb.writeln(
+        '# yaml-language-server: \$schema=https://candelahq.com/schemas/config.v1.json');
+    _writeYamlMap(sb, data, 0);
+    await _writeRaw(file, sb.toString());
   }
 
   void _writeYamlMap(StringBuffer sb, Map<String, dynamic> map, int indent) {
@@ -524,7 +609,7 @@ class ConfigService {
     }
   }
 
-  static final _yamlUnsafe = RegExp(r'[:#{}\[\]&*!|>%@`]');
+  static final _yamlUnsafe = RegExp(r'[:#{}\\[\]&*!|>%@`]');
   static final _yamlNumeric =
       RegExp(r'^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$');
   static final _yamlOctal = RegExp(r'^0[0-7]+$');

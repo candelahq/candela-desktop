@@ -19,6 +19,15 @@ dependencies:
   # YAML parsing (for ~/.config/candela/config.yaml)
   yaml: ^3.1.3
 
+  # YAML editing with comment preservation (config modifications)
+  yaml_edit: ^2.2.1
+
+  # JSON Schema validation (config.v1.json schema enforcement)
+  json_schema_builder: ^0.1.0
+
+  # Reactive state management + DI (replaces global singletons)
+  flutter_riverpod: ^2.6.1
+
   # HTTP client (provider connectivity tests)
   http: ^1.3.0
 

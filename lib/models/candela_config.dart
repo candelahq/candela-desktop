@@ -1,25 +1,29 @@
-/// Parsed representation of ~/.candela.yaml.
+/// Parsed representation of ~/.config/candela/config.yaml.
 class CandelaConfig {
   final String path;
   final DateTime? lastModified;
+  final int configVersion;
   final String? remote;
   final String? audience;
   final int port;
   final int lmStudioPort;
   final List<ProviderConfig> providers;
   final VertexAIConfig? vertexAI;
+  final PricingConfig? pricing;
   final CandelaMode mode;
   final List<ConfigIssue> issues;
 
   const CandelaConfig({
     required this.path,
     this.lastModified,
+    this.configVersion = 0,
     this.remote,
     this.audience,
     this.port = 8181,
     this.lmStudioPort = 1234,
     this.providers = const [],
     this.vertexAI,
+    this.pricing,
     this.mode = CandelaMode.solo,
     this.issues = const [],
   });
@@ -45,6 +49,28 @@ class VertexAIConfig {
   const VertexAIConfig({this.project, this.region});
 
   String get effectiveRegion => region ?? 'us-central1';
+}
+
+/// Per-model pricing overrides for accurate cost tracking.
+class PricingConfig {
+  final List<ModelPricing> models;
+
+  const PricingConfig({this.models = const []});
+}
+
+/// Custom rate for a single model, overriding built-in defaults.
+class ModelPricing {
+  final String provider;
+  final String model;
+  final double inputPerMillion;
+  final double outputPerMillion;
+
+  const ModelPricing({
+    required this.provider,
+    required this.model,
+    required this.inputPerMillion,
+    required this.outputPerMillion,
+  });
 }
 
 enum IssueSeverity { error, warning, info }

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/candela_config.dart';
 import '../../models/span_stats.dart';
 import '../../services/budget_notification_service.dart';
@@ -11,7 +12,7 @@ import '../../widgets/budget_waterfall_card.dart';
 import '../../widgets/model_breakdown_table.dart';
 import '../../widgets/stat_card.dart';
 import '../../widgets/time_range_selector.dart';
-import '../../main.dart' show configService;
+import '../../providers.dart';
 
 /// Full-page token spend & usage dashboard.
 ///
@@ -20,14 +21,14 @@ import '../../main.dart' show configService;
 ///
 /// • **Team mode** (`config.remote` set) → ConnectRPC backend, gcloud token.
 /// • **Local mode** → `/_local/api/traces` on the sidecar.
-class DashboardScreen extends StatefulWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   TokenTimeRange _range = TokenTimeRange.d7;
   TelemetryResult? _result;
   bool _loading = true;
@@ -60,7 +61,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (_initialized) return;
     _initialized = true;
 
-    final config = await configService.load();
+    final config = await ref.read(configServiceProvider).load();
     final isTeam = config.mode == CandelaMode.team &&
         config.remote != null &&
         config.remote!.isNotEmpty;

@@ -357,7 +357,7 @@ class ProviderTestService {
     }
   }
 
-  /// Test connectivity through the candela-local proxy.
+  /// Test connectivity through the candela proxy.
   /// This is the most important test — it validates the actual user experience.
   Future<ProviderStatus> testProxy({int port = 8181}) async {
     final proxyUrl = 'http://localhost:$port';
@@ -432,7 +432,7 @@ class ProviderTestService {
         state: ProviderState.error,
         statusMessage: 'Not running',
         errorDetail: 'No proxy on localhost:$port',
-        fixCommand: 'candela-local',
+        fixCommand: 'candela run',
         icon: '🕯',
         port: port,
       );

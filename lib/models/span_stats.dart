@@ -1,6 +1,6 @@
 /// Data models for the local token / cost observability dashboard.
 ///
-/// These mirror the JSON shapes emitted by the candela-local
+/// These mirror the JSON shapes emitted by the candela
 /// `/_local/api/traces` endpoint (see traces_handler.go).
 library;
 

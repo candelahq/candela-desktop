@@ -28,9 +28,9 @@ void main() {
     }
 
     testWidgets('shows config path', (WidgetTester tester) async {
-      const config = CandelaConfig(path: '/Users/test/.candela.yaml');
+      const config = CandelaConfig(path: '/Users/test/.config/candela/config.yaml');
       await tester.pumpWidget(buildApp(config));
-      expect(find.text('/Users/test/.candela.yaml'), findsOneWidget);
+      expect(find.text('/Users/test/.config/candela/config.yaml'), findsOneWidget);
     });
 
     testWidgets('shows Solo Mode badge', (WidgetTester tester) async {

@@ -42,7 +42,7 @@ class ProviderTestService {
           displayName: 'Google / Vertex AI',
           state: ProviderState.error,
           statusMessage: 'No GCP project configured',
-          fixCommand: 'Set vertex_ai.project in ~/.candela.yaml',
+          fixCommand: 'Set vertex_ai.project in ~/.config/candela/config.yaml',
           icon: 'G');
     }
     if (accessToken == null) {

@@ -262,7 +262,7 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
         setState(() => _cliActionLoading = false);
         await _checkCliStatus();
         // Auto-start proxy after install.
-        if (!_cliInstalled == false) {
+        if (_cliInstalled) {
           final pm = ref.read(processManagerProvider);
           await pm.detectRunning();
           final proxy = pm.get('proxy');

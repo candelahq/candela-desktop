@@ -250,7 +250,7 @@ class UpdateService extends ChangeNotifier {
       // Relaunch the updated app.
       await Process.start(
         'open',
-        ['-n', '/Applications/Candela.app'],
+        ['-n', '-a', 'Candela'],
         mode: ProcessStartMode.detached,
       );
 

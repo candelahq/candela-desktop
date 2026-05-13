@@ -1,17 +1,56 @@
-# candela_desktop
+# 🕯️ Candela Desktop
 
-A new Flutter project.
+Native macOS desktop app for [Candela](https://github.com/candelahq/candela) — the OTel-native LLM observability platform. Built with Flutter.
 
-## Getting Started
+## Install
 
-This project is a starting point for a Flutter application.
+```bash
+brew install --cask candelahq/tap/candela-desktop
+```
 
-A few resources to get you started if this is your first Flutter project:
+Or download the latest `.dmg` from [GitHub Releases](https://github.com/candelahq/candela-desktop/releases).
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## Features
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- **Provider Dashboard** — connect and monitor OpenAI, Google Gemini, Anthropic (Vertex), Ollama, vLLM, and LM Studio
+- **Trace Viewer** — waterfall view of distributed traces with span hierarchy, timing, token counts, and cost
+- **Config Editor** — live YAML editor for `~/.config/candela/config.yaml` with validation
+- **Mode Switcher** — toggle between Solo, Solo + Cloud, and Team modes
+- **Auto-Start Proxy** — automatically starts the `candela` CLI proxy on launch if installed but not running
+- **CLI Management** — detects missing CLI, offers one-click `brew install`, and shows upgrade banners when newer versions are available
+- **Self-Update** — upgrade the desktop app via `brew upgrade --cask` from the system tray menu
+- **Dark/Light Mode** — adaptive UI with system theme detection
+- **Secure Storage** — API keys stored in macOS Keychain
+
+## CLI Integration
+
+Candela Desktop works best alongside the [`candela` CLI](https://github.com/candelahq/candela):
+
+```bash
+brew install candelahq/tap/candela
+```
+
+The desktop app auto-detects the CLI and provides:
+- One-click install if `candela` is not found
+- Upgrade banners when a newer version is available
+- Auto-start of the proxy on app launch
+
+## Development
+
+```bash
+git clone https://github.com/candelahq/candela-desktop.git
+cd candela-desktop
+flutter pub get
+flutter run -d macos
+```
+
+### Testing
+
+```bash
+flutter test                    # unit + widget tests (~550 tests)
+flutter analyze                 # static analysis
+```
+
+## License
+
+Apache-2.0 — see [LICENSE](LICENSE).

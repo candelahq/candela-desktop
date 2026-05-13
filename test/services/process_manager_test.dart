@@ -341,7 +341,7 @@ void main() {
     test('isInstalled returns false for unregistered name (null binary)',
         () async {
       pm.configure(providerNames: []);
-      // 'proxy' has a binary ('candela-local') but it won't be on PATH in tests.
+      // 'proxy' has a binary ('candela') but it won't be on PATH in tests.
       final result = await pm.isInstalled('proxy');
       // Either false (not installed) or the binary exists on dev machine — both are valid.
       expect(result, isA<bool>());

@@ -325,9 +325,12 @@ void main() {
       // Configure with a cloud-only provider — no local processes.
       pm.configure(providerNames: []);
       await expectLater(pm.startAll(), completes);
-      // Only proxy is configured — proxy binary won't be installed in CI.
-      expect(pm.get('proxy')!.state,
-          anyOf(ProcessState.stopped, ProcessState.notInstalled));
+      // Only proxy is configured — proxy binary won't be installed in CI,
+      // but on dev machines it may actually start.
+      expect(
+          pm.get('proxy')!.state,
+          anyOf(ProcessState.stopped, ProcessState.notInstalled,
+              ProcessState.running));
     });
 
     test('isInstalled returns false for unknown binary name', () async {

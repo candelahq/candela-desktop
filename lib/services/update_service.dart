@@ -177,7 +177,7 @@ class UpdateService extends ChangeNotifier {
       case InstallChannel.direct:
         return 'A new version is available. It will be installed automatically.';
       case InstallChannel.homebrew:
-        return 'Run: brew upgrade candela';
+        return 'Run: brew upgrade --cask candelahq/tap/candela-desktop';
       case InstallChannel.nix:
         return 'Run: nix profile upgrade';
       case InstallChannel.unknown:
@@ -227,6 +227,39 @@ class UpdateService extends ChangeNotifier {
     }
 
     return _SemverParts(parts.sublist(0, 3), preRelease);
+  }
+
+  /// Perform a Homebrew cask upgrade and relaunch the app.
+  ///
+  /// Runs `brew upgrade --cask candelahq/tap/candela-desktop`, then
+  /// relaunches via `open -n` and exits the current process.
+  /// Returns false if the upgrade failed (the app stays open).
+  Future<bool> performBrewUpgrade() async {
+    _setStatus(UpdateStatus.checking);
+    try {
+      final result = await Process.run(
+        'brew',
+        ['upgrade', '--cask', 'candelahq/tap/candela-desktop'],
+      );
+
+      if (result.exitCode != 0) {
+        _setStatus(UpdateStatus.error);
+        return false;
+      }
+
+      // Relaunch the updated app.
+      await Process.start(
+        'open',
+        ['-n', '-a', 'Candela'],
+        mode: ProcessStartMode.detached,
+      );
+
+      // Exit the current (old) process.
+      exit(0);
+    } catch (_) {
+      _setStatus(UpdateStatus.error);
+      return false;
+    }
   }
 }
 

@@ -17,6 +17,8 @@ import 'config_card.dart';
 import 'provider_card.dart';
 import 'runtime_control_card.dart';
 import 'diagnostic_log.dart';
+import '../../widgets/cli_status_banner.dart';
+import '../../services/brew_service.dart';
 
 class AuthDebugScreen extends ConsumerStatefulWidget {
   const AuthDebugScreen({super.key});
@@ -40,6 +42,14 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
   bool _loading = true;
   bool _disposed = false;
   int _loadGeneration = 0; // cancellation guard
+
+  // CLI status state.
+  bool _cliInstalled = false;
+  bool _brewAvailable = true;
+  String? _cliInstalledVersion;
+  String? _cliLatestVersion;
+  bool _cliActionLoading = false;
+  String? _cliError;
 
   @override
   void initState() {
@@ -104,6 +114,9 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
 
     // Auto-run diagnostics on first load.
     _diagnostics.runAll();
+
+    // Check CLI install status.
+    _checkCliStatus();
   }
 
   Future<void> _runProviderTests(
@@ -204,6 +217,67 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
   Future<void> _removeProvider(String providerName) async {
     await _configService.removeProvider(providerName);
     await _loadAll();
+  }
+
+  /// Check if the candela CLI is installed and whether an upgrade is available.
+  Future<void> _checkCliStatus() async {
+    final brew = ref.read(brewServiceProvider);
+    final brewOk = await brew.isBrewInstalled();
+    final installed = await brew.isFormulaInstalled('candelahq/tap/candela');
+
+    String? currentVer;
+    String? latestVer;
+    if (installed) {
+      currentVer = await brew.installedVersion('candelahq/tap/candela');
+      latestVer = await brew.latestVersion('candelahq/tap/candela');
+    }
+
+    if (!_disposed && mounted) {
+      setState(() {
+        _brewAvailable = brewOk;
+        _cliInstalled = installed;
+        _cliInstalledVersion = currentVer;
+        _cliLatestVersion = latestVer;
+      });
+    }
+  }
+
+  /// Handle install or upgrade button tap.
+  Future<void> _onCliAction() async {
+    final brew = ref.read(brewServiceProvider);
+    setState(() {
+      _cliActionLoading = true;
+      _cliError = null;
+    });
+
+    BrewResult result;
+    if (!_cliInstalled) {
+      result = await brew.install('candelahq/tap/candela');
+    } else {
+      result = await brew.upgrade('candelahq/tap/candela');
+    }
+
+    if (!_disposed && mounted) {
+      if (result.success) {
+        setState(() => _cliActionLoading = false);
+        await _checkCliStatus();
+        // Auto-start proxy after install.
+        if (_cliInstalled) {
+          final pm = ref.read(processManagerProvider);
+          await pm.detectRunning();
+          final proxy = pm.get('proxy');
+          if (proxy != null && proxy.state == ProcessState.stopped) {
+            pm.start('proxy');
+          }
+        }
+        await _loadAll();
+      } else {
+        setState(() {
+          _cliActionLoading = false;
+          _cliError = result.errorMessage ?? 'Install failed';
+        });
+      }
+    }
   }
 
   void _showAddProviderDialog() {
@@ -334,6 +408,17 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // CLI install/upgrade banner
+                      CliStatusBanner(
+                        isInstalled: _cliInstalled,
+                        installedVersion: _cliInstalledVersion,
+                        latestVersion: _cliLatestVersion,
+                        isBrewAvailable: _brewAvailable,
+                        isLoading: _cliActionLoading,
+                        error: _cliError,
+                        onAction: _onCliAction,
+                        onDismissError: () => setState(() => _cliError = null),
+                      ),
                       // Section 1: Identity + Config
                       if (_identity != null)
                         IdentityCard(identity: _identity!, onRefresh: _loadAll),

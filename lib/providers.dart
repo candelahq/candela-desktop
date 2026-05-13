@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/candela_config.dart';
+import '../services/brew_service.dart';
 import '../services/config_service.dart';
 import '../services/process_manager.dart';
 import '../services/tray_service.dart';
@@ -67,6 +68,13 @@ final processManagerProvider = Provider<ProcessManager>((ref) {
 
   ref.onDispose(() => pm.dispose());
   return pm;
+});
+
+// ── Brew ─────────────────────────────────────────────────────────────────────
+
+/// Homebrew CLI wrapper for install/upgrade operations.
+final brewServiceProvider = Provider<BrewService>((ref) {
+  return BrewService();
 });
 
 // ── Tray ────────────────────────────────────────────────────────────────────

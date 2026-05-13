@@ -4,6 +4,7 @@ import 'package:window_manager/window_manager.dart';
 import 'theme/candela_theme.dart';
 import 'theme/colors.dart';
 import 'providers.dart';
+import 'services/process_manager.dart';
 import 'services/update_service.dart';
 import 'widgets/sidebar.dart';
 import 'screens/auth_debug/auth_debug_screen.dart';
@@ -119,6 +120,14 @@ class _AppShellState extends ConsumerState<AppShell> with WindowListener {
     // Detect already-running processes.
     final pm = ref.read(processManagerProvider);
     await pm.detectRunning();
+
+    // Auto-start proxy if installed but not already running.
+    final proxy = pm.get('proxy');
+    if (proxy != null &&
+        proxy.state == ProcessState.stopped &&
+        await pm.isInstalled('proxy')) {
+      pm.start('proxy');
+    }
   }
 
   @override

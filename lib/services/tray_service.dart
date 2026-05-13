@@ -4,15 +4,17 @@ import 'package:flutter/services.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 import 'process_manager.dart';
+import 'update_service.dart';
 
 /// Manages the macOS/Windows/Linux system tray icon and menu.
 class TrayService with TrayListener {
   final ProcessManager processManager;
+  final UpdateService? updateService;
   Timer? _updateTimer;
   Timer? _debounceTimer;
   VoidCallback? onShowWindow;
 
-  TrayService({required this.processManager});
+  TrayService({required this.processManager, this.updateService});
 
   Future<void> init() async {
     // Use a built-in icon path. For production, use a proper .png asset.
@@ -104,6 +106,18 @@ class TrayService with TrayListener {
 
     items.add(MenuItem.separator());
 
+    // Update available.
+    if (updateService != null &&
+        updateService!.status == UpdateStatus.available &&
+        updateService!.latestVersion != null) {
+      items.add(MenuItem(
+        key: 'update',
+        label: '↑  Update Available (${updateService!.latestVersion})',
+      ));
+    }
+
+    items.add(MenuItem.separator());
+
     items.add(MenuItem(
       key: 'show',
       label: 'Show Window',
@@ -145,6 +159,9 @@ class TrayService with TrayListener {
       case 'quit':
         _quit();
         break;
+      case 'update':
+        _performUpdate();
+        break;
     }
   }
 
@@ -155,6 +172,13 @@ class TrayService with TrayListener {
     await windowManager.destroy();
     // Use SystemNavigator to allow Flutter cleanup instead of hard exit.
     SystemNavigator.pop();
+  }
+
+  Future<void> _performUpdate() async {
+    if (updateService?.detectChannel() == InstallChannel.homebrew) {
+      await processManager.stopAll();
+      await updateService!.performBrewUpgrade();
+    }
   }
 
   void dispose() {

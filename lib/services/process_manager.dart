@@ -64,6 +64,15 @@ class ProcessManager extends ChangeNotifier {
     }
     _healthTimers.clear();
 
+    // Kill handles for processes being removed to prevent orphaned OS
+    // processes that can no longer be stopped via the UI.
+    final staleNames =
+        _handles.keys.where((n) => !providerNames.contains(n) && n != 'proxy');
+    for (final name in staleNames.toList()) {
+      _handles[name]?.kill(ProcessSignal.sigterm);
+      _handles.remove(name);
+    }
+
     _processes.clear();
 
     // Proxy is always managed.

@@ -216,6 +216,11 @@ class UpdateService extends ChangeNotifier {
   }
 
   static _SemverParts _parseSemver(String version) {
+    // Strip common 'v' prefix (e.g. 'v1.0.0' from git tags).
+    if (version.startsWith('v') || version.startsWith('V')) {
+      version = version.substring(1);
+    }
+
     // Strip build metadata (+N) per semver 2.0.0 — ignored for precedence.
     final plusIdx = version.indexOf('+');
     final withoutBuild =

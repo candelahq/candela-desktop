@@ -55,6 +55,14 @@ void main() {
       expect(UpdateService.isNewer('0.4.0-beta.1+1', '0.3.0'), isTrue);
       expect(UpdateService.isNewer('0.4.0+1', '0.4.0-beta.1+1'), isTrue);
     });
+
+    test('v prefix is stripped for comparison', () {
+      expect(UpdateService.isNewer('v2.0.0', 'v1.0.0'), isTrue);
+      expect(UpdateService.isNewer('v1.0.0', 'v2.0.0'), isFalse);
+      // Mixed: one with prefix, one without.
+      expect(UpdateService.isNewer('v0.4.0', '0.3.0'), isTrue);
+      expect(UpdateService.isNewer('0.4.0', 'v0.3.0'), isTrue);
+    });
   });
 
   group('UpdateService — checkForUpdate', () {

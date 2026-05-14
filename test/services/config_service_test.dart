@@ -564,12 +564,20 @@ pricing:
         );
       });
 
-      test('allows empty content', () async {
+      test('rejects empty content to prevent config wipe', () async {
         await File(testConfigPath).create(recursive: true);
-        await service.writeRawConfig('');
-        final config = await service.load();
-        expect(config.issues, isNotEmpty);
-        expect(config.issues.first.message, contains('empty'));
+        expect(
+          () => service.writeRawConfig(''),
+          throwsA(isA<FormatException>()),
+        );
+      });
+
+      test('rejects whitespace-only content', () async {
+        await File(testConfigPath).create(recursive: true);
+        expect(
+          () => service.writeRawConfig('   \n  \n'),
+          throwsA(isA<FormatException>()),
+        );
       });
     });
 

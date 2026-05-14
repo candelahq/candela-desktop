@@ -363,14 +363,18 @@ class ConfigService {
   /// Validates YAML syntax before writing. Throws [FormatException] on
   /// invalid YAML.
   Future<void> writeRawConfig(String yamlContent) async {
-    // Validate YAML before acquiring the lock.
-    if (yamlContent.trim().isNotEmpty) {
-      try {
-        loadYaml(yamlContent);
-      } on YamlException catch (e) {
-        throw FormatException('Invalid YAML: ${e.message}');
-      }
+    // Reject empty content — writing an empty string would wipe the config.
+    if (yamlContent.trim().isEmpty) {
+      throw const FormatException('Cannot write empty config');
     }
+
+    // Validate YAML before acquiring the lock.
+    try {
+      loadYaml(yamlContent);
+    } on YamlException catch (e) {
+      throw FormatException('Invalid YAML: ${e.message}');
+    }
+
     final resolvedPath = _resolveConfigPath();
     final file = File(resolvedPath);
 

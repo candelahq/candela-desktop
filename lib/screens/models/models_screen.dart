@@ -18,12 +18,14 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
   TokenTimeRange _range = TokenTimeRange.d7;
   List<ModelBreakdown> _models = [];
   bool _loading = true;
+  String? _error;
   Timer? _autoRefresh;
   TelemetryService? _svc;
   bool _initialized = false;
   String? _selectedModel;
   _ModelSortCol _sortCol = _ModelSortCol.cost;
   bool _ascending = false;
+  double _maxCost = 0;
 
   @override
   void initState() {
@@ -35,21 +37,35 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
     if (_initialized) return;
     _initialized = true;
     final config = await ref.read(configServiceProvider).load();
+    if (!mounted) return;
     _svc = TelemetryService(port: config.port);
     await _fetch();
+    if (!mounted) return;
     _autoRefresh = Timer.periodic(const Duration(seconds: 30), (_) => _fetch());
   }
 
   Future<void> _fetch() async {
     if (!mounted || _svc == null) return;
     setState(() => _loading = true);
-    final result = await _svc!.fetch(_range);
-    if (!mounted) return;
-    setState(() {
-      _models = result?.models ?? [];
-      _sortModels();
-      _loading = false;
-    });
+    try {
+      final result = await _svc!.fetch(_range);
+      if (!mounted) return;
+      setState(() {
+        _models = result?.models ?? [];
+        _sortModels();
+        _maxCost = _models.isEmpty
+            ? 0
+            : _models.map((m) => m.costUsd).reduce((a, b) => a > b ? a : b);
+        _loading = false;
+        _error = result == null ? 'Could not reach the proxy' : null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = 'Failed to load models: $e';
+      });
+    }
   }
 
   void _sortModels() {
@@ -96,17 +112,23 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
         ? _models.where((m) => m.model == _selectedModel).firstOrNull
         : null;
     return Scaffold(
-      backgroundColor: CandelaColors.bgPrimary,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(children: [
         _buildHeader(),
         Expanded(
-            child: _models.isEmpty && !_loading
-                ? _buildEmpty()
-                : Row(children: [
-                    Expanded(flex: 3, child: _buildModelList()),
-                    if (selected != null)
-                      Expanded(flex: 2, child: _ModelDetail(model: selected)),
-                  ])),
+            child: _error != null
+                ? Center(
+                    child: Text(_error!,
+                        style: const TextStyle(
+                            color: CandelaColors.error, fontSize: 13)))
+                : _models.isEmpty && !_loading
+                    ? _buildEmpty()
+                    : Row(children: [
+                        Expanded(flex: 3, child: _buildModelList()),
+                        if (selected != null)
+                          Expanded(
+                              flex: 2, child: _ModelDetail(model: selected)),
+                      ])),
       ]),
     );
   }
@@ -232,9 +254,7 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
         itemBuilder: (_, i) => _ModelRow(
           model: _models[i],
           isSelected: _models[i].model == _selectedModel,
-          maxCost: _models.isEmpty
-              ? 0
-              : _models.map((m) => m.costUsd).reduce((a, b) => a > b ? a : b),
+          maxCost: _maxCost,
           onTap: () => setState(() {
             _selectedModel =
                 _models[i].model == _selectedModel ? null : _models[i].model;

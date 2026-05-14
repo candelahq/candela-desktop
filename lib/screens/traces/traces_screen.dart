@@ -34,6 +34,10 @@ class _TracesScreenState extends ConsumerState<TracesScreen> {
   _TraceSortCol _sortCol = _TraceSortCol.timestamp;
   bool _ascending = false;
 
+  // Cached filter options — computed once per fetch, not per rebuild.
+  Set<String> _cachedModels = {};
+  Set<String> _cachedStatuses = {};
+
   // Expansion
   String? _expandedSpanId;
 
@@ -48,27 +52,39 @@ class _TracesScreenState extends ConsumerState<TracesScreen> {
     _initialized = true;
 
     final config = await ref.read(configServiceProvider).load();
+    if (!mounted) return;
     _svc = TelemetryService(port: config.port);
 
     await _fetch();
+    if (!mounted) return;
     _autoRefresh = Timer.periodic(const Duration(seconds: 30), (_) => _fetch());
   }
 
   Future<void> _fetch() async {
     if (!mounted || _svc == null) return;
     setState(() => _loading = true);
-    final result = await _svc!.fetch(_range);
-    if (!mounted) return;
-    setState(() {
-      _spans = result?.spans ?? [];
-      _loading = false;
-      _error = result == null
-          ? 'Could not reach the Candela proxy. Is it running?'
-          : result.error != null
-              ? 'Connection error'
-              : null;
-      _applyFilters();
-    });
+    try {
+      final result = await _svc!.fetch(_range);
+      if (!mounted) return;
+      setState(() {
+        _spans = result?.spans ?? [];
+        _cachedModels = _spans.map((s) => s.model).toSet();
+        _cachedStatuses = _spans.map((s) => s.status).toSet();
+        _loading = false;
+        _error = result == null
+            ? 'Could not reach the Candela proxy. Is it running?'
+            : result.error != null
+                ? 'Connection error'
+                : null;
+        _applyFilters();
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = 'Failed to load traces: $e';
+      });
+    }
   }
 
   void _applyFilters() {
@@ -118,9 +134,9 @@ class _TracesScreenState extends ConsumerState<TracesScreen> {
     _fetch();
   }
 
-  Set<String> get _availableModels => _spans.map((s) => s.model).toSet();
+  Set<String> get _availableModels => _cachedModels;
 
-  Set<String> get _availableStatuses => _spans.map((s) => s.status).toSet();
+  Set<String> get _availableStatuses => _cachedStatuses;
 
   @override
   void dispose() {
@@ -132,7 +148,7 @@ class _TracesScreenState extends ConsumerState<TracesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: CandelaColors.bgPrimary,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(
         children: [
           _buildHeader(),

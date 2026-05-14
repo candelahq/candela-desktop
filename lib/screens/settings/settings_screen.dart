@@ -329,7 +329,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ],
       ),
-    );
+    ).then((_) => controller.dispose());
   }
 }
 

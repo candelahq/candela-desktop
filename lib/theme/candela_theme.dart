@@ -85,7 +85,7 @@ class CandelaTheme {
       dividerColor: CandelaColorsLight.borderSubtle,
       colorScheme: const ColorScheme.light(
         primary: CandelaColors.accent,
-        onPrimary: Colors.white,
+        onPrimary: CandelaColorsLight.textPrimary,
         secondary: CandelaColors.accentHover,
         surface: CandelaColorsLight.bgSecondary,
         error: CandelaColors.error,

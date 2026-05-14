@@ -42,6 +42,10 @@ class _CandelaSidebarState extends State<CandelaSidebar> {
         label: 'Traces'),
     _NavItem(
         icon: Icons.memory_outlined, activeIcon: Icons.memory, label: 'Models'),
+    _NavItem(
+        icon: Icons.settings_outlined,
+        activeIcon: Icons.settings,
+        label: 'Settings'),
   ];
 
   @override

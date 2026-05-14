@@ -31,3 +31,21 @@ class CandelaColors {
   static const error = Color(0xFFF87171);
   static const info = Color(0xFF60A5FA);
 }
+
+/// Light-mode color tokens — mirrors [CandelaColors] structure.
+class CandelaColorsLight {
+  CandelaColorsLight._();
+
+  static const bgPrimary = Color(0xFFF8F8FA);
+  static const bgSecondary = Color(0xFFFFFFFF);
+  static const bgTertiary = Color(0xFFF0F0F5);
+  static const bgElevated = Color(0xFFE8E8EE);
+  static const bgHover = Color(0xFFEEEEF4);
+
+  static const textPrimary = Color(0xFF1A1A2E);
+  static const textSecondary = Color(0xFF606078);
+  static const textMuted = Color(0xFF9898B0);
+
+  static const border = Color(0xFFD8D8E0);
+  static const borderSubtle = Color(0xFFE8E8EE);
+}

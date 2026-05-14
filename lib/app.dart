@@ -10,24 +10,45 @@ import 'widgets/sidebar.dart';
 import 'screens/auth_debug/auth_debug_screen.dart';
 import 'screens/dashboard/dashboard_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
+import 'screens/traces/traces_screen.dart';
+import 'screens/models/models_screen.dart';
+import 'screens/settings/settings_screen.dart';
 
-class CandelaApp extends StatelessWidget {
+class CandelaApp extends StatefulWidget {
   const CandelaApp({super.key});
+
+  @override
+  State<CandelaApp> createState() => _CandelaAppState();
+}
+
+class _CandelaAppState extends State<CandelaApp> {
+  ThemeMode _themeMode = ThemeMode.dark;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Candela',
       debugShowCheckedModeBanner: false,
-      theme: CandelaTheme.dark,
-      home: const _AppRouter(),
+      theme: CandelaTheme.light,
+      darkTheme: CandelaTheme.dark,
+      themeMode: _themeMode,
+      home: _AppRouter(
+        themeMode: _themeMode,
+        onThemeModeChanged: (mode) => setState(() => _themeMode = mode),
+      ),
     );
   }
 }
 
 /// Decides whether to show onboarding or the main app shell.
 class _AppRouter extends ConsumerStatefulWidget {
-  const _AppRouter();
+  final ThemeMode themeMode;
+  final ValueChanged<ThemeMode> onThemeModeChanged;
+
+  const _AppRouter({
+    required this.themeMode,
+    required this.onThemeModeChanged,
+  });
 
   @override
   ConsumerState<_AppRouter> createState() => _AppRouterState();
@@ -75,12 +96,22 @@ class _AppRouterState extends ConsumerState<_AppRouter> {
       );
     }
 
-    return const AppShell();
+    return AppShell(
+      themeMode: widget.themeMode,
+      onThemeModeChanged: widget.onThemeModeChanged,
+    );
   }
 }
 
 class AppShell extends ConsumerStatefulWidget {
-  const AppShell({super.key});
+  final ThemeMode themeMode;
+  final ValueChanged<ThemeMode> onThemeModeChanged;
+
+  const AppShell({
+    super.key,
+    required this.themeMode,
+    required this.onThemeModeChanged,
+  });
 
   @override
   ConsumerState<AppShell> createState() => _AppShellState();
@@ -91,13 +122,6 @@ class _AppShellState extends ConsumerState<AppShell> with WindowListener {
   bool _hasShownTrayTooltip = false;
   final _updateService = UpdateService();
   bool _trayInitialized = false;
-
-  static final _pages = <Widget>[
-    const AuthDebugScreen(),
-    const DashboardScreen(),
-    const _ComingSoon(title: 'Traces'),
-    const _ComingSoon(title: 'Models'),
-  ];
 
   @override
   void initState() {
@@ -168,6 +192,17 @@ class _AppShellState extends ConsumerState<AppShell> with WindowListener {
     await windowManager.focus();
   }
 
+  List<Widget> get _pages => [
+        const AuthDebugScreen(),
+        const DashboardScreen(),
+        const TracesScreen(),
+        const ModelsScreen(),
+        SettingsScreen(
+          currentThemeMode: widget.themeMode,
+          onThemeModeChanged: widget.onThemeModeChanged,
+        ),
+      ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -179,29 +214,14 @@ class _AppShellState extends ConsumerState<AppShell> with WindowListener {
             updateService: _updateService,
           ),
           Expanded(
-            child: _pages[_selectedIndex],
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: KeyedSubtree(
+                key: ValueKey(_selectedIndex),
+                child: _pages[_selectedIndex],
+              ),
+            ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ComingSoon extends StatelessWidget {
-  final String title;
-  const _ComingSoon({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text('🕯️', style: TextStyle(fontSize: 48)),
-          const SizedBox(height: 16),
-          Text(title, style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 8),
-          Text('Coming soon', style: TextStyle(color: Colors.grey[600])),
         ],
       ),
     );

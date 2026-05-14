@@ -209,6 +209,7 @@ class ConfigService {
       vertexAI = VertexAIConfig(
         project: vtx['project'] as String?,
         region: vtx['region'] as String?,
+        promptCaching: vtx['prompt_caching'] == true,
       );
     }
 
@@ -544,6 +545,32 @@ class ConfigService {
       editor.remove(['providers', removeIdx]);
     }
     await _writeRaw(file, editor.toString());
+  }
+
+  /// Toggle prompt caching under `vertex_ai.prompt_caching`.
+  ///
+  /// When enabled, the proxy injects `cache_control` breakpoints into
+  /// Anthropic requests, reducing costs ~10x for multi-turn conversations.
+  Future<void> setPromptCaching(bool enabled) async {
+    final resolvedPath = _resolveConfigPath();
+    final file = File(resolvedPath);
+
+    if (await file.exists()) {
+      final content = await file.readAsString();
+      final parsed = loadYaml(content);
+      final editor = YamlEditor(content);
+      if (parsed is YamlMap && parsed.containsKey('vertex_ai')) {
+        editor.update(['vertex_ai', 'prompt_caching'], enabled);
+      } else {
+        editor.update(['vertex_ai'], {'prompt_caching': enabled});
+      }
+      await _writeRaw(file, editor.toString());
+    } else {
+      await _writeYaml(file, {
+        'config_version': 1,
+        'vertex_ai': {'prompt_caching': enabled},
+      });
+    }
   }
 
   // ── Write helpers ────────────────────────────────────────────────────────

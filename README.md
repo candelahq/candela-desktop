@@ -13,13 +13,15 @@ Or download the latest `.dmg` from [GitHub Releases](https://github.com/candelah
 ## Features
 
 - **Provider Dashboard** — connect and monitor OpenAI, Google Gemini, Anthropic (Vertex), Ollama, vLLM, and LM Studio
-- **Trace Viewer** — waterfall view of distributed traces with span hierarchy, timing, token counts, and cost
+- **Traces Screen** — searchable, filterable span list with sortable columns, expandable detail rows, latency visualization
+- **Models Screen** — model catalog with per-model stats, cost analysis, efficiency metrics (cost/call, tokens/call, output ratio)
+- **Settings Screen** — theme switcher, launch-at-login, proxy port config, mode switcher, version info
 - **Config Editor** — live YAML editor for `~/.config/candela/config.yaml` with validation
 - **Mode Switcher** — toggle between Solo, Solo + Cloud, and Team modes
 - **Auto-Start Proxy** — automatically starts the `candela` CLI proxy on launch if installed but not running
 - **CLI Management** — detects missing CLI, offers one-click `brew install`, and shows upgrade banners when newer versions are available
 - **Self-Update** — upgrade the desktop app via `brew upgrade --cask` from the system tray menu
-- **Dark/Light Mode** — adaptive UI with system theme detection
+- **Dark/Light Mode** — full light and dark themes with system preference detection
 - **Secure Storage** — API keys stored in macOS Keychain
 
 ## CLI Integration

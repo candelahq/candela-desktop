@@ -45,8 +45,9 @@ class ProviderConfig {
 class VertexAIConfig {
   final String? project;
   final String? region;
+  final bool promptCaching;
 
-  const VertexAIConfig({this.project, this.region});
+  const VertexAIConfig({this.project, this.region, this.promptCaching = false});
 
   String get effectiveRegion => region ?? 'us-central1';
 }

@@ -66,7 +66,7 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
 
   Future<void> _loadAll() async {
     final gen = ++_loadGeneration;
-    if (!_disposed) setState(() => _loading = true);
+    if (!_disposed && mounted) setState(() => _loading = true);
 
     // Parallelize independent gcloud subprocess calls (~800ms savings).
     final installed = await _gcloud.isInstalled();
@@ -252,6 +252,7 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
   /// Handle install or upgrade button tap.
   Future<void> _onCliAction() async {
     final brew = ref.read(brewServiceProvider);
+    if (_disposed || !mounted) return;
     setState(() {
       _cliActionLoading = true;
       _cliError = null;

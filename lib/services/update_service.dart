@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:auto_updater/auto_updater.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:safe_change_notifier/safe_change_notifier.dart';
 
 /// How the app was installed — determines update mechanism.
 enum InstallChannel {
@@ -45,8 +46,7 @@ enum UpdateStatus {
 /// - Direct installs (macOS) → Sparkle auto-update via `auto_updater`
 /// - Homebrew installs → "run `brew upgrade candela`"
 /// - Nix installs → "run `nix profile upgrade`"
-class UpdateService extends ChangeNotifier {
-  bool _disposed = false;
+class UpdateService extends SafeChangeNotifier {
   static const _releaseFeedUrl =
       'https://api.github.com/repos/candelahq/candela-desktop/releases/latest';
 
@@ -276,14 +276,7 @@ class UpdateService extends ChangeNotifier {
   }
 
   @override
-  void notifyListeners() {
-    if (_disposed) return;
-    super.notifyListeners();
-  }
-
-  @override
   void dispose() {
-    _disposed = true;
     _client.close();
     super.dispose();
   }

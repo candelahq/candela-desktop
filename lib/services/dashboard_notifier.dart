@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:safe_change_notifier/safe_change_notifier.dart';
 import '../models/budget_info.dart';
 import '../models/span_stats.dart';
 import '../services/gcloud_service.dart';
@@ -52,8 +53,7 @@ class DashboardState {
 /// Uses [ChangeNotifier] for compatibility with the existing provider setup.
 /// Instantiate with a [TelemetryService] and optional [GCloudService] for
 /// team-mode token refresh.
-class DashboardNotifier extends ChangeNotifier {
-  bool _disposed = false;
+class DashboardNotifier extends SafeChangeNotifier {
   final TelemetryService _telemetry;
   final GCloudService? _gcloud;
   Timer? _refreshTimer;
@@ -109,14 +109,7 @@ class DashboardNotifier extends ChangeNotifier {
   }
 
   @override
-  void notifyListeners() {
-    if (_disposed) return;
-    super.notifyListeners();
-  }
-
-  @override
   void dispose() {
-    _disposed = true;
     _refreshTimer?.cancel();
     super.dispose();
   }

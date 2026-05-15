@@ -456,6 +456,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.6.1"
+  safe_change_notifier:
+    dependency: "direct main"
+    description:
+      name: safe_change_notifier
+      sha256: de542ff5b3dc2bff1b4ae3349992c22c7162e2c87c6c0e52db7ae9402a2e15d0
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.4.0+1"
   screen_retriever:
     dependency: transitive
     description:

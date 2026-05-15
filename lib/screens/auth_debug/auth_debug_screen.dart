@@ -66,7 +66,7 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
 
   Future<void> _loadAll() async {
     final gen = ++_loadGeneration;
-    if (!_disposed && mounted) setState(() => _loading = true);
+    if (mounted) setState(() => _loading = true);
 
     // Parallelize independent gcloud subprocess calls (~800ms savings).
     final installed = await _gcloud.isInstalled();
@@ -88,7 +88,7 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
     final config = results[4] as CandelaConfig;
     final dashboardToken = results[5] as TokenInfo?;
 
-    if (_disposed || !mounted) return;
+    if (!mounted) return;
     setState(() {
       _identity = IdentityState(
         email: account,
@@ -205,11 +205,12 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
       testFutures.add(_providerTest.testLmStudio());
     }
 
-    if (_disposed || !mounted) return;
+    final gen = _loadGeneration;
+    if (!mounted) return;
     setState(() => _providerStatuses = loadingStatuses);
 
     final results = await Future.wait(testFutures);
-    if (_disposed || !mounted) return;
+    if (!mounted || gen != _loadGeneration) return;
     setState(() => _providerStatuses = results);
   }
 
@@ -252,7 +253,7 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
   /// Handle install or upgrade button tap.
   Future<void> _onCliAction() async {
     final brew = ref.read(brewServiceProvider);
-    if (_disposed || !mounted) return;
+    if (!mounted) return;
     setState(() {
       _cliActionLoading = true;
       _cliError = null;

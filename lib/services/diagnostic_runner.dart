@@ -19,6 +19,7 @@ class DiagnosticRunner {
 
   final List<DiagnosticEntry> history = [];
   bool _running = false;
+  bool _disposed = false;
   bool get isRunning => _running;
 
   /// Completer for the current run, used to reject/await concurrent calls.
@@ -66,6 +67,9 @@ class DiagnosticRunner {
 
     // 1. gcloud CLI
     _emit('Checking gcloud CLI...', DiagnosticStatus.running);
+    if (_disposed) {
+      return const DiagnosticSummary(passed: 0, failed: 0, warned: 0);
+    }
     if (await _gcloud.isInstalled()) {
       _emit('gcloud CLI installed', DiagnosticStatus.pass);
       passed++;
@@ -103,6 +107,9 @@ class DiagnosticRunner {
     }
 
     // 3. ADC
+    if (_disposed) {
+      return DiagnosticSummary(passed: passed, failed: failed, warned: warned);
+    }
     _emit('Checking Application Default Credentials...',
         DiagnosticStatus.running);
     final adc = await _adc.readAdcFile();
@@ -118,6 +125,9 @@ class DiagnosticRunner {
     }
 
     // 4. Token
+    if (_disposed) {
+      return DiagnosticSummary(passed: passed, failed: failed, warned: warned);
+    }
     _emit('Validating access token...', DiagnosticStatus.running);
     final token = await _gcloud.getTokenInfo();
     String? accessTokenStr;
@@ -138,6 +148,9 @@ class DiagnosticRunner {
     }
 
     // 5. GCP Project
+    if (_disposed) {
+      return DiagnosticSummary(passed: passed, failed: failed, warned: warned);
+    }
     _emit('Checking GCP project...', DiagnosticStatus.running);
     final project = config.vertexAI?.project ?? await _gcloud.getProject();
     if (project != null && project.isNotEmpty) {
@@ -150,6 +163,9 @@ class DiagnosticRunner {
     }
 
     // 6. Provider tests — only test what's configured.
+    if (_disposed) {
+      return DiagnosticSummary(passed: passed, failed: failed, warned: warned);
+    }
 
     // Always test the proxy.
     _emit(
@@ -240,6 +256,7 @@ class DiagnosticRunner {
 
   void _emit(String message, DiagnosticStatus status,
       {String? detail, String? fixCommand, String? fixUrl}) {
+    if (_disposed) return; // Guard: controller may already be closed.
     final entry = DiagnosticEntry(
         timestamp: DateTime.now(),
         message: message,
@@ -260,6 +277,7 @@ class DiagnosticRunner {
   }
 
   void dispose() {
+    _disposed = true;
     _controller.close();
     _providers.dispose();
   }

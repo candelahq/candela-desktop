@@ -68,9 +68,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     TelemetryService svc;
     if (isTeam) {
-      // Fetch a gcloud ADC token for team backend auth.
+      // Fetch a gcloud ID token for team backend auth.
+      // Cloud Run requires an audience-scoped identity token, not an access token.
       final gcloud = GCloudService();
-      final tokenInfo = await gcloud.getTokenInfo();
+      final audience = config.audience ?? config.remote ?? '';
+      final tokenInfo = audience.isNotEmpty
+          ? await gcloud.getIdToken(audience)
+          : await gcloud.getTokenInfo();
       svc = TelemetryService(
         port: config.port,
         remoteUrl: config.remote,
@@ -97,7 +101,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _autoRefresh = Timer.periodic(const Duration(seconds: 30), (_) => _fetch());
   }
 
-  /// Re-fetches the ADC token and rebuilds the TelemetryService when the
+  /// Re-fetches the auth token and rebuilds the TelemetryService when the
   /// token is within [_tokenRefreshBuffer] of expiry. No-op in local mode.
   Future<void> _refreshTokenIfNeeded() async {
     if (_gcloud == null || _remoteUrl == null) return; // local mode
@@ -107,7 +111,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       return; // still plenty of time left
     }
     // Token is expired or close to expiry — fetch a fresh one.
-    final tokenInfo = await _gcloud!.getTokenInfo();
+    final audience = _remoteUrl!;
+    final tokenInfo = await _gcloud!.getIdToken(audience);
     if (!mounted) return;
     final oldSvc = _svc;
     _svc = TelemetryService(

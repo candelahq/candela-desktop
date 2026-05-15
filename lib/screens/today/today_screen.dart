@@ -45,7 +45,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     TelemetryService svc;
     if (isTeam) {
       final gcloud = GCloudService();
-      final tokenInfo = await gcloud.getTokenInfo();
+      final audience = config.audience ?? config.remote ?? '';
+      final tokenInfo = audience.isNotEmpty
+          ? await gcloud.getIdToken(audience)
+          : await gcloud.getTokenInfo();
       svc = TelemetryService(
         port: config.port,
         remoteUrl: config.remote,

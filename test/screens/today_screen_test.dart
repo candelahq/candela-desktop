@@ -38,18 +38,24 @@ void main() {
 
     testWidgets('shows date in header', (tester) async {
       await tester.pumpWidget(_wrap(const TodayScreen()));
-      // Verify date text contains the current day name.
+      // DateFormat.yMMMMEEEEd() produces e.g. "Wednesday, May 14, 2026"
       final now = DateTime.now();
-      final dayNames = [
-        'Monday',
-        'Tuesday',
-        'Wednesday',
-        'Thursday',
-        'Friday',
-        'Saturday',
-        'Sunday',
+      // Just verify a month name substring is present (locale-aware).
+      final months = [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
       ];
-      expect(find.textContaining(dayNames[now.weekday - 1]), findsOneWidget);
+      expect(find.textContaining(months[now.month - 1]), findsOneWidget);
     });
   });
 }

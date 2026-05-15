@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../models/budget_info.dart';
 import '../../models/candela_config.dart';
 import '../../models/span_stats.dart';
@@ -8,6 +9,7 @@ import '../../services/gcloud_service.dart';
 import '../../services/telemetry_service.dart';
 import '../../theme/colors.dart';
 import '../../providers.dart';
+import '../../utils/format.dart';
 
 /// Full-page "Today" view — shows daily budget, grants, remaining balance,
 /// and today's spend at a glance.
@@ -69,22 +71,29 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     _autoRefresh = Timer.periodic(const Duration(seconds: 30), (_) => _fetch());
   }
 
+  bool _isFetching = false;
+
   Future<void> _fetch() async {
-    if (!mounted || _svc == null) return;
+    if (!mounted || _svc == null || _isFetching) return;
+    _isFetching = true;
     setState(() => _loading = true);
-    final result = await _svc!.fetch(TokenTimeRange.h24);
-    if (!mounted) return;
-    setState(() {
-      _result = result;
-      _loading = false;
-      _error = result == null
-          ? 'Could not reach the Candela proxy.'
-          : result.error == TelemetryErrorKind.authExpired
-              ? 'Session expired — run: gcloud auth application-default login'
-              : result.error != null
-                  ? 'Backend unreachable.'
-                  : null;
-    });
+    try {
+      final result = await _svc!.fetch(TokenTimeRange.h24);
+      if (!mounted) return;
+      setState(() {
+        _result = result;
+        _loading = false;
+        _error = result == null
+            ? 'Could not reach the Candela proxy.'
+            : result.error == TelemetryErrorKind.authExpired
+                ? 'Session expired — run: gcloud auth application-default login'
+                : result.error != null
+                    ? 'Backend unreachable.'
+                    : null;
+      });
+    } finally {
+      _isFetching = false;
+    }
   }
 
   @override
@@ -117,32 +126,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   }
 
   Widget _buildHeader() {
-    final now = DateTime.now();
-    final dayNames = [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday',
-    ];
-    final monthNames = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    final dateStr =
-        '${dayNames[now.weekday - 1]}, ${monthNames[now.month - 1]} ${now.day}';
+    final dateStr = DateFormat.yMMMMEEEEd().format(DateTime.now());
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
@@ -375,14 +359,14 @@ class _QuickStats extends StatelessWidget {
         const SizedBox(width: 12),
         _MiniStat(
           label: 'INPUT TOKENS',
-          value: s != null ? _fmtTok(s.totalInputTokens) : '0',
+          value: s != null ? formatTokenCount(s.totalInputTokens) : '0',
           icon: Icons.arrow_forward,
           color: const Color(0xFF60A5FA),
         ),
         const SizedBox(width: 12),
         _MiniStat(
           label: 'OUTPUT TOKENS',
-          value: s != null ? _fmtTok(s.totalOutputTokens) : '0',
+          value: s != null ? formatTokenCount(s.totalOutputTokens) : '0',
           icon: Icons.arrow_back,
           color: const Color(0xFFA78BFA),
         ),
@@ -395,12 +379,6 @@ class _QuickStats extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  static String _fmtTok(int v) {
-    if (v >= 1000000) return '${(v / 1000000).toStringAsFixed(1)}M';
-    if (v >= 1000) return '${(v / 1000).toStringAsFixed(1)}k';
-    return '$v';
   }
 }
 

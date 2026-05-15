@@ -195,12 +195,13 @@ class _IdentityCardState extends State<IdentityCard> {
   Process? _adcProcess;
 
   Future<void> _runAdcLogin() async {
+    if (!mounted) return;
     setState(() {});
     try {
       _adcProcess = await Process.start(
           'gcloud', ['auth', 'application-default', 'login'],
           environment: GCloudService().augmentedEnv);
-      setState(() {}); // show cancel button
+      if (mounted) setState(() {}); // show cancel button
 
       final exitCode = await _adcProcess!.exitCode;
       if (!mounted) return;
@@ -237,6 +238,7 @@ class _IdentityCardState extends State<IdentityCard> {
   void _cancelAdcLogin() {
     _adcProcess?.kill();
     _adcProcess = null;
+    if (!mounted) return;
     setState(() {});
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('ADC login cancelled')),

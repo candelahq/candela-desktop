@@ -88,6 +88,7 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
     final config = results[4] as CandelaConfig;
     final dashboardToken = results[5] as TokenInfo?;
 
+    if (_disposed || !mounted) return;
     setState(() {
       _identity = IdentityState(
         email: account,
@@ -204,9 +205,11 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
       testFutures.add(_providerTest.testLmStudio());
     }
 
+    if (_disposed || !mounted) return;
     setState(() => _providerStatuses = loadingStatuses);
 
     final results = await Future.wait(testFutures);
+    if (_disposed || !mounted) return;
     setState(() => _providerStatuses = results);
   }
 

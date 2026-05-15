@@ -103,6 +103,7 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
     });
 
     // Sync process manager with config.
+    if (!mounted || gen != _loadGeneration) return;
     final pm = ref.read(processManagerProvider);
     pm.configure(
       providerNames: config.providers.map((p) => p.name).toList(),
@@ -112,7 +113,7 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
       },
     );
     await pm.detectRunning();
-    if (gen != _loadGeneration) return;
+    if (!mounted || gen != _loadGeneration) return;
 
     // Run provider tests.
     _runProviderTests(config, project, tokenInfo);

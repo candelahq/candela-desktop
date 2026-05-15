@@ -112,13 +112,7 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
         'lmstudio': config.lmStudioPort.toString(),
       },
     );
-    try {
-      await pm.detectRunning();
-    } catch (_) {
-      // ProcessManager may be disposed externally (e.g. ProviderScope teardown
-      // during window hide or test cleanup) while detectRunning is in-flight.
-      return;
-    }
+    await pm.detectRunning();
     if (!mounted || gen != _loadGeneration) return;
 
     // Run provider tests.

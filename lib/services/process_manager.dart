@@ -45,6 +45,7 @@ class ManagedProcess {
 
 /// Manages local processes: configured runtime backend + Candela Proxy.
 class ProcessManager extends ChangeNotifier {
+  bool _disposed = false;
   final Map<String, ManagedProcess> _processes = {};
   final Map<String, Process> _handles = {};
   final Map<String, Timer> _healthTimers = {};
@@ -161,6 +162,7 @@ class ProcessManager extends ChangeNotifier {
         p.state = ProcessState.notInstalled;
       }
     }
+    if (_disposed) return;
     notifyListeners();
   }
 
@@ -414,7 +416,14 @@ class ProcessManager extends ChangeNotifier {
   }
 
   @override
+  void notifyListeners() {
+    if (_disposed) return;
+    super.notifyListeners();
+  }
+
+  @override
   void dispose() {
+    _disposed = true;
     for (final t in _healthTimers.values) {
       t.cancel();
     }

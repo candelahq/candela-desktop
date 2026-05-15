@@ -53,6 +53,7 @@ class DashboardState {
 /// Instantiate with a [TelemetryService] and optional [GCloudService] for
 /// team-mode token refresh.
 class DashboardNotifier extends ChangeNotifier {
+  bool _disposed = false;
   final TelemetryService _telemetry;
   final GCloudService? _gcloud;
   Timer? _refreshTimer;
@@ -108,7 +109,14 @@ class DashboardNotifier extends ChangeNotifier {
   }
 
   @override
+  void notifyListeners() {
+    if (_disposed) return;
+    super.notifyListeners();
+  }
+
+  @override
   void dispose() {
+    _disposed = true;
     _refreshTimer?.cancel();
     super.dispose();
   }

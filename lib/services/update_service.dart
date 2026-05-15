@@ -46,6 +46,7 @@ enum UpdateStatus {
 /// - Homebrew installs → "run `brew upgrade candela`"
 /// - Nix installs → "run `nix profile upgrade`"
 class UpdateService extends ChangeNotifier {
+  bool _disposed = false;
   static const _releaseFeedUrl =
       'https://api.github.com/repos/candelahq/candela-desktop/releases/latest';
 
@@ -272,6 +273,19 @@ class UpdateService extends ChangeNotifier {
       _setStatus(UpdateStatus.error);
       return false;
     }
+  }
+
+  @override
+  void notifyListeners() {
+    if (_disposed) return;
+    super.notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _client.close();
+    super.dispose();
   }
 }
 

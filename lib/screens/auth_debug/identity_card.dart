@@ -86,6 +86,52 @@ class _IdentityCardState extends State<IdentityCard> {
                   const SizedBox(height: 4),
                   Text(statusText,
                       style: TextStyle(fontSize: 12, color: statusColor)),
+                  // Show dashboard auth identity (gcloud auth) if available.
+                  if (identity.dashboardTokenInfo != null) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.dashboard,
+                            size: 12, color: CandelaColors.textMuted),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Dashboard auth: ${identity.dashboardTokenInfo!.email ?? 'unknown'}',
+                          style: const TextStyle(
+                              fontSize: 11, color: CandelaColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ],
+                  // Warn if ADC and gcloud auth are different accounts.
+                  if (identity.hasMismatchedIdentities) ...[
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: CandelaColors.warning.withAlpha(20),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                            color: CandelaColors.warning.withAlpha(80)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.warning_amber,
+                              size: 13, color: CandelaColors.warning),
+                          SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              'ADC and gcloud auth are different accounts — '
+                              'dashboard data may not match your expectations',
+                              style: TextStyle(
+                                  fontSize: 11, color: CandelaColors.warning),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

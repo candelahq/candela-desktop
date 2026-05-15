@@ -76,6 +76,8 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
       _adc.readAdcFile(),
       installed ? _gcloud.getTokenInfo() : Future<TokenInfo?>.value(null),
       _configService.load(),
+      // Also fetch the regular gcloud auth token (used by team mode dashboard).
+      installed ? _gcloud.getAccessToken() : Future<TokenInfo?>.value(null),
     ]);
     if (gen != _loadGeneration) return; // stale — abort
 
@@ -84,6 +86,7 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
     final adcInfo = results[2] as AdcInfo?;
     final tokenInfo = results[3] as TokenInfo?;
     final config = results[4] as CandelaConfig;
+    final dashboardToken = results[5] as TokenInfo?;
 
     setState(() {
       _identity = IdentityState(
@@ -92,6 +95,7 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
         adcInfo: adcInfo,
         tokenInfo: tokenInfo,
         gcloudInstalled: installed,
+        dashboardTokenInfo: dashboardToken,
       );
       _config = config;
       _loading = false;

@@ -97,6 +97,54 @@ class GCloudService {
     }
   }
 
+  /// Get an ID token for authenticating to a Cloud Run / IAP backend.
+  ///
+  /// Uses `gcloud auth print-identity-token --audiences=<audience>` which
+  /// produces a JWT ID token that Cloud Run's IAM invoker auth accepts.
+  /// Falls back to [getAccessToken] if the ID token command fails.
+  Future<TokenInfo?> getIdToken(String audience) async {
+    try {
+      final result = await _run([
+        'auth',
+        'print-identity-token',
+        '--audiences=$audience',
+      ]);
+      if (result.exitCode != 0) {
+        // Fall back to regular access token (works with userinfo validation).
+        return getAccessToken();
+      }
+
+      final token = (result.stdout as String).trim();
+      if (token.isEmpty) return getAccessToken();
+
+      return _decodeJwt(token);
+    } catch (_) {
+      return getAccessToken();
+    }
+  }
+
+  /// Get a regular gcloud access token (not ADC) for team backend auth.
+  ///
+  /// Uses `gcloud auth print-access-token` which produces an OAuth2 token
+  /// that the backend validates via Google's userinfo endpoint. This is
+  /// different from ADC tokens which may lack the required scopes.
+  Future<TokenInfo?> getAccessToken() async {
+    try {
+      final result = await _run([
+        'auth',
+        'print-access-token',
+      ]);
+      if (result.exitCode != 0) return getTokenInfo();
+
+      final token = (result.stdout as String).trim();
+      if (token.isEmpty) return getTokenInfo();
+
+      return _decodeJwt(token);
+    } catch (_) {
+      return getTokenInfo();
+    }
+  }
+
   /// Check if a GCP API is enabled for the given project.
   Future<bool> isApiEnabled(String project, String api) async {
     // CRITICAL-2: use _run() for augmented PATH + consistent timeout,

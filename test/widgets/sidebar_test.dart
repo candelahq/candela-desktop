@@ -64,6 +64,11 @@ void main() {
       expect(find.byType(CandelaSidebar), findsOneWidget);
     });
 
+    testWidgets('shows Today nav item', (tester) async {
+      await _pump(tester, _sidebar());
+      expect(find.text('Today'), findsOneWidget);
+    });
+
     testWidgets('shows Auth & Debug nav item', (tester) async {
       await _pump(tester, _sidebar());
       expect(find.text('Auth & Debug'), findsOneWidget);
@@ -102,7 +107,33 @@ void main() {
   });
 
   group('CandelaSidebar — navigation callbacks', () {
-    testWidgets('tapping Dashboard calls onItemSelected(1)', (tester) async {
+    testWidgets('tapping Today calls onItemSelected(0)', (tester) async {
+      var selected = -1;
+      await _pump(
+          tester,
+          CandelaSidebar(
+            selectedIndex: 1,
+            onItemSelected: (i) => selected = i,
+          ));
+      await tester.tap(find.text('Today'));
+      await tester.pump();
+      expect(selected, 0);
+    });
+
+    testWidgets('tapping Auth & Debug calls onItemSelected(1)', (tester) async {
+      var selected = -1;
+      await _pump(
+          tester,
+          CandelaSidebar(
+            selectedIndex: 0,
+            onItemSelected: (i) => selected = i,
+          ));
+      await tester.tap(find.text('Auth & Debug'));
+      await tester.pump();
+      expect(selected, 1);
+    });
+
+    testWidgets('tapping Dashboard calls onItemSelected(2)', (tester) async {
       var selected = -1;
       await _pump(
           tester,
@@ -112,23 +143,10 @@ void main() {
           ));
       await tester.tap(find.text('Dashboard'));
       await tester.pump();
-      expect(selected, 1);
+      expect(selected, 2);
     });
 
-    testWidgets('tapping Auth & Debug calls onItemSelected(0)', (tester) async {
-      var selected = -1;
-      await _pump(
-          tester,
-          CandelaSidebar(
-            selectedIndex: 1,
-            onItemSelected: (i) => selected = i,
-          ));
-      await tester.tap(find.text('Auth & Debug'));
-      await tester.pump();
-      expect(selected, 0);
-    });
-
-    testWidgets('tapping Traces calls onItemSelected(2)', (tester) async {
+    testWidgets('tapping Traces calls onItemSelected(3)', (tester) async {
       var selected = -1;
       await _pump(
           tester,
@@ -138,10 +156,10 @@ void main() {
           ));
       await tester.tap(find.text('Traces'));
       await tester.pump();
-      expect(selected, 2);
+      expect(selected, 3);
     });
 
-    testWidgets('tapping Models calls onItemSelected(3)', (tester) async {
+    testWidgets('tapping Models calls onItemSelected(4)', (tester) async {
       var selected = -1;
       await _pump(
           tester,
@@ -151,32 +169,38 @@ void main() {
           ));
       await tester.tap(find.text('Models'));
       await tester.pump();
-      expect(selected, 3);
+      expect(selected, 4);
     });
   });
 
   group('CandelaSidebar — active selection', () {
-    testWidgets('selectedIndex 0 renders with shield active icon',
+    testWidgets('selectedIndex 0 renders with today active icon',
         (tester) async {
       await _pump(tester, _sidebar(selectedIndex: 0));
+      expect(find.byIcon(Icons.today), findsOneWidget);
+    });
+
+    testWidgets('selectedIndex 1 renders with shield active icon',
+        (tester) async {
+      await _pump(tester, _sidebar(selectedIndex: 1));
       expect(find.byIcon(Icons.shield), findsOneWidget);
     });
 
-    testWidgets('selectedIndex 1 renders with dashboard active icon',
+    testWidgets('selectedIndex 2 renders with dashboard active icon',
         (tester) async {
-      await _pump(tester, _sidebar(selectedIndex: 1));
+      await _pump(tester, _sidebar(selectedIndex: 2));
       expect(find.byIcon(Icons.dashboard), findsOneWidget);
     });
 
-    testWidgets('selectedIndex 2 renders with timeline active icon',
+    testWidgets('selectedIndex 3 renders with timeline active icon',
         (tester) async {
-      await _pump(tester, _sidebar(selectedIndex: 2));
+      await _pump(tester, _sidebar(selectedIndex: 3));
       expect(find.byIcon(Icons.timeline), findsOneWidget);
     });
 
-    testWidgets('selectedIndex 3 renders with memory active icon',
+    testWidgets('selectedIndex 4 renders with memory active icon',
         (tester) async {
-      await _pump(tester, _sidebar(selectedIndex: 3));
+      await _pump(tester, _sidebar(selectedIndex: 4));
       expect(find.byIcon(Icons.memory), findsOneWidget);
     });
   });

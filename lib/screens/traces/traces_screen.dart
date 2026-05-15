@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../models/candela_config.dart';
 import '../../models/span_stats.dart';
+import '../../services/gcloud_service.dart';
 import '../../services/telemetry_service.dart';
 import '../../theme/colors.dart';
 import '../../providers.dart';
@@ -53,7 +55,25 @@ class _TracesScreenState extends ConsumerState<TracesScreen> {
 
     final config = await ref.read(configServiceProvider).load();
     if (!mounted) return;
-    _svc = TelemetryService(port: config.port);
+
+    final isTeam = config.mode == CandelaMode.team &&
+        config.remote != null &&
+        config.remote!.isNotEmpty;
+
+    if (isTeam) {
+      final gcloud = GCloudService();
+      final audience = config.audience ?? config.remote ?? '';
+      final tokenInfo = audience.isNotEmpty
+          ? await gcloud.getIdToken(audience)
+          : await gcloud.getTokenInfo();
+      _svc = TelemetryService(
+        port: config.port,
+        remoteUrl: config.remote,
+        authToken: tokenInfo?.accessToken,
+      );
+    } else {
+      _svc = TelemetryService(port: config.port);
+    }
 
     await _fetch();
     if (!mounted) return;

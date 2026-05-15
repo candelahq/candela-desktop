@@ -52,6 +52,7 @@ dependencies:
 
   # Budget threshold notifications (macOS/Linux/Windows banners)
   flutter_local_notifications: ^18.0.1
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:

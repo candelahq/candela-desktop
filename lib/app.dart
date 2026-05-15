@@ -10,6 +10,7 @@ import 'widgets/sidebar.dart';
 import 'screens/auth_debug/auth_debug_screen.dart';
 import 'screens/dashboard/dashboard_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
+import 'screens/today/today_screen.dart';
 import 'screens/traces/traces_screen.dart';
 import 'screens/models/models_screen.dart';
 import 'screens/settings/settings_screen.dart';
@@ -193,6 +194,7 @@ class _AppShellState extends ConsumerState<AppShell> with WindowListener {
   }
 
   List<Widget> get _pages => [
+        const TodayScreen(),
         const AuthDebugScreen(),
         const DashboardScreen(),
         const TracesScreen(),

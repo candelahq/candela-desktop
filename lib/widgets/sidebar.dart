@@ -29,6 +29,8 @@ class _CandelaSidebarState extends State<CandelaSidebar> {
 
   static const _items = [
     _NavItem(
+        icon: Icons.today_outlined, activeIcon: Icons.today, label: 'Today'),
+    _NavItem(
         icon: Icons.shield_outlined,
         activeIcon: Icons.shield,
         label: 'Auth & Debug'),

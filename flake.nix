@@ -81,7 +81,11 @@
 
       # ── Development shell ─────────────────────────────────
       devShells = forEachSupportedSystem ({ pkgs, ... }: {
-        default = pkgs.mkShell {
+        # ── mkShellNoCC avoids Nix cc-wrapper / ld-wrapper on PATH ──
+        # Flutter macOS builds rely on Xcode's native toolchain.
+        # Nix's ld wrapper doesn't understand -Xlinker (a clang driver
+        # flag), causing "ld: unknown option: -Xlinker" during linking.
+        default = pkgs.mkShellNoCC {
           packages = with pkgs; [
             # ── Flutter / Dart SDK ──────────────────────────────
             flutter              # Flutter stable (includes Dart SDK)
@@ -112,6 +116,10 @@
 
             # Let Flutter know we manage the SDK externally
             export FLUTTER_ROOT="$(dirname $(dirname $(which flutter)))"
+
+            # Ensure Xcode's native toolchain is used for macOS builds,
+            # not any residual Nix cc-wrapper / ld-wrapper references.
+            unset CC CXX LD
 
             # Install lefthook git hooks (only if not already present)
             if ! grep -q 'LEFTHOOK' .git/hooks/pre-commit 2>/dev/null; then

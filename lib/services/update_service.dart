@@ -216,10 +216,22 @@ class UpdateService extends ChangeNotifier {
   }
 
   static _SemverParts _parseSemver(String version) {
+    // Strip common 'v' prefix (e.g. 'v1.0.0' from git tags).
+    if (version.startsWith('v') || version.startsWith('V')) {
+      version = version.substring(1);
+    }
+
+    // Strip build metadata (+N) per semver 2.0.0 — ignored for precedence.
+    final plusIdx = version.indexOf('+');
+    final withoutBuild =
+        plusIdx == -1 ? version : version.substring(0, plusIdx);
+
     // Split on '-' to separate base from pre-release.
-    final dashIdx = version.indexOf('-');
-    final base = dashIdx == -1 ? version : version.substring(0, dashIdx);
-    final preRelease = dashIdx == -1 ? null : version.substring(dashIdx + 1);
+    final dashIdx = withoutBuild.indexOf('-');
+    final base =
+        dashIdx == -1 ? withoutBuild : withoutBuild.substring(0, dashIdx);
+    final preRelease =
+        dashIdx == -1 ? null : withoutBuild.substring(dashIdx + 1);
 
     final parts = base.split('.').map((s) => int.tryParse(s) ?? 0).toList();
     while (parts.length < 3) {

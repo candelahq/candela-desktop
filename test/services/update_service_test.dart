@@ -38,6 +38,31 @@ void main() {
       expect(UpdateService.isNewer('0.2.0-beta.2', '0.2.0-beta.1'), isTrue);
       expect(UpdateService.isNewer('0.2.0-beta.1', '0.2.0-beta.2'), isFalse);
     });
+
+    test('build number suffix is stripped for comparison', () {
+      // 0.3.5+1 must parse patch=5, not patch=0
+      expect(UpdateService.isNewer('0.3.5+1', '0.3.4'), isTrue);
+      expect(UpdateService.isNewer('0.3.4', '0.3.5+1'), isFalse);
+    });
+
+    test('same version with different build numbers is not newer', () {
+      expect(UpdateService.isNewer('0.4.0+1', '0.4.0+2'), isFalse);
+      expect(UpdateService.isNewer('0.4.0+2', '0.4.0+1'), isFalse);
+    });
+
+    test('build number with pre-release is handled correctly', () {
+      // 0.4.0-beta.1+1 → base 0.4.0, pre-release beta.1
+      expect(UpdateService.isNewer('0.4.0-beta.1+1', '0.3.0'), isTrue);
+      expect(UpdateService.isNewer('0.4.0+1', '0.4.0-beta.1+1'), isTrue);
+    });
+
+    test('v prefix is stripped for comparison', () {
+      expect(UpdateService.isNewer('v2.0.0', 'v1.0.0'), isTrue);
+      expect(UpdateService.isNewer('v1.0.0', 'v2.0.0'), isFalse);
+      // Mixed: one with prefix, one without.
+      expect(UpdateService.isNewer('v0.4.0', '0.3.0'), isTrue);
+      expect(UpdateService.isNewer('0.4.0', 'v0.3.0'), isTrue);
+    });
   });
 
   group('UpdateService — checkForUpdate', () {

@@ -6,6 +6,34 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 import 'app.dart';
 
+/// Persistent crash log for release builds — stderr is invisible to users.
+///
+/// Writes to `~/.config/candela/crash.log` (the same dir as the config file).
+/// Each entry is timestamped and capped at 512KB to prevent unbounded growth.
+void _logToFile(String message) {
+  try {
+    final home = Platform.environment['HOME'];
+    if (home == null) return;
+    final logDir = Directory('$home/.config/candela');
+    if (!logDir.existsSync()) logDir.createSync(recursive: true);
+    final logFile = File('${logDir.path}/crash.log');
+
+    // Cap at 512KB — truncate from the front if too large.
+    if (logFile.existsSync() && logFile.lengthSync() > 512 * 1024) {
+      final lines = logFile.readAsLinesSync();
+      logFile
+          .writeAsStringSync('${lines.skip(lines.length ~/ 2).join('\n')}\n');
+    }
+
+    logFile.writeAsStringSync(
+      '[${DateTime.now().toIso8601String()}] $message\n',
+      mode: FileMode.append,
+    );
+  } catch (_) {
+    // Never let logging itself crash the app.
+  }
+}
+
 void main() async {
   // Global error boundary — prevents unhandled exceptions from crashing the
   // app and orphaning managed backend processes.
@@ -15,12 +43,16 @@ void main() async {
     // Catch Flutter framework errors (widget build failures, etc.).
     FlutterError.onError = (details) {
       FlutterError.presentError(details);
-      stderr.writeln('[Candela] FlutterError: ${details.exceptionAsString()}');
+      final msg = '[Candela] FlutterError: ${details.exceptionAsString()}';
+      stderr.writeln(msg);
+      _logToFile('$msg\n${details.stack}');
     };
 
     // Last-resort catch for platform-level errors.
     PlatformDispatcher.instance.onError = (error, stack) {
-      stderr.writeln('[Candela] PlatformError: $error\n$stack');
+      final msg = '[Candela] PlatformError: $error';
+      stderr.writeln('$msg\n$stack');
+      _logToFile('$msg\n$stack');
       return true; // Handled — don't terminate.
     };
 
@@ -45,6 +77,8 @@ void main() async {
     runApp(const ProviderScope(child: CandelaApp()));
   }, (error, stack) {
     // Catch-all for unhandled async exceptions in the zone.
-    stderr.writeln('[Candela] Unhandled: $error\n$stack');
+    final msg = '[Candela] Unhandled: $error';
+    stderr.writeln('$msg\n$stack');
+    _logToFile('$msg\n$stack');
   });
 }

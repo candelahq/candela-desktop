@@ -32,7 +32,7 @@ class IdeConfigWriter {
     }
 
     final models = ((config['models'] as List?) ?? [])
-        .cast<Map<String, dynamic>>()
+        .whereType<Map<String, dynamic>>()
         .toList();
 
     // Remove any prior Candela entry.
@@ -79,7 +79,7 @@ class IdeConfigWriter {
 
     // Merge available_models — upsert by name.
     final models = ((openai['available_models'] as List?) ?? [])
-        .cast<Map<String, dynamic>>()
+        .whereType<Map<String, dynamic>>()
         .toList();
     models.removeWhere((m) => m['name'] == 'candela');
     models.add({'name': 'candela', 'max_tokens': 8192});

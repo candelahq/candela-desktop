@@ -1,9 +1,16 @@
 import 'dart:convert';
 
+import 'package:connectrpc/connect.dart' show ConnectException, Code;
+import 'package:fixnum/fixnum.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:candela_desktop/gen/candela/v1/dashboard_service.pb.dart'
+    hide TimeSeriesPoint;
+import 'package:candela_desktop/gen/candela/types/user.pb.dart';
+import 'package:candela_desktop/gen/google/protobuf/timestamp.pb.dart';
 import 'package:candela_desktop/models/span_stats.dart';
+import 'package:candela_desktop/services/connect_api_service.dart';
 import 'package:candela_desktop/services/process_manager.dart';
 import 'package:candela_desktop/services/telemetry_service.dart';
 
@@ -51,9 +58,59 @@ MockClient _mockClient(
 TelemetryService _localSvc(MockClient client) =>
     TelemetryService(port: 8181, httpClient: client);
 
-/// Returns a team-mode [TelemetryService] with the given mock client.
-TelemetryService _teamSvc(
-  MockClient client, {
+/// Mock implementation of [ConnectApiService] for testing team-mode paths.
+///
+/// Allows tests to configure exactly what each RPC returns without requiring
+/// real HTTP or protobuf serialization.
+class MockConnectApi extends ConnectApiService {
+  final GetUsageSummaryResponse? summaryResponse;
+  final GetModelBreakdownResponse? modelResponse;
+  final GetMyUsageResponse? usageResponse;
+  final ConnectException? throwOnSummary;
+  final ConnectException? throwOnModels;
+  final ConnectException? throwOnUsage;
+  String? capturedAuthToken;
+
+  MockConnectApi({
+    this.summaryResponse,
+    this.modelResponse,
+    this.usageResponse,
+    this.throwOnSummary,
+    this.throwOnModels,
+    this.throwOnUsage,
+  }) : super(baseUrl: 'http://test', authToken: null);
+
+  @override
+  Future<GetUsageSummaryResponse> getUsageSummary({
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    if (throwOnSummary != null) throw throwOnSummary!;
+    return summaryResponse ?? GetUsageSummaryResponse();
+  }
+
+  @override
+  Future<GetModelBreakdownResponse> getModelBreakdown({
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    if (throwOnModels != null) throw throwOnModels!;
+    return modelResponse ?? GetModelBreakdownResponse();
+  }
+
+  @override
+  Future<GetMyUsageResponse> getMyUsage({
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    if (throwOnUsage != null) throw throwOnUsage!;
+    return usageResponse ?? GetMyUsageResponse();
+  }
+}
+
+/// Returns a team-mode [TelemetryService] with a [MockConnectApi].
+TelemetryService _teamSvcWithMock(
+  MockConnectApi mock, {
   String remoteUrl = 'https://candela.example.com',
   String? authToken = 'test-token',
 }) =>
@@ -61,7 +118,10 @@ TelemetryService _teamSvc(
       port: 8181,
       remoteUrl: remoteUrl,
       authToken: authToken,
-      httpClient: client,
+      connectApiFactory: (baseUrl, token) {
+        mock.capturedAuthToken = token;
+        return mock;
+      },
     );
 
 // ── isSafeUrl (C2) ───────────────────────────────────────────────────────────
@@ -362,9 +422,10 @@ void main() {
 
   group('TelemetryService.fetch — team mode', () {
     test('returns authExpired error on 401 (C1/C3)', () async {
-      final client =
-          MockClient((req) async => http.Response('Unauthorized', 401));
-      final svc = _teamSvc(client);
+      final mock = MockConnectApi(
+        throwOnSummary: ConnectException(Code.unauthenticated, 'expired'),
+      );
+      final svc = _teamSvcWithMock(mock);
       final result = await svc.fetch(TokenTimeRange.d7);
 
       expect(result, isNotNull);
@@ -372,10 +433,11 @@ void main() {
       expect(result.hasData, isFalse);
     });
 
-    test('returns unreachable error on 500', () async {
-      final client =
-          MockClient((req) async => http.Response('Server error', 500));
-      final svc = _teamSvc(client);
+    test('returns unreachable error on server error', () async {
+      final mock = MockConnectApi(
+        throwOnSummary: ConnectException(Code.internal, 'server error'),
+      );
+      final svc = _teamSvcWithMock(mock);
       final result = await svc.fetch(TokenTimeRange.d7);
 
       expect(result, isNotNull);
@@ -383,143 +445,91 @@ void main() {
     });
 
     test('returns unreachable on invalid remoteUrl (C2 SSRF guard)', () async {
-      final client = MockClient((req) async => http.Response('ok', 200));
-      final svc = TelemetryService(
-        remoteUrl: 'file:///etc/passwd', // unsafe scheme
-        httpClient: client,
+      // The SSRF check happens in fetch() before _fetchRemote, so no mock needed.
+      final mock = MockConnectApi();
+      final svc = _teamSvcWithMock(
+        mock,
+        remoteUrl: 'file:///etc/passwd',
       );
       final result = await svc.fetch(TokenTimeRange.d7);
       expect(result!.error, TelemetryErrorKind.unreachable);
     });
 
     test('caps callCount at 1000 to prevent OOM (C4)', () async {
-      final modelsBody = jsonEncode({
-        'models': [
-          {
-            'model': 'gpt-4o',
-            'provider': 'openai',
-            'call_count': 10000000, // malicious large value
-            'input_tokens': 1000,
-            'output_tokens': 500,
-            'cost_usd': 10.0,
-            'avg_latency_ms': 500.0,
-          }
-        ]
-      });
-      final summaryBody = jsonEncode({
-        'cost_over_time': [],
-        'tokens_over_time': [],
-      });
+      final model = ModelUsage()
+        ..model = 'gpt-4o'
+        ..provider = 'openai'
+        ..callCount = Int64(10000000)
+        ..inputTokens = Int64(1000)
+        ..outputTokens = Int64(500)
+        ..costUsd = 10.0
+        ..avgLatencyMs = 500.0;
 
-      final client = MockClient((req) async {
-        if (req.url.path.contains('GetModelBreakdown')) {
-          return http.Response(modelsBody, 200);
-        }
-        return http.Response(summaryBody, 200);
-      });
-      final svc = _teamSvc(client);
+      final mock = MockConnectApi(
+        modelResponse: GetModelBreakdownResponse()..models.add(model),
+      );
+      final svc = _teamSvcWithMock(mock);
       final result = await svc.fetch(TokenTimeRange.d7);
 
       // Should complete without OOM — spans capped at 1000
       expect(result!.spans.length, lessThanOrEqualTo(1000));
     });
 
-    test('rejects oversized response body (C5/H1)', () async {
-      // 5MB + 1 byte response
-      final bigBody = 'x' * (5 * 1024 * 1024 + 1);
-      final client = MockClient((req) async => http.Response(bigBody, 200));
-      final svc = _teamSvc(client);
-      final result = await svc.fetch(TokenTimeRange.d7);
-      expect(result?.error, TelemetryErrorKind.unreachable);
-    });
-
     test('parses model breakdown and aggregates correctly', () async {
-      final modelsBody = jsonEncode({
-        'models': [
-          {
-            'model': 'claude-3-5-sonnet',
-            'provider': 'anthropic',
-            'call_count': 4,
-            'input_tokens': 400,
-            'output_tokens': 200,
-            'cost_usd': 0.04,
-            'avg_latency_ms': 900.0,
-          }
-        ]
-      });
-      final summaryBody = jsonEncode({
-        'cost_over_time': [],
-        'tokens_over_time': [],
-      });
+      final model = ModelUsage()
+        ..model = 'claude-3-5-sonnet'
+        ..provider = 'anthropic'
+        ..callCount = Int64(4)
+        ..inputTokens = Int64(400)
+        ..outputTokens = Int64(200)
+        ..costUsd = 0.04
+        ..avgLatencyMs = 900.0;
 
-      final client = MockClient((req) async {
-        if (req.url.path.contains('GetModelBreakdown')) {
-          return http.Response(modelsBody, 200);
-        }
-        return http.Response(summaryBody, 200);
-      });
-      final svc = _teamSvc(client);
+      final mock = MockConnectApi(
+        modelResponse: GetModelBreakdownResponse()..models.add(model),
+      );
+      final svc = _teamSvcWithMock(mock);
       final result = await svc.fetch(TokenTimeRange.d7);
 
       expect(result!.hasData, isTrue);
       expect(result.isTeamMode, isTrue);
-      // Spans are spread across the window; the span at i=0 lands exactly at
-      // cutoff and may be filtered. Verify total cost matches remaining spans.
       expect(result.summary!.totalCostUsd, greaterThan(0));
       expect(result.summary!.totalCostUsd, lessThanOrEqualTo(0.04 + 1e-9));
       expect(result.spans.length, greaterThan(0));
     });
 
-    test('falls back to time-series when model breakdown returns non-200',
-        () async {
-      final summaryBody = jsonEncode({
-        'cost_over_time': [
-          {'timestamp': DateTime.now().toIso8601String(), 'value': 0.5},
-        ],
-        'tokens_over_time': [
-          {'timestamp': DateTime.now().toIso8601String(), 'value': 1000},
-        ],
-      });
-
-      final client = MockClient((req) async {
-        if (req.url.path.contains('GetModelBreakdown')) {
-          return http.Response('{}', 500);
-        }
-        return http.Response(summaryBody, 200);
-      });
-      final svc = _teamSvc(client);
+    test('returns empty result when model breakdown is empty', () async {
+      final mock = MockConnectApi(
+        modelResponse: GetModelBreakdownResponse(),
+      );
+      final svc = _teamSvcWithMock(mock);
       final result = await svc.fetch(TokenTimeRange.h24);
 
       expect(result, isNotNull);
-      expect(result!.hasData, isTrue);
+      // Empty models = no spans → empty result (no data to chart).
+      expect(result!.hasData, isFalse);
+      expect(result.error, isNull);
     });
 
-    test('sets Authorization header when authToken is provided', () async {
-      String? capturedAuth;
-      final client = MockClient((req) async {
-        capturedAuth = req.headers['Authorization'];
-        return http.Response(jsonEncode({'models': []}), 200);
-      });
-      final svc = _teamSvc(client, authToken: 'my-token');
-      await svc.fetch(TokenTimeRange.h24);
-
-      expect(capturedAuth, 'Bearer my-token');
-    });
-
-    test('omits Authorization header when authToken is null', () async {
-      String? capturedAuth;
-      final client = MockClient((req) async {
-        capturedAuth = req.headers['Authorization'];
-        return http.Response(
-            jsonEncode({'cost_over_time': [], 'tokens_over_time': []}), 200);
-      });
-      final svc = TelemetryService(
-        remoteUrl: 'https://example.com',
-        authToken: null,
-        httpClient: client,
+    test('passes authToken through factory', () async {
+      final mock = MockConnectApi(
+        modelResponse: GetModelBreakdownResponse(),
       );
+      _teamSvcWithMock(mock, authToken: 'my-token');
+      // Factory captures the token before RPC — verify it was passed.
+      // (fetch() triggers the factory call)
+      final svc = _teamSvcWithMock(mock, authToken: 'my-token');
       await svc.fetch(TokenTimeRange.h24);
-      expect(capturedAuth, isNull);
+      expect(mock.capturedAuthToken, 'my-token');
+    });
+
+    test('passes null authToken when not provided', () async {
+      final mock = MockConnectApi(
+        modelResponse: GetModelBreakdownResponse(),
+      );
+      final svc = _teamSvcWithMock(mock, authToken: null);
+      await svc.fetch(TokenTimeRange.h24);
+      expect(mock.capturedAuthToken, isNull);
     });
   });
 
@@ -529,29 +539,19 @@ void main() {
     test('single-call model does NOT land in bucket 0', () async {
       // Create a model with call_count=1 and verify the synthetic span
       // timestamp is at the window midpoint (not at start = bucket 0).
-      final modelsBody = jsonEncode({
-        'models': [
-          {
-            'model': 'gpt-4o',
-            'provider': 'openai',
-            'call_count': 1,
-            'input_tokens': 100,
-            'output_tokens': 50,
-            'cost_usd': 0.01,
-            'avg_latency_ms': 500.0,
-          }
-        ]
-      });
-      final summaryBody =
-          jsonEncode({'cost_over_time': [], 'tokens_over_time': []});
+      final model = ModelUsage()
+        ..model = 'gpt-4o'
+        ..provider = 'openai'
+        ..callCount = Int64(1)
+        ..inputTokens = Int64(100)
+        ..outputTokens = Int64(50)
+        ..costUsd = 0.01
+        ..avgLatencyMs = 500.0;
 
-      final client = MockClient((req) async {
-        if (req.url.path.contains('GetModelBreakdown')) {
-          return http.Response(modelsBody, 200);
-        }
-        return http.Response(summaryBody, 200);
-      });
-      final svc = _teamSvc(client);
+      final mock = MockConnectApi(
+        modelResponse: GetModelBreakdownResponse()..models.add(model),
+      );
+      final svc = _teamSvcWithMock(mock);
       final result = await svc.fetch(TokenTimeRange.d7);
 
       // The span timestamp should be roughly in the middle of the 7-day window.
@@ -565,45 +565,30 @@ void main() {
           lessThanOrEqualTo(1));
     });
 
-    test('parses proto3 JSON with camelCase keys and string int64 values',
-        () async {
-      // Proto3 JSON encoding uses camelCase field names and encodes int64
-      // values as strings (e.g. "21" not 21). This is exactly what the
-      // Go backend returns.
-      final modelsBody = jsonEncode({
-        'models': [
-          {
-            'model': 'claude-sonnet-4-20250514',
-            'provider': 'anthropic',
-            'callCount': '21', // proto3 int64 → string
-            'inputTokens': '591312', // proto3 int64 → string
-            'outputTokens': '1686', // proto3 int64 → string
-            'costUsd': 1.7992, // float stays numeric
-            'avgLatencyMs': 3369.16, // float stays numeric
-          }
-        ]
-      });
-      final summaryBody =
-          jsonEncode({'costOverTime': [], 'tokensOverTime': []});
+    test('parses model breakdown with typed proto fields', () async {
+      // Equivalent of old proto3 JSON test — proto handles int64/float natively.
+      final model = ModelUsage()
+        ..model = 'claude-sonnet-4-20250514'
+        ..provider = 'anthropic'
+        ..callCount = Int64(21)
+        ..inputTokens = Int64(591312)
+        ..outputTokens = Int64(1686)
+        ..costUsd = 1.7992
+        ..avgLatencyMs = 3369.16;
 
-      final client = MockClient((req) async {
-        if (req.url.path.contains('GetModelBreakdown')) {
-          return http.Response(modelsBody, 200);
-        }
-        return http.Response(summaryBody, 200);
-      });
-      final svc = _teamSvc(client);
+      final mock = MockConnectApi(
+        modelResponse: GetModelBreakdownResponse()..models.add(model),
+      );
+      final svc = _teamSvcWithMock(mock);
       final result = await svc.fetch(TokenTimeRange.d7);
 
       expect(result!.hasData, isTrue);
-      // _spread places span i=0 at the window start (cutoff boundary), which
-      // gets filtered out. So 21 → 20 spans after time-range filtering.
-      expect(result.spans.length, 20);
-      // Total cost across remaining spans should be close to source (minus 1/21).
-      expect(result.summary!.totalCostUsd, closeTo(1.7992 * 20 / 21, 0.01));
-      // Total tokens should similarly reflect 20/21 of the source.
-      expect(result.summary!.totalInputTokens, closeTo(591312 * 20 / 21, 100));
-      expect(result.summary!.totalOutputTokens, closeTo(1686 * 20 / 21, 100));
+      // ConnectApiService._spread offsets by (i+0.5), so all 21 spans land
+      // inside the window and survive time-range filtering.
+      expect(result.spans.length, 21);
+      expect(result.summary!.totalCostUsd, closeTo(1.7992, 0.01));
+      expect(result.summary!.totalInputTokens, closeTo(591312, 50));
+      expect(result.summary!.totalOutputTokens, closeTo(1686, 21));
     });
   });
 
@@ -645,53 +630,40 @@ void main() {
   // ── Proto3 parsing edge cases ────────────────────────────────────────────
 
   group('Proto3 parsing helpers', () {
-    test('parses proto3 budget with string-encoded int64 fields', () async {
-      // Budget response using camelCase keys and string int64 values
-      final usageBody = jsonEncode({
-        'budget': {
-          'limitUsd': '50.0',
-          'spentUsd': '12.34',
-          'tokensUsed': '999999',
-          'periodEnd': '2026-06-01T00:00:00Z',
-        },
-        'activeGrants': [
-          {
-            'id': '1',
-            'amountUsd': '25.0',
-            'spentUsd': '10.0',
-            'reason': 'Monthly allocation',
-            'grantedBy': 'admin@example.com',
-            'expiresAt': '2026-07-01T00:00:00Z',
-          }
-        ],
-        'totalRemainingUsd': '37.66',
-      });
-      final modelsBody = jsonEncode({
-        'models': [
-          {
-            'model': 'gemini-2.5-pro',
-            'provider': 'google',
-            'callCount': '5',
-            'inputTokens': '1000',
-            'outputTokens': '500',
-            'costUsd': 0.05,
-            'avgLatencyMs': 200.0,
-          }
-        ]
-      });
-      final summaryBody =
-          jsonEncode({'costOverTime': [], 'tokensOverTime': []});
+    test('parses budget from proto with all fields', () async {
+      final model = ModelUsage()
+        ..model = 'gemini-2.5-pro'
+        ..provider = 'google'
+        ..callCount = Int64(5)
+        ..inputTokens = Int64(1000)
+        ..outputTokens = Int64(500)
+        ..costUsd = 0.05
+        ..avgLatencyMs = 200.0;
 
-      final client = MockClient((req) async {
-        if (req.url.path.contains('GetMyUsage')) {
-          return http.Response(usageBody, 200);
-        }
-        if (req.url.path.contains('GetModelBreakdown')) {
-          return http.Response(modelsBody, 200);
-        }
-        return http.Response(summaryBody, 200);
-      });
-      final svc = _teamSvc(client);
+      final periodEnd = DateTime.utc(2026, 6, 1);
+      final usage = GetMyUsageResponse()
+        ..budget = (UserBudget()
+          ..limitUsd = 50.0
+          ..spentUsd = 12.34
+          ..tokensUsed = Int64(999999)
+          ..periodEnd = (Timestamp()
+            ..seconds = Int64(periodEnd.millisecondsSinceEpoch ~/ 1000)))
+        ..totalRemainingUsd = 37.66;
+      usage.activeGrants.add(BudgetGrant()
+        ..id = '1'
+        ..amountUsd = 25.0
+        ..spentUsd = 10.0
+        ..reason = 'Monthly allocation'
+        ..grantedBy = 'admin@example.com'
+        ..expiresAt = (Timestamp()
+          ..seconds =
+              Int64(DateTime.utc(2026, 7, 1).millisecondsSinceEpoch ~/ 1000)));
+
+      final mock = MockConnectApi(
+        modelResponse: GetModelBreakdownResponse()..models.add(model),
+        usageResponse: usage,
+      );
+      final svc = _teamSvcWithMock(mock);
       final result = await svc.fetch(TokenTimeRange.d7);
 
       expect(result, isNotNull);
@@ -706,93 +678,38 @@ void main() {
       expect(result.activeGrants.first.reason, 'Monthly allocation');
     });
 
-    test('falls back to snake_case keys when camelCase missing', () async {
-      // Simulate a hypothetical backend that uses snake_case
-      final modelsBody = jsonEncode({
-        'models': [
-          {
-            'model': 'gpt-4o',
-            'provider': 'openai',
-            'call_count': '3',
-            'input_tokens': '300',
-            'output_tokens': '150',
-            'cost_usd': 0.03,
-            'avg_latency_ms': 100.0,
-          }
-        ]
-      });
-      final summaryBody =
-          jsonEncode({'cost_over_time': [], 'tokens_over_time': []});
+    test('handles model with default/zero fields gracefully', () async {
+      // Model with only name set — all numeric fields default to 0.
+      final model = ModelUsage()..model = 'test-model';
 
-      final client = MockClient((req) async {
-        if (req.url.path.contains('GetModelBreakdown')) {
-          return http.Response(modelsBody, 200);
-        }
-        return http.Response(summaryBody, 200);
-      });
-      final svc = _teamSvc(client);
+      final mock = MockConnectApi(
+        modelResponse: GetModelBreakdownResponse()..models.add(model),
+      );
+      final svc = _teamSvcWithMock(mock);
       final result = await svc.fetch(TokenTimeRange.d7);
 
       expect(result, isNotNull);
-      expect(result!.hasData, isTrue);
-      // 3 call_count → 2 spans after time-range boundary filtering
-      expect(result.spans.length, 2);
-    });
-
-    test('handles null and missing fields gracefully in model breakdown',
-        () async {
-      // Model entry with no optional fields — should default to 0
-      final modelsBody = jsonEncode({
-        'models': [
-          {'model': 'test-model'}
-        ]
-      });
-      final summaryBody =
-          jsonEncode({'costOverTime': [], 'tokensOverTime': []});
-
-      final client = MockClient((req) async {
-        if (req.url.path.contains('GetModelBreakdown')) {
-          return http.Response(modelsBody, 200);
-        }
-        return http.Response(summaryBody, 200);
-      });
-      final svc = _teamSvc(client);
-      final result = await svc.fetch(TokenTimeRange.d7);
-
-      // callCount defaults to 1; _spread places the single span at the
-      // window midpoint, so it survives the time-range filter.
-      expect(result, isNotNull);
+      // callCount=0 → clamped to 1, placed at midpoint → survives filter
       expect(result!.spans.length, lessThanOrEqualTo(1));
       if (result.spans.isNotEmpty) {
-        // All token/cost fields should default to 0
         expect(result.spans.first.inputTokens, 0);
         expect(result.spans.first.outputTokens, 0);
         expect(result.spans.first.costUsd, 0.0);
       }
     });
 
-    test('clamps negative and NaN totalRemainingUsd to zero', () async {
-      final usageBody = jsonEncode({
-        'budget': {
-          'limitUsd': 10.0,
-          'spentUsd': 15.0,
-        },
-        'totalRemainingUsd': -5.0,
-      });
-      final modelsBody = jsonEncode({'models': []});
-      final summaryBody =
-          jsonEncode({'costOverTime': [], 'tokensOverTime': []});
+    test('clamps negative totalRemainingUsd to zero', () async {
+      final usage = GetMyUsageResponse()
+        ..budget = (UserBudget()
+          ..limitUsd = 10.0
+          ..spentUsd = 15.0)
+        ..totalRemainingUsd = -5.0;
 
-      final client = MockClient((req) async {
-        if (req.url.path.contains('GetMyUsage')) {
-          return http.Response(usageBody, 200);
-        }
-        if (req.url.path.contains('GetModelBreakdown')) {
-          return http.Response(modelsBody, 200);
-        }
-        return http.Response(summaryBody, 200);
-      });
-      final svc = _teamSvc(client);
+      final mock = MockConnectApi(
+        modelResponse: GetModelBreakdownResponse(),
+        usageResponse: usage,
+      );
+      final svc = _teamSvcWithMock(mock);
       final result = await svc.fetch(TokenTimeRange.d7);
 
       // Negative remaining should be clamped to 0
@@ -800,25 +717,17 @@ void main() {
     });
 
     test('handles empty grants list', () async {
-      final usageBody = jsonEncode({
-        'budget': {'limitUsd': 10.0, 'spentUsd': 5.0},
-        'activeGrants': [],
-        'totalRemainingUsd': 5.0,
-      });
-      final modelsBody = jsonEncode({'models': []});
-      final summaryBody =
-          jsonEncode({'costOverTime': [], 'tokensOverTime': []});
+      final usage = GetMyUsageResponse()
+        ..budget = (UserBudget()
+          ..limitUsd = 10.0
+          ..spentUsd = 5.0)
+        ..totalRemainingUsd = 5.0;
 
-      final client = MockClient((req) async {
-        if (req.url.path.contains('GetMyUsage')) {
-          return http.Response(usageBody, 200);
-        }
-        if (req.url.path.contains('GetModelBreakdown')) {
-          return http.Response(modelsBody, 200);
-        }
-        return http.Response(summaryBody, 200);
-      });
-      final svc = _teamSvc(client);
+      final mock = MockConnectApi(
+        modelResponse: GetModelBreakdownResponse(),
+        usageResponse: usage,
+      );
+      final svc = _teamSvcWithMock(mock);
       final result = await svc.fetch(TokenTimeRange.d7);
 
       expect(result!.activeGrants, isEmpty);
@@ -826,33 +735,28 @@ void main() {
     });
 
     test('grants with missing optional expiresAt field', () async {
-      final usageBody = jsonEncode({
-        'activeGrants': [
-          {
-            'id': 'g1',
-            'amountUsd': 100.0,
-            'spentUsd': 0.0,
-            'reason': 'Trial',
-            'grantedBy': 'system',
-            // expiresAt intentionally missing
-          }
-        ],
-        'totalRemainingUsd': 100.0,
-      });
-      final modelsBody = jsonEncode({'models': []});
-      final summaryBody =
-          jsonEncode({'costOverTime': [], 'tokensOverTime': []});
+      final usage = GetMyUsageResponse();
+      usage.activeGrants.add(BudgetGrant()
+        ..id = 'g1'
+        ..amountUsd = 100.0
+        ..spentUsd = 0.0
+        ..reason = 'Trial'
+        ..grantedBy = 'system');
 
-      final client = MockClient((req) async {
-        if (req.url.path.contains('GetMyUsage')) {
-          return http.Response(usageBody, 200);
-        }
-        if (req.url.path.contains('GetModelBreakdown')) {
-          return http.Response(modelsBody, 200);
-        }
-        return http.Response(summaryBody, 200);
-      });
-      final svc = _teamSvc(client);
+      final model = ModelUsage()
+        ..model = 'gpt-4o'
+        ..provider = 'openai'
+        ..callCount = Int64(1)
+        ..inputTokens = Int64(10)
+        ..outputTokens = Int64(5)
+        ..costUsd = 0.01
+        ..avgLatencyMs = 50.0;
+
+      final mock = MockConnectApi(
+        modelResponse: GetModelBreakdownResponse()..models.add(model),
+        usageResponse: usage,
+      );
+      final svc = _teamSvcWithMock(mock);
       final result = await svc.fetch(TokenTimeRange.d7);
 
       expect(result!.activeGrants, hasLength(1));

@@ -10,6 +10,8 @@ import '../../services/telemetry_service.dart';
 import '../../theme/colors.dart';
 import '../../providers.dart';
 import '../../utils/format.dart';
+import '../../widgets/local_services_card.dart';
+import '../../widgets/model_selector_dropdown.dart';
 
 /// Full-page "Today" view — shows daily budget, grants, remaining balance,
 /// and today's spend at a glance.
@@ -28,6 +30,29 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   Timer? _autoRefresh;
   TelemetryService? _svc;
   bool _isTeamMode = false;
+  String? _selectedModel;
+  UsageSummary? _filteredSummary;
+
+  void _setSelectedModel(String? model) {
+    setState(() => _selectedModel = model);
+    _recalculateSummary();
+  }
+
+  void _recalculateSummary() {
+    if (_result == null || _svc == null) {
+      setState(() => _filteredSummary = null);
+      return;
+    }
+    if (_selectedModel == null) {
+      setState(() => _filteredSummary = _result!.summary);
+      return;
+    }
+    final filteredSpans =
+        _result!.spans.where((s) => s.model == _selectedModel).toList();
+    final newSummary =
+        _svc!.buildSummary(filteredSpans, TokenTimeRange.h24, DateTime.now());
+    setState(() => _filteredSummary = newSummary);
+  }
 
   @override
   void initState() {
@@ -91,6 +116,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                     ? 'Backend unreachable.'
                     : null;
       });
+      _recalculateSummary();
     } finally {
       _isFetching = false;
     }
@@ -105,11 +131,14 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final uniqueModels =
+        _result?.models.map((m) => m.model).toSet().toList() ?? [];
+
     return Scaffold(
       backgroundColor: CandelaColors.bgPrimary,
       body: Column(
         children: [
-          _buildHeader(),
+          _buildHeader(uniqueModels),
           Expanded(
             child: _loading && _result == null
                 ? const Center(
@@ -117,7 +146,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                         CircularProgressIndicator(color: CandelaColors.accent))
                 : SingleChildScrollView(
                     padding: const EdgeInsets.all(24),
-                    child: _buildBody(),
+                    child: _buildBody(_filteredSummary),
                   ),
           ),
         ],
@@ -125,7 +154,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(List<String> uniqueModels) {
     final dateStr = DateFormat.yMMMMEEEEd().format(DateTime.now());
 
     return Container(
@@ -159,18 +188,29 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           const SizedBox(width: 12),
           _ModeBadge(isTeam: _isTeamMode),
           const Spacer(),
+          if (uniqueModels.isNotEmpty) ...[
+            ModelSelectorDropdown(
+              models: uniqueModels,
+              selected: _selectedModel,
+              onChanged: _setSelectedModel,
+            ),
+            const SizedBox(width: 10),
+          ],
           _RefreshButton(onRefresh: _fetch, loading: _loading),
         ],
       ),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(UsageSummary? summary) {
     if (_error != null && _result == null) {
-      return _ErrorCard(message: _error!);
+      return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        _ErrorCard(message: _error!),
+        const SizedBox(height: 16),
+        const LocalServicesCard(),
+      ]);
     }
 
-    final summary = _result?.summary;
     final budget = _result?.budget;
     final grants = _result?.activeGrants ?? [];
     final remaining = _result?.totalRemainingUsd;
@@ -201,6 +241,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         // ── Top models today ──
         if (models.isNotEmpty) ...[
           _TopModelsCard(models: models),
+        ],
+        // ── Local Services ──
+        if (!_isTeamMode) ...[
+          const LocalServicesCard(),
+          const SizedBox(height: 16),
         ],
         // ── Empty state ──
         if (summary == null && budget == null && _error == null)
@@ -735,7 +780,7 @@ class _EmptyState extends StatelessWidget {
             Text(
               isTeamMode
                   ? 'LLM calls through your team gateway will appear here.'
-                  : 'LLM calls through the local proxy will appear here.',
+                  : 'Start your proxy and route traffic to see activity.',
               style: const TextStyle(
                   fontSize: 13, color: CandelaColors.textSecondary),
             ),

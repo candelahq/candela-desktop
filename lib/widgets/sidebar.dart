@@ -33,7 +33,7 @@ class _CandelaSidebarState extends State<CandelaSidebar> {
     _NavItem(
         icon: Icons.shield_outlined,
         activeIcon: Icons.shield,
-        label: 'Auth & Debug'),
+        label: 'Diagnostics'),
     _NavItem(
         icon: Icons.dashboard_outlined,
         activeIcon: Icons.dashboard,
@@ -64,8 +64,6 @@ class _CandelaSidebarState extends State<CandelaSidebar> {
     // Kick off update check if service is available.
     final svc = widget.updateService;
     if (svc != null) {
-      // Initialize Sparkle for direct installs.
-      await svc.initSparkle();
       // Check for updates.
       final newer = await svc.checkForUpdate(info.version);
       if (mounted) {
@@ -82,20 +80,8 @@ class _CandelaSidebarState extends State<CandelaSidebar> {
     if (svc == null) return;
 
     final channel = svc.detectChannel();
-    if (channel == InstallChannel.direct) {
-      // Try Sparkle native update dialog.
-      final launched = await svc.checkForUpdatesViaSparkle();
-      if (!launched && mounted) {
-        // Sparkle not available (not macOS, missing binary, etc.)
-        // Fall back to opening the releases page.
-        _showUpdateSnackBar(
-          'Update available! Download from candelahq.com/releases',
-        );
-      }
-    } else {
-      // Show instructions for managed channels.
-      _showUpdateSnackBar(svc.updateInstructions(channel));
-    }
+    // Show instructions for the current install channel.
+    _showUpdateSnackBar(svc.updateInstructions(channel));
   }
 
   void _showUpdateSnackBar(String message) {

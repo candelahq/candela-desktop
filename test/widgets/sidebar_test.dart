@@ -69,9 +69,9 @@ void main() {
       expect(find.text('Today'), findsOneWidget);
     });
 
-    testWidgets('shows Auth & Debug nav item', (tester) async {
+    testWidgets('shows Diagnostics nav item', (tester) async {
       await _pump(tester, _sidebar());
-      expect(find.text('Auth & Debug'), findsOneWidget);
+      expect(find.text('Diagnostics'), findsOneWidget);
     });
 
     testWidgets('shows Dashboard nav item', (tester) async {
@@ -120,7 +120,7 @@ void main() {
       expect(selected, 0);
     });
 
-    testWidgets('tapping Auth & Debug calls onItemSelected(1)', (tester) async {
+    testWidgets('tapping Diagnostics calls onItemSelected(1)', (tester) async {
       var selected = -1;
       await _pump(
           tester,
@@ -128,7 +128,7 @@ void main() {
             selectedIndex: 0,
             onItemSelected: (i) => selected = i,
           ));
-      await tester.tap(find.text('Auth & Debug'));
+      await tester.tap(find.text('Diagnostics'));
       await tester.pump();
       expect(selected, 1);
     });

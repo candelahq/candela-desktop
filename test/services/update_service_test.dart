@@ -156,10 +156,10 @@ void main() {
   });
 
   group('UpdateService — updateInstructions', () {
-    test('direct channel gives auto-update message', () {
+    test('direct channel gives fallback download message', () {
       final service = UpdateService();
       final msg = service.updateInstructions(InstallChannel.direct);
-      expect(msg, contains('automatically'));
+      expect(msg, contains('Download'));
     });
 
     test('homebrew channel gives brew command', () {

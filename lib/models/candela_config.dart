@@ -10,6 +10,7 @@ class CandelaConfig {
   final List<ProviderConfig> providers;
   final VertexAIConfig? vertexAI;
   final PricingConfig? pricing;
+  final OptimizationConfig? optimizations;
   final CandelaMode mode;
   final List<ConfigIssue> issues;
 
@@ -24,6 +25,7 @@ class CandelaConfig {
     this.providers = const [],
     this.vertexAI,
     this.pricing,
+    this.optimizations,
     this.mode = CandelaMode.solo,
     this.issues = const [],
   });
@@ -57,6 +59,17 @@ class PricingConfig {
   final List<ModelPricing> models;
 
   const PricingConfig({this.models = const []});
+}
+
+/// Token and latency optimizations configuration.
+class OptimizationConfig {
+  final bool semanticCache;
+  final bool contextCompression;
+
+  const OptimizationConfig({
+    this.semanticCache = false,
+    this.contextCompression = false,
+  });
 }
 
 /// Custom rate for a single model, overriding built-in defaults.

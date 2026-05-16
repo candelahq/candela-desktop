@@ -239,6 +239,18 @@ class ConfigService {
       }
     }
 
+    // Parse optimizations.
+    OptimizationConfig? optimizations;
+    final optYaml = yaml['optimizations'] is YamlMap
+        ? yaml['optimizations'] as YamlMap
+        : null;
+    if (optYaml != null) {
+      optimizations = OptimizationConfig(
+        semanticCache: optYaml['semantic_cache'] == true,
+        contextCompression: optYaml['context_compression'] == true,
+      );
+    }
+
     // Detect mode.
     CandelaMode mode;
     if (remote != null && remote.isNotEmpty) {
@@ -293,6 +305,7 @@ class ConfigService {
       providers: providers,
       vertexAI: vertexAI,
       pricing: pricing,
+      optimizations: optimizations,
       mode: mode,
       issues: issues,
     );
@@ -574,6 +587,45 @@ class ConfigService {
         'config_version': 1,
         'vertex_ai': {'prompt_caching': enabled},
       });
+    }
+  }
+
+  /// Set optimizations settings.
+  Future<void> setOptimizations({
+    bool? semanticCache,
+    bool? contextCompression,
+  }) async {
+    final resolvedPath = _resolveConfigPath();
+    final file = File(resolvedPath);
+
+    if (await file.exists()) {
+      final content = await file.readAsString();
+      final editor = YamlEditor(content);
+
+      // Ensure optimizations node exists
+      final parsed = loadYaml(content) as YamlMap?;
+      if (parsed == null || parsed['optimizations'] is! YamlMap) {
+        editor.update(['optimizations'], {});
+      }
+
+      if (semanticCache != null) {
+        editor.update(['optimizations', 'semantic_cache'], semanticCache);
+      }
+      if (contextCompression != null) {
+        editor.update(
+            ['optimizations', 'context_compression'], contextCompression);
+      }
+
+      await _writeRaw(file, editor.toString());
+    } else {
+      final opt = <String, dynamic>{};
+      if (semanticCache != null) {
+        opt['semantic_cache'] = semanticCache;
+      }
+      if (contextCompression != null) {
+        opt['context_compression'] = contextCompression;
+      }
+      await _writeYaml(file, {'config_version': 1, 'optimizations': opt});
     }
   }
 

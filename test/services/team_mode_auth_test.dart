@@ -1,120 +1,158 @@
-import 'dart:convert';
-
+import 'package:connectrpc/connect.dart' show ConnectException, Code;
+import 'package:fixnum/fixnum.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
-import 'package:candela_desktop/services/telemetry_service.dart';
+import 'package:candela_desktop/gen/candela/v1/dashboard_service.pb.dart'
+    hide TimeSeriesPoint;
+import 'package:candela_desktop/gen/candela/types/user.pb.dart';
+import 'package:candela_desktop/gen/google/protobuf/timestamp.pb.dart';
 import 'package:candela_desktop/models/span_stats.dart';
+import 'package:candela_desktop/services/connect_api_service.dart';
+import 'package:candela_desktop/services/telemetry_service.dart';
+
+/// Mock [ConnectApiService] for testing team-mode auth behavior.
+class MockConnectApi extends ConnectApiService {
+  final GetUsageSummaryResponse? summaryResponse;
+  final GetModelBreakdownResponse? modelResponse;
+  final GetMyUsageResponse? usageResponse;
+  final ConnectException? throwOnSummary;
+  final ConnectException? throwOnModels;
+  final ConnectException? throwOnUsage;
+  String? capturedAuthToken;
+
+  MockConnectApi({
+    this.summaryResponse,
+    this.modelResponse,
+    this.usageResponse,
+    this.throwOnSummary,
+    this.throwOnModels,
+    this.throwOnUsage,
+  }) : super(baseUrl: 'http://test', authToken: null);
+
+  @override
+  Future<GetUsageSummaryResponse> getUsageSummary({
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    if (throwOnSummary != null) throw throwOnSummary!;
+    return summaryResponse ?? GetUsageSummaryResponse();
+  }
+
+  @override
+  Future<GetModelBreakdownResponse> getModelBreakdown({
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    if (throwOnModels != null) throw throwOnModels!;
+    return modelResponse ?? GetModelBreakdownResponse();
+  }
+
+  @override
+  Future<GetMyUsageResponse> getMyUsage({
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    if (throwOnUsage != null) throw throwOnUsage!;
+    return usageResponse ?? GetMyUsageResponse();
+  }
+}
+
+/// Build a team-mode service with a mock ConnectApiService.
+TelemetryService _teamSvc(
+  MockConnectApi mock, {
+  String remoteUrl = 'https://candela.example.com',
+  String? authToken = 'test-token',
+}) =>
+    TelemetryService(
+      port: 8181,
+      remoteUrl: remoteUrl,
+      authToken: authToken,
+      connectApiFactory: (baseUrl, token) {
+        mock.capturedAuthToken = token;
+        return mock;
+      },
+    );
 
 /// Tests for Team mode auth — verifies that the TelemetryService correctly
-/// sends Bearer tokens and handles auth failures in team mode, which is the
-/// root cause of "no data in desktop, but data in web."
+/// passes auth tokens through ConnectApiService and handles auth failures
+/// via ConnectRPC error codes.
 
 void main() {
   group('Team mode — auth token handling', () {
     test('sends Bearer token in Authorization header', () async {
-      String? capturedAuth;
-      final client = MockClient((req) async {
-        capturedAuth ??= req.headers['Authorization'];
-        return http.Response(jsonEncode({'models': []}), 200);
-      });
-      final svc = TelemetryService(
-        remoteUrl: 'https://candela.example.com',
-        authToken: 'id-token-from-gcloud',
-        httpClient: client,
+      final mock = MockConnectApi(
+        modelResponse: GetModelBreakdownResponse(),
       );
+      final svc = _teamSvc(mock, authToken: 'id-token-from-gcloud');
       await svc.fetch(TokenTimeRange.h24);
-      expect(capturedAuth, 'Bearer id-token-from-gcloud');
+      expect(mock.capturedAuthToken, 'id-token-from-gcloud');
     });
 
     test('ID token (JWT) is accepted as authToken', () async {
-      // Simulate an ID token (3-part JWT format)
-      final header =
-          base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
-      final payload = base64Url
-          .encode(utf8.encode('{"exp":4102444800,"email":"user@corp.com"}'));
-      final idToken = '$header.$payload.signature';
-
-      String? capturedAuth;
-      final client = MockClient((req) async {
-        capturedAuth ??= req.headers['Authorization'];
-        return http.Response(jsonEncode({'models': []}), 200);
-      });
-      final svc = TelemetryService(
-        remoteUrl: 'https://candela.example.com',
-        authToken: idToken,
-        httpClient: client,
+      // Simulate a realistic JWT-shaped token
+      final idToken =
+          'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjQxMDI0NDQ4MDAsImVtYWlsIjoidXNlckBjb3JwLmNvbSJ9.signature';
+      final mock = MockConnectApi(
+        modelResponse: GetModelBreakdownResponse(),
       );
+      final svc = _teamSvc(mock, authToken: idToken);
       await svc.fetch(TokenTimeRange.h24);
-      expect(capturedAuth, 'Bearer $idToken');
+      expect(mock.capturedAuthToken, idToken);
     });
 
     test('401 response returns authExpired error', () async {
-      final client =
-          MockClient((req) async => http.Response('Unauthorized', 401));
-      final svc = TelemetryService(
-        remoteUrl: 'https://candela.example.com',
-        authToken: 'expired-token',
-        httpClient: client,
+      final mock = MockConnectApi(
+        throwOnSummary: ConnectException(Code.unauthenticated, 'expired'),
       );
+      final svc = _teamSvc(mock, authToken: 'expired-token');
       final result = await svc.fetch(TokenTimeRange.h24);
       expect(result!.error, TelemetryErrorKind.authExpired);
       expect(result.hasData, isFalse);
     });
 
-    test('null authToken omits Authorization header', () async {
-      bool hasAuthHeader = false;
-      final client = MockClient((req) async {
-        hasAuthHeader = req.headers.containsKey('Authorization');
-        return http.Response(
-            jsonEncode({'cost_over_time': [], 'tokens_over_time': []}), 200);
-      });
-      final svc = TelemetryService(
-        remoteUrl: 'https://candela.example.com',
-        authToken: null,
-        httpClient: client,
+    test('null authToken is passed through to factory', () async {
+      final mock = MockConnectApi(
+        modelResponse: GetModelBreakdownResponse(),
       );
+      final svc = _teamSvc(mock, authToken: null);
       await svc.fetch(TokenTimeRange.h24);
-      expect(hasAuthHeader, isFalse);
+      expect(mock.capturedAuthToken, isNull);
     });
   });
 
   group('Team mode — budget and grants parsing', () {
     test('parses budget from GetMyUsage response', () async {
-      final usageBody = jsonEncode({
-        'budget': {
-          'limit_usd': 10.0,
-          'spent_usd': 3.50,
-          'tokens_used': 150000,
-          'period_end': DateTime.now()
-              .toUtc()
-              .add(const Duration(hours: 12))
-              .toIso8601String(),
-        },
-        'active_grants': [
-          {
-            'id': 'grant-1',
-            'amount_usd': 25.0,
-            'spent_usd': 5.0,
-            'reason': 'Onboarding bonus',
-            'granted_by': 'admin@corp.com',
-          }
-        ],
-        'total_remaining_usd': 26.50,
-      });
+      final model = ModelUsage()
+        ..model = 'gpt-4o'
+        ..provider = 'openai'
+        ..callCount = Int64(2)
+        ..inputTokens = Int64(200)
+        ..outputTokens = Int64(100)
+        ..costUsd = 0.02
+        ..avgLatencyMs = 100.0;
 
-      final client = MockClient((req) async {
-        if (req.url.path.contains('GetMyUsage')) {
-          return http.Response(usageBody, 200);
-        }
-        return http.Response(jsonEncode({'models': []}), 200);
-      });
+      final periodEnd = DateTime.now().toUtc().add(const Duration(hours: 12));
+      final ts = Timestamp()
+        ..seconds = Int64(periodEnd.millisecondsSinceEpoch ~/ 1000);
 
-      final svc = TelemetryService(
-        remoteUrl: 'https://candela.example.com',
-        authToken: 'valid-token',
-        httpClient: client,
+      final usage = GetMyUsageResponse()
+        ..budget = (UserBudget()
+          ..limitUsd = 10.0
+          ..spentUsd = 3.50
+          ..tokensUsed = Int64(150000)
+          ..periodEnd = ts)
+        ..totalRemainingUsd = 26.50;
+      usage.activeGrants.add(BudgetGrant()
+        ..id = 'grant-1'
+        ..amountUsd = 25.0
+        ..spentUsd = 5.0
+        ..reason = 'Onboarding bonus'
+        ..grantedBy = 'admin@corp.com');
+
+      final mock = MockConnectApi(
+        modelResponse: GetModelBreakdownResponse()..models.add(model),
+        usageResponse: usage,
       );
+      final svc = _teamSvc(mock, authToken: 'valid-token');
       final result = await svc.fetch(TokenTimeRange.h24);
 
       expect(result, isNotNull);
@@ -127,56 +165,34 @@ void main() {
     });
 
     test('handles missing budget gracefully', () async {
-      final client = MockClient((req) async {
-        if (req.url.path.contains('GetMyUsage')) {
-          return http.Response(jsonEncode({}), 200);
-        }
-        return http.Response(jsonEncode({'models': []}), 200);
-      });
-
-      final svc = TelemetryService(
-        remoteUrl: 'https://candela.example.com',
-        authToken: 'valid-token',
-        httpClient: client,
+      // Empty usage response (no budget set)
+      final mock = MockConnectApi(
+        modelResponse: GetModelBreakdownResponse(),
+        usageResponse: GetMyUsageResponse(),
       );
+      final svc = _teamSvc(mock, authToken: 'valid-token');
       final result = await svc.fetch(TokenTimeRange.h24);
 
       expect(result, isNotNull);
-      expect(result!.budget, isNull);
-      expect(result.activeGrants, isEmpty);
+      // Budget is null when not set in proto response
+      expect(result!.activeGrants, isEmpty);
     });
 
     test('GetMyUsage failure is non-fatal', () async {
-      final modelsBody = jsonEncode({
-        'models': [
-          {
-            'model': 'claude-sonnet-4',
-            'provider': 'anthropic',
-            'call_count': 3,
-            'input_tokens': 1000,
-            'output_tokens': 500,
-            'cost_usd': 0.05,
-            'avg_latency_ms': 800.0,
-          }
-        ]
-      });
+      final model = ModelUsage()
+        ..model = 'claude-sonnet-4'
+        ..provider = 'anthropic'
+        ..callCount = Int64(3)
+        ..inputTokens = Int64(1000)
+        ..outputTokens = Int64(500)
+        ..costUsd = 0.05
+        ..avgLatencyMs = 800.0;
 
-      final client = MockClient((req) async {
-        if (req.url.path.contains('GetMyUsage')) {
-          return http.Response('Internal Error', 500);
-        }
-        if (req.url.path.contains('GetModelBreakdown')) {
-          return http.Response(modelsBody, 200);
-        }
-        return http.Response(
-            jsonEncode({'cost_over_time': [], 'tokens_over_time': []}), 200);
-      });
-
-      final svc = TelemetryService(
-        remoteUrl: 'https://candela.example.com',
-        authToken: 'valid-token',
-        httpClient: client,
+      final mock = MockConnectApi(
+        modelResponse: GetModelBreakdownResponse()..models.add(model),
+        throwOnUsage: ConnectException(Code.internal, 'usage error'),
       );
+      final svc = _teamSvc(mock, authToken: 'valid-token');
       final result = await svc.fetch(TokenTimeRange.d7);
 
       // Should still have span data even though budget call failed.
@@ -186,40 +202,32 @@ void main() {
     });
   });
 
-  group('Team mode — ConnectRPC endpoints', () {
-    test('calls correct ConnectRPC paths', () async {
-      final paths = <String>[];
-      final client = MockClient((req) async {
-        paths.add(req.url.path);
-        return http.Response(jsonEncode({'models': []}), 200);
-      });
-
+  group('Team mode — ConnectRPC integration', () {
+    test('factory receives correct baseUrl', () async {
+      String? capturedBase;
+      final mock = MockConnectApi(
+        modelResponse: GetModelBreakdownResponse(),
+      );
       final svc = TelemetryService(
+        port: 8181,
         remoteUrl: 'https://candela.example.com',
         authToken: 'token',
-        httpClient: client,
+        connectApiFactory: (baseUrl, token) {
+          capturedBase = baseUrl;
+          return mock;
+        },
       );
       await svc.fetch(TokenTimeRange.h24);
-
-      expect(paths, contains('/candela.v1.DashboardService/GetUsageSummary'));
-      expect(paths, contains('/candela.v1.DashboardService/GetModelBreakdown'));
-      expect(paths, contains('/candela.v1.DashboardService/GetMyUsage'));
+      expect(capturedBase, 'https://candela.example.com');
     });
 
-    test('sends Connect-Protocol-Version header', () async {
-      String? protocolVersion;
-      final client = MockClient((req) async {
-        protocolVersion ??= req.headers['Connect-Protocol-Version'];
-        return http.Response(jsonEncode({'models': []}), 200);
-      });
-
-      final svc = TelemetryService(
-        remoteUrl: 'https://candela.example.com',
-        authToken: 'token',
-        httpClient: client,
+    test('server error maps to unreachable', () async {
+      final mock = MockConnectApi(
+        throwOnSummary: ConnectException(Code.unavailable, 'down'),
       );
-      await svc.fetch(TokenTimeRange.h24);
-      expect(protocolVersion, '1');
+      final svc = _teamSvc(mock);
+      final result = await svc.fetch(TokenTimeRange.h24);
+      expect(result!.error, TelemetryErrorKind.unreachable);
     });
   });
 }

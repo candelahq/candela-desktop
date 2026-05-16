@@ -1,10 +1,13 @@
 import 'dart:convert';
 
+import 'package:connectrpc/connect.dart' show ConnectException, Code;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/budget_info.dart';
 import '../models/span_stats.dart';
+import '../gen/candela/v1/dashboard_service.pb.dart' hide TimeSeriesPoint;
+import 'connect_api_service.dart';
 
 // ── Error kinds ───────────────────────────────────────────────────────────────
 
@@ -45,10 +48,12 @@ class TelemetryService {
   // H5: injectable client enables testing without network.
   final http.Client _client;
 
+  /// Factory for creating a [ConnectApiService]. Injected in tests.
+  final ConnectApiService Function(String baseUrl, String? authToken)
+      _connectApiFactory;
+
   // Security / resource limits.
-  static const _maxSyntheticSpans = 1000; // C4: cap OOM loop
   static const _maxBodyBytes = 5 * 1024 * 1024; // C5/H1: 5 MB response cap
-  static const _requestTimeout = Duration(seconds: 10);
   static const _localTimeout = Duration(seconds: 5);
 
   TelemetryService({
@@ -56,7 +61,12 @@ class TelemetryService {
     this.remoteUrl,
     this.authToken,
     http.Client? httpClient,
-  }) : _client = httpClient ?? http.Client() {
+    ConnectApiService Function(String baseUrl, String? authToken)?
+        connectApiFactory,
+  })  : _client = httpClient ?? http.Client(),
+        _connectApiFactory = connectApiFactory ??
+            ((baseUrl, authToken) =>
+                ConnectApiService(baseUrl: baseUrl, authToken: authToken)) {
     // H6: validate port range at construction time.
     if (port <= 0 || port > 65535) {
       throw ArgumentError.value(port, 'port', 'Must be 1–65535');
@@ -193,56 +203,54 @@ class TelemetryService {
     final base = remoteUrl!.replaceAll(RegExp(r'/$'), '');
     final start = now.subtract(range.duration);
 
-    final headers = {
-      'Content-Type': 'application/json',
-      'Connect-Protocol-Version': '1',
-      if (authToken != null) 'Authorization': 'Bearer $authToken',
-    };
-
-    final timeRange = {
-      'start': start.toUtc().toIso8601String(),
-      'end': now.toUtc().toIso8601String(),
-    };
+    final api = _connectApiFactory(base, authToken);
 
     try {
+      // Fire RPCs concurrently. GetMyUsage is non-fatal.
+      final summaryFuture = api.getUsageSummary(start: start, end: now);
+      final modelsFuture = api.getModelBreakdown(start: start, end: now);
+      final usageFuture = api
+          .getMyUsage(start: start, end: now)
+          .then<GetMyUsageResponse?>((r) => r)
+          .catchError((Object e) {
+        debugPrint('[TelemetryService] GetMyUsage failed (non-fatal): $e');
+        return null;
+      });
+
       final results = await Future.wait([
-        _client
-            .post(
-              Uri.parse('$base/candela.v1.DashboardService/GetUsageSummary'),
-              headers: headers,
-              body: jsonEncode({'project_id': '', 'time_range': timeRange}),
-            )
-            .timeout(_requestTimeout),
-        _client
-            .post(
-              Uri.parse('$base/candela.v1.DashboardService/GetModelBreakdown'),
-              headers: headers,
-              body: jsonEncode({'project_id': '', 'time_range': timeRange}),
-            )
-            .timeout(_requestTimeout),
-        // GetMyUsage carries budget + active_grants for the waterfall card.
-        // .catchError ensures this call is truly non-fatal — a failure here
-        // yields a 500 sentinel so spans/summary are still returned normally.
-        _client
-            .post(
-              Uri.parse('$base/candela.v1.DashboardService/GetMyUsage'),
-              headers: headers,
-              body: jsonEncode({'project_id': '', 'time_range': timeRange}),
-            )
-            .timeout(_requestTimeout)
-            .catchError((Object e) {
-          // Non-fatal: budget display is best-effort. Log for observability.
-          debugPrint('[TelemetryService] GetMyUsage failed (non-fatal): $e');
-          return http.Response('', 500);
-        }),
+        summaryFuture,
+        modelsFuture,
+        usageFuture,
       ]);
 
-      final summaryResp = results[0];
-      final modelsResp = results[1];
-      final usageResp = results[2];
+      final modelsResp = results[1] as GetModelBreakdownResponse;
+      final usageResp = results[2] as GetMyUsageResponse?;
 
+      // Parse budget/grant data from GetMyUsage (non-fatal if missing/error).
+      BudgetInfo? budget;
+      List<GrantInfo> grants = [];
+      double? totalRemainingUsd;
+      if (usageResp != null) {
+        try {
+          budget = ConnectApiService.budgetFromProto(usageResp);
+          grants = ConnectApiService.grantsFromProto(usageResp);
+          final rawRemaining = usageResp.totalRemainingUsd;
+          // Clamp server value: must be non-negative and finite.
+          if (!rawRemaining.isNaN && !rawRemaining.isInfinite) {
+            totalRemainingUsd = rawRemaining.clamp(0.0, 1e9);
+          }
+        } catch (_) {
+          // Budget data is display-only — swallow parse errors.
+        }
+      }
+
+      // Convert proto ModelUsage → SpanRecord for the chart pipeline.
+      final spans =
+          ConnectApiService.spansFromModels(modelsResp.models, start, now);
+      return (spans, null, budget, grants, totalRemainingUsd);
+    } on ConnectException catch (e) {
       // C1/C3: distinguish 401 (auth expired) from other errors.
-      if (summaryResp.statusCode == 401) {
+      if (e.code == Code.unauthenticated) {
         return (
           <SpanRecord>[],
           TelemetryErrorKind.authExpired,
@@ -251,73 +259,7 @@ class TelemetryService {
           null
         );
       }
-      if (summaryResp.statusCode != 200) {
-        return (
-          <SpanRecord>[],
-          TelemetryErrorKind.unreachable,
-          null,
-          <GrantInfo>[],
-          null
-        );
-      }
 
-      // H1: enforce response body size limit before decoding.
-      if (summaryResp.bodyBytes.length > _maxBodyBytes ||
-          modelsResp.bodyBytes.length > _maxBodyBytes) {
-        return (
-          <SpanRecord>[],
-          TelemetryErrorKind.unreachable,
-          null,
-          <GrantInfo>[],
-          null
-        );
-      }
-
-      // Parse budget/grant data from GetMyUsage (non-fatal if missing/error).
-      BudgetInfo? budget;
-      List<GrantInfo> grants = [];
-      double? totalRemainingUsd;
-      if (usageResp.statusCode == 200 &&
-          usageResp.bodyBytes.length <= _maxBodyBytes) {
-        try {
-          final usageJson = jsonDecode(usageResp.body) as Map<String, dynamic>;
-          budget = _parseBudget(usageJson['budget']);
-          grants =
-              _parseGrants(_field(usageJson, 'activeGrants', 'active_grants'));
-          final rawRemaining = _parseNum(
-                  _field(usageJson, 'totalRemainingUsd', 'total_remaining_usd'))
-              ?.toDouble();
-          // Clamp server value: must be non-negative and finite.
-          // Guards against buggy/malicious responses (NaN, -$n, Infinity).
-          if (rawRemaining != null &&
-              !rawRemaining.isNaN &&
-              !rawRemaining.isInfinite) {
-            totalRemainingUsd = rawRemaining.clamp(0.0, 1e9);
-          }
-        } catch (_) {
-          // Budget data is display-only — swallow parse errors.
-        }
-      }
-
-      if (modelsResp.statusCode == 200) {
-        final modelsJson = jsonDecode(modelsResp.body) as Map<String, dynamic>;
-        final spans = _spansFromModelBreakdown(
-            modelsJson['models'] as List<dynamic>? ?? [], start, now);
-        return (spans, null, budget, grants, totalRemainingUsd);
-      }
-
-      // Fallback: synthesize from summary time series.
-      final summaryJson = jsonDecode(summaryResp.body) as Map<String, dynamic>;
-      final spans = _spansFromTimeSeries(
-        (_field(summaryJson, 'costOverTime', 'cost_over_time')
-                as List<dynamic>?) ??
-            [],
-        (_field(summaryJson, 'tokensOverTime', 'tokens_over_time')
-                as List<dynamic>?) ??
-            [],
-      );
-      return (spans, null, budget, grants, totalRemainingUsd);
-    } on FormatException {
       return (
         <SpanRecord>[],
         TelemetryErrorKind.unreachable,
@@ -334,158 +276,6 @@ class TelemetryService {
         null
       );
     }
-  }
-
-  // ── Budget/grant parsers ─────────────────────────────────────────────────────
-
-  static BudgetInfo? _parseBudget(dynamic raw) {
-    if (raw is! Map<String, dynamic>) return null;
-    try {
-      final limitUsd =
-          _parseNum(_field(raw, 'limitUsd', 'limit_usd'))?.toDouble() ?? 0.0;
-      final spentUsd =
-          _parseNum(_field(raw, 'spentUsd', 'spent_usd'))?.toDouble() ?? 0.0;
-      final tokensUsed =
-          _parseNum(_field(raw, 'tokensUsed', 'tokens_used'))?.toInt() ?? 0;
-      final periodEndRaw = (_field(raw, 'periodEnd', 'period_end')) as String?;
-      final periodEnd = periodEndRaw != null
-          ? DateTime.tryParse(periodEndRaw) ?? DateTime.now().toUtc()
-          : DateTime.now().toUtc().add(const Duration(days: 1));
-      return BudgetInfo(
-        limitUsd: limitUsd,
-        spentUsd: spentUsd,
-        tokensUsed: tokensUsed,
-        period: BudgetPeriodKind.daily,
-        periodEnd: periodEnd,
-      );
-    } catch (_) {
-      return null;
-    }
-  }
-
-  static List<GrantInfo> _parseGrants(dynamic raw) {
-    if (raw is! List) return [];
-    final grants = <GrantInfo>[];
-    for (final item in raw) {
-      if (item is! Map<String, dynamic>) continue;
-      try {
-        final expiresRaw = (_field(item, 'expiresAt', 'expires_at')) as String?;
-        grants.add(GrantInfo(
-          // Use .toString() for string fields — guards against int IDs from
-          // schema evolution (e.g. proto3 int64 JSON → numeric type).
-          id: item['id']?.toString() ?? '',
-          amountUsd:
-              _parseNum(_field(item, 'amountUsd', 'amount_usd'))?.toDouble() ??
-                  0.0,
-          spentUsd:
-              _parseNum(_field(item, 'spentUsd', 'spent_usd'))?.toDouble() ??
-                  0.0,
-          reason: (_field(item, 'reason', 'reason'))?.toString() ?? '',
-          grantedBy:
-              (_field(item, 'grantedBy', 'granted_by'))?.toString() ?? '',
-          expiresAt: expiresRaw != null ? DateTime.tryParse(expiresRaw) : null,
-        ));
-      } catch (_) {
-        continue;
-      }
-    }
-    return grants;
-  }
-
-  // ── Synthesis helpers ───────────────────────────────────────────────────────
-
-  /// Parse a numeric value that may be a JSON number OR a proto3 int64 string.
-  /// Proto3 encodes int64/uint64 fields as JSON strings (e.g. "21" not 21).
-  static num? _parseNum(dynamic v) {
-    if (v is num) return v;
-    if (v is String) return num.tryParse(v);
-    return null;
-  }
-
-  /// Lookup a value under either its camelCase or snake_case key.
-  /// Proto3 JSON uses camelCase by default; some backends may use snake_case.
-  static dynamic _field(Map<String, dynamic> map, String camel, String snake) {
-    return map[camel] ?? map[snake];
-  }
-
-  List<SpanRecord> _spansFromModelBreakdown(
-      List<dynamic> models, DateTime start, DateTime end) {
-    final spans = <SpanRecord>[];
-    for (final m in models) {
-      final map = m as Map<String, dynamic>;
-      // C4: cap callCount to prevent OOM loop from malicious server response.
-      // Proto3 JSON encodes int64 as strings, so use _parseNum for safe parsing.
-      final callCount =
-          (_parseNum(_field(map, 'callCount', 'call_count'))?.toInt() ?? 1)
-              .clamp(1, _maxSyntheticSpans);
-      final inputTok =
-          _parseNum(_field(map, 'inputTokens', 'input_tokens'))?.toInt() ?? 0;
-      final outputTok =
-          _parseNum(_field(map, 'outputTokens', 'output_tokens'))?.toInt() ?? 0;
-      final cost =
-          _parseNum(_field(map, 'costUsd', 'cost_usd'))?.toDouble() ?? 0.0;
-      final latency = _parseNum(_field(map, 'avgLatencyMs', 'avg_latency_ms'))
-              ?.toDouble() ??
-          0.0;
-      final model = map['model'] as String? ?? 'unknown';
-      final provider = map['provider'] as String? ?? 'team';
-
-      for (var i = 0; i < callCount; i++) {
-        spans.add(SpanRecord(
-          spanId: 'r-$model-$i',
-          traceId: 'r-$model',
-          model: model,
-          provider: provider,
-          inputTokens: (inputTok / callCount).round(),
-          outputTokens: (outputTok / callCount).round(),
-          totalTokens: ((inputTok + outputTok) / callCount).round(),
-          costUsd: cost / callCount,
-          durationMs: latency,
-          status: 'ok',
-          timestamp: _spread(start, end, i, callCount),
-          name: 'chat $model',
-        ));
-      }
-    }
-    return spans;
-  }
-
-  List<SpanRecord> _spansFromTimeSeries(
-      List<dynamic> costSeries, List<dynamic> tokenSeries) {
-    final tokenMap = {
-      for (final t in tokenSeries)
-        (t as Map<String, dynamic>)['timestamp'] as String? ?? '':
-            _parseNum(t['value'])?.toInt() ?? 0,
-    };
-
-    return costSeries.map((point) {
-      final p = point as Map<String, dynamic>;
-      final ts = p['timestamp'] as String? ?? '';
-      return SpanRecord(
-        spanId: 'r-ts-$ts',
-        traceId: 'r-ts',
-        model: 'unknown',
-        provider: 'team',
-        inputTokens: 0,
-        outputTokens: 0,
-        totalTokens: tokenMap[ts] ?? 0,
-        costUsd: _parseNum(p['value'])?.toDouble() ?? 0.0,
-        durationMs: 0,
-        status: 'ok',
-        timestamp: DateTime.tryParse(ts) ?? DateTime.now(),
-        name: 'bucket',
-      );
-    }).toList();
-  }
-
-  /// Spread span [i] of [total] evenly across [start]–[end].
-  /// H4: when total==1, place at window midpoint so it lands in a middle bucket.
-  DateTime _spread(DateTime start, DateTime end, int i, int total) {
-    final ms = end.difference(start).inMilliseconds;
-    if (total <= 1) {
-      return start.add(Duration(milliseconds: ms ~/ 2));
-    }
-    return start.add(Duration(milliseconds: (ms / total * i).round()));
   }
 
   // ── Aggregation ─────────────────────────────────────────────────────────────

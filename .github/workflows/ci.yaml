@@ -74,6 +74,8 @@ jobs:
           if ! command -v lcov &> /dev/null; then
             brew install lcov
           fi
+          # Exclude generated proto stubs from coverage calculation.
+          lcov --remove coverage/lcov.info 'lib/gen/*' -o coverage/lcov.info --quiet
           COVERAGE=$(lcov --summary coverage/lcov.info 2>&1 | grep 'lines' | sed 's/.*: //' | sed 's/%.*//')
           echo "Line coverage: ${COVERAGE}%"
           # Ratchet: fail if coverage drops below 45%.

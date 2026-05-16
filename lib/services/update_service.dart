@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:auto_updater/auto_updater.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:safe_change_notifier/safe_change_notifier.dart';
@@ -9,7 +8,7 @@ import 'package:safe_change_notifier/safe_change_notifier.dart';
 /// How the app was installed — determines update mechanism.
 enum InstallChannel {
   /// Downloaded directly (e.g., from GitHub Releases or candelahq.com).
-  /// Uses Sparkle for in-app auto-update on macOS.
+  /// (Sparkle removed, just prompt to download from candelahq.com).
   direct,
 
   /// Installed via Homebrew (`brew install candelahq/tap/candela`).
@@ -24,39 +23,23 @@ enum InstallChannel {
 
 /// Describes the current update status.
 enum UpdateStatus {
-  /// No update check has been performed yet.
   idle,
-
-  /// Currently checking for updates.
   checking,
-
-  /// An update is available.
   available,
-
-  /// Already on the latest version.
   upToDate,
-
-  /// Check failed (network error, etc).
   error,
 }
 
-/// Manages version checking, update notifications, and Sparkle auto-update.
+/// Manages version checking and update notifications.
 ///
 /// Detects the install channel and provides appropriate update handling:
-/// - Direct installs (macOS) → Sparkle auto-update via `auto_updater`
 /// - Homebrew installs → "run `brew upgrade candela`"
 /// - Nix installs → "run `nix profile upgrade`"
+/// - Direct installs → fallback message
 class UpdateService extends SafeChangeNotifier {
   static const _releaseFeedUrl =
       'https://api.github.com/repos/candelahq/candela-desktop/releases/latest';
 
-  static const _appcastUrl =
-      'https://github.com/candelahq/candela-desktop/releases/latest/download/appcast.xml';
-
-  /// Scheduled check interval: every 4 hours (in seconds).
-  static const _checkIntervalSeconds = 4 * 60 * 60;
-
-  /// Allow injection for testing.
   final http.Client _client;
 
   String? _latestVersion;
@@ -69,8 +52,6 @@ class UpdateService extends SafeChangeNotifier {
       notifyListeners();
     }
   }
-
-  bool _sparkleInitialized = false;
 
   UpdateService({http.Client? client}) : _client = client ?? http.Client();
 
@@ -97,39 +78,6 @@ class UpdateService extends SafeChangeNotifier {
     }
 
     return _cachedChannel!;
-  }
-
-  /// Initialize Sparkle auto-updater for direct installs on macOS.
-  ///
-  /// Sets the appcast feed URL and schedules periodic background checks.
-  /// No-op if the install channel is not [InstallChannel.direct] or
-  /// if the platform is not macOS.
-  Future<void> initSparkle() async {
-    if (_sparkleInitialized) return;
-    if (!Platform.isMacOS) return;
-    if (detectChannel() != InstallChannel.direct) return;
-
-    try {
-      await autoUpdater.setFeedURL(_appcastUrl);
-      await autoUpdater.setScheduledCheckInterval(_checkIntervalSeconds);
-      _sparkleInitialized = true;
-    } catch (_) {
-      // Sparkle not available — silent fallback to manual check.
-    }
-  }
-
-  /// Trigger an immediate Sparkle update check (shows native UI dialog).
-  ///
-  /// Only works for direct installs on macOS. Returns false if Sparkle
-  /// is not available (wrong channel, not macOS, etc.).
-  Future<bool> checkForUpdatesViaSparkle() async {
-    if (!_sparkleInitialized) return false;
-    try {
-      await autoUpdater.checkForUpdates();
-      return true;
-    } catch (_) {
-      return false;
-    }
   }
 
   /// Check GitHub Releases for a newer version.
@@ -176,14 +124,12 @@ class UpdateService extends SafeChangeNotifier {
   String updateInstructions(InstallChannel channel) {
     switch (channel) {
       case InstallChannel.direct:
-        return 'A new version is available. It will be installed automatically.';
+        return 'Download the latest version from candelahq.com/releases';
       case InstallChannel.homebrew:
         return 'Run: brew upgrade --cask candelahq/tap/candela-desktop';
       case InstallChannel.nix:
         return 'Run: nix profile upgrade';
       case InstallChannel.unknown:
-        // CRITICAL-6: unknown channel is silent in production — log for
-        // diagnostics (CI artifacts, custom installs, App Store builds).
         debugPrint(
             '[UpdateService] Unknown install channel for: ${Platform.resolvedExecutable}');
         return 'Visit candelahq.com/releases for the latest version.';
@@ -191,22 +137,15 @@ class UpdateService extends SafeChangeNotifier {
   }
 
   /// Semver comparison: is [a] newer than [b]?
-  ///
-  /// Handles pre-release tags: `0.2.0` is newer than `0.2.0-beta.1`.
-  /// Pre-release versions with the same base are ordered by pre-release
-  /// identifier (e.g. `beta.2` > `beta.1`).
   static bool isNewer(String a, String b) {
     final aParsed = _parseSemver(a);
     final bParsed = _parseSemver(b);
 
-    // Compare major.minor.patch
     for (var i = 0; i < 3; i++) {
       if (aParsed.version[i] > bParsed.version[i]) return true;
       if (aParsed.version[i] < bParsed.version[i]) return false;
     }
 
-    // Same base version — compare pre-release.
-    // No pre-release > any pre-release (1.0.0 > 1.0.0-beta.1).
     if (aParsed.preRelease == null && bParsed.preRelease != null) return true;
     if (aParsed.preRelease != null && bParsed.preRelease == null) return false;
     if (aParsed.preRelease != null && bParsed.preRelease != null) {
@@ -217,17 +156,14 @@ class UpdateService extends SafeChangeNotifier {
   }
 
   static _SemverParts _parseSemver(String version) {
-    // Strip common 'v' prefix (e.g. 'v1.0.0' from git tags).
     if (version.startsWith('v') || version.startsWith('V')) {
       version = version.substring(1);
     }
 
-    // Strip build metadata (+N) per semver 2.0.0 — ignored for precedence.
     final plusIdx = version.indexOf('+');
     final withoutBuild =
         plusIdx == -1 ? version : version.substring(0, plusIdx);
 
-    // Split on '-' to separate base from pre-release.
     final dashIdx = withoutBuild.indexOf('-');
     final base =
         dashIdx == -1 ? withoutBuild : withoutBuild.substring(0, dashIdx);
@@ -243,10 +179,6 @@ class UpdateService extends SafeChangeNotifier {
   }
 
   /// Perform a Homebrew cask upgrade and relaunch the app.
-  ///
-  /// Runs `brew upgrade --cask candelahq/tap/candela-desktop`, then
-  /// relaunches via `open -n` and exits the current process.
-  /// Returns false if the upgrade failed (the app stays open).
   Future<bool> performBrewUpgrade() async {
     _setStatus(UpdateStatus.checking);
     try {
@@ -260,14 +192,12 @@ class UpdateService extends SafeChangeNotifier {
         return false;
       }
 
-      // Relaunch the updated app.
       await Process.start(
         'open',
         ['-n', '-a', 'Candela'],
         mode: ProcessStartMode.detached,
       );
 
-      // Exit the current (old) process.
       exit(0);
     } catch (_) {
       _setStatus(UpdateStatus.error);

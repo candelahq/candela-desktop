@@ -105,6 +105,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         const SizedBox(height: 24),
                         _buildPerformanceSection(),
                         const SizedBox(height: 24),
+                        _buildOptimizationSection(),
+                        const SizedBox(height: 24),
                         _buildModeSection(),
                         const SizedBox(height: 24),
                         _buildAboutSection(),
@@ -242,6 +244,52 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _togglePromptCaching(bool value) async {
     await ref.read(configServiceProvider).setPromptCaching(value);
+    await _loadAll();
+  }
+
+  Widget _buildOptimizationSection() {
+    final config = _config;
+    final semanticEnabled = config?.optimizations?.semanticCache ?? false;
+    final compressionEnabled =
+        config?.optimizations?.contextCompression ?? false;
+
+    return _SettingsSection(
+      title: 'Token Optimization',
+      icon: Icons.compress_outlined,
+      children: [
+        _SettingsRow(
+          label: 'Semantic caching',
+          subtitle: 'Cache responses for semantically similar prompts',
+          child: Switch(
+            value: semanticEnabled,
+            onChanged: _toggleSemanticCaching,
+            activeTrackColor: CandelaColors.accent,
+          ),
+        ),
+        _SettingsRow(
+          label: 'Context compression',
+          subtitle: 'Strip redundant tokens before dispatch (LLMLingua)',
+          child: Switch(
+            value: compressionEnabled,
+            onChanged: _toggleContextCompression,
+            activeTrackColor: CandelaColors.accent,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _toggleSemanticCaching(bool value) async {
+    await ref
+        .read(configServiceProvider)
+        .setOptimizations(semanticCache: value);
+    await _loadAll();
+  }
+
+  Future<void> _toggleContextCompression(bool value) async {
+    await ref
+        .read(configServiceProvider)
+        .setOptimizations(contextCompression: value);
     await _loadAll();
   }
 

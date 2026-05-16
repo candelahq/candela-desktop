@@ -1,0 +1,788 @@
+
+🕯️  Candela Desktop dev shell
+   Flutter : 3.41.6
+   Dart    : Dart SDK version: 3.11.4 (stable) (Tue Mar 24 01:02:20 2026 -0700) on "macos_arm64"
+
+00:00 +0: loading /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart
+00:00 +0: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:00 +1: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:00 +2: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:00 +3: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:00 +4: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:00 +5: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:00 +6: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:00 +7: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:00 +8: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:00 +9: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:00 +10: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:00 +11: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +12: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +13: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +14: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +15: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +16: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +17: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +18: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +19: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +20: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +21: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +22: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +23: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +24: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +25: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +26: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +27: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +28: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +29: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +30: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +31: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +32: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +33: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +34: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +35: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +36: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +37: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +38: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +39: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +40: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +41: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +42: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +43: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +44: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +45: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +46: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +47: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +48: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +49: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +50: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:01 +51: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:02 +52: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:02 +53: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:02 +54: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:02 +55: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:02 +56: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:02 +57: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:02 +58: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:02 +59: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:02 +60: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:02 +61: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:02 +62: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:02 +63: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:02 +64: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:02 +65: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +66: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +67: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +68: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +69: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +70: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +71: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +72: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +73: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +74: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +75: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +76: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +77: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +78: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +79: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +80: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +81: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +82: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +83: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +84: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +85: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +86: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +87: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +88: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +89: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +90: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +91: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +92: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +93: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +94: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +95: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:03 +96: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:05 +97: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:06 +98: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:06 +99: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:06 +100: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:06 +101: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:06 +102: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:06 +103: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:06 +104: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:06 +105: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:06 +106: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:06 +107: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering runAll populates history and returns valid summary
+00:06 +108: /Users/ab/code/candela-desktop/test/screens/today_screen_test.dart: TodayScreen renders and shows loading state
+00:06 +109: /Users/ab/code/candela-desktop/test/screens/today_screen_test.dart: TodayScreen renders and shows loading state
+00:06 +110: /Users/ab/code/candela-desktop/test/screens/today_screen_test.dart: TodayScreen renders and shows loading state
+00:07 +111: /Users/ab/code/candela-desktop/test/screens/today_screen_test.dart: TodayScreen renders and shows loading state
+00:07 +112: /Users/ab/code/candela-desktop/test/screens/today_screen_test.dart: TodayScreen renders and shows loading state
+00:07 +113: /Users/ab/code/candela-desktop/test/screens/today_screen_test.dart: TodayScreen renders and shows loading state
+00:08 +114: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:08 +115: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:09 +116: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:09 +117: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:10 +118: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:10 +119: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:10 +120: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:10 +121: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:10 +122: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:10 +123: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:11 +124: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:11 +125: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:11 +126: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:11 +127: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:11 +128: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:11 +129: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:11 +130: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:11 +131: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:11 +132: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:11 +133: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:11 +134: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:11 +135: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:11 +136: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:11 +137: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:11 +138: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:12 +139: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:12 +140: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:12 +141: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:12 +142: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:12 +143: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:12 +144: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:12 +145: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:12 +146: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:12 +147: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:12 +148: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:12 +149: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:12 +150: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:12 +151: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:12 +152: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:12 +153: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:13 +154: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:13 +155: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:13 +156: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:13 +157: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:13 +158: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:13 +159: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:13 +160: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:13 +161: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:13 +162: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:13 +163: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:13 +164: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:13 +165: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:13 +166: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:13 +167: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:13 +168: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:13 +169: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:14 +170: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:14 +171: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:16 +172: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:16 +173: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:16 +174: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:16 +175: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:17 +176: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:17 +177: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:17 +178: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:17 +179: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:17 +180: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:17 +181: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:17 +182: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:17 +183: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:17 +184: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:17 +185: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:17 +186: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:17 +187: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:17 +188: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:17 +189: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:17 +190: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:17 +191: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:18 +192: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:18 +193: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:18 +194: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:18 +195: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:18 +196: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:18 +197: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:18 +198: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:18 +199: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:19 +200: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:19 +201: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:19 +202: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:19 +203: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:19 +204: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:19 +205: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:19 +206: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:19 +207: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:19 +208: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:19 +209: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:19 +210: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:19 +211: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:19 +212: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:19 +213: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:19 +213: /Users/ab/code/candela-desktop/test/services/update_service_test.dart: UpdateService — updateInstructions CRITICAL-6: unknown channel returns fallback URL message
+[UpdateService] Unknown install channel for: /nix/store/pz8mpj4dwk9aaqfawdfah8q04cjcggxb-flutter-artifacts-universal-aarch64-darwin/bin/cache/artifacts/engine/darwin-x64/flutter_tester
+00:19 +214: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:19 +215: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:19 +216: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:19 +217: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:19 +218: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:20 +219: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:20 +220: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:20 +221: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:20 +222: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:21 +223: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:23 +224: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:26 +225: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:27 +226: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:27 +227: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:27 +228: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:27 +229: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:27 +230: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:27 +231: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:27 +232: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:27 +233: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:27 +234: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:27 +235: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:27 +236: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:27 +237: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:27 +238: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:27 +239: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:27 +240: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:27 +241: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:27 +242: /Users/ab/code/candela-desktop/test/integration/diagnostic_runner_integration_test.dart: DiagnosticRunner — integration stream ordering concurrent runAll returns same future
+00:30 +243: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.isSafeUrl accepts https URL
+00:30 +244: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.isSafeUrl accepts http URL (local dev)
+00:30 +245: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.isSafeUrl rejects empty string
+00:30 +246: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.isSafeUrl rejects file:// scheme (SSRF guard)
+00:30 +247: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.isSafeUrl rejects ftp:// scheme
+00:30 +248: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.isSafeUrl rejects URL with empty host
+00:30 +249: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService constructor accepts valid port 8181
+00:30 +250: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService constructor throws on port 0 (H6)
+00:30 +251: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService constructor throws on port 65536 (H6)
+00:30 +252: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService constructor throws on negative port
+00:30 +253: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService constructor accepts port 1
+00:30 +254: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService constructor accepts port 65535
+00:30 +255: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService constructor isTeamMode is false when remoteUrl is null
+00:30 +256: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService constructor isTeamMode is true when remoteUrl is set
+00:31 +257: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — local mode returns unreachable error when proxy returns 404
+00:31 +258: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — local mode returns empty result when response body is empty spans list
+00:31 +259: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — local mode aggregates a single span correctly
+00:31 +260: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — local mode aggregates multiple spans
+00:31 +261: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — local mode returns unreachable error kind on network failure
+00:31 +262: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — local mode returns empty result for spans outside the time range
+00:31 +263: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — local mode result is not team mode
+00:31 +264: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService — model breakdown groups spans by provider::model
+00:31 +265: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService — model breakdown sorts models by cost descending
+00:31 +266: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService — model breakdown sums tokens correctly per model
+00:31 +267: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService — time series produces exactly 24 buckets for all time ranges
+00:31 +268: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService — time series a span within the window lands in a non-zero bucket
+00:31 +269: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService — time series h24 bucket labels are formatted as HH:mm
+00:31 +270: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService — time series d7 bucket labels are formatted as Mon DD
+00:32 +271: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode returns authExpired error on 401 (C1/C3)
+00:32 +272: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode returns unreachable error on 500
+00:32 +273: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode returns unreachable on invalid remoteUrl (C2 SSRF guard)
+00:32 +274: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode caps callCount at 1000 to prevent OOM (C4)
+00:32 +275: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:32 +276: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:32 +277: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +278: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +279: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +280: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +281: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +282: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +283: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +284: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +285: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +286: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +287: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +288: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +289: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +290: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +291: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +292: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +293: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +294: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +295: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +296: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +297: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +298: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +299: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +300: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +301: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +302: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +303: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +304: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +305: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +306: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +307: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +308: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +309: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +310: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +311: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +312: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +313: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +314: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +315: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +316: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode rejects oversized response body (C5/H1)
+00:33 +317: /Users/ab/code/candela-desktop/test/services/provider_test_service_test.dart: ProviderTestService testGoogle — HTTP paths returns error on 403 forbidden
+00:33 +318: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode parses model breakdown and aggregates correctly
+00:33 +319: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode parses model breakdown and aggregates correctly
+00:33 +320: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode parses model breakdown and aggregates correctly
+00:33 +321: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode parses model breakdown and aggregates correctly
+00:33 +322: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode parses model breakdown and aggregates correctly
+00:33 +323: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode parses model breakdown and aggregates correctly
+00:33 +324: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode parses model breakdown and aggregates correctly
+00:33 +325: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode parses model breakdown and aggregates correctly
+00:33 +326: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode parses model breakdown and aggregates correctly
+00:33 +327: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode parses model breakdown and aggregates correctly
+00:33 +328: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode parses model breakdown and aggregates correctly
+00:34 +329: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode falls back to time-series when model breakdown returns non-200
+00:34 +330: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode sets Authorization header when authToken is provided
+00:34 +331: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryService.fetch — team mode omits Authorization header when authToken is null
+00:34 +332: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: _spread midpoint fix (H4) single-call model does NOT land in bucket 0
+00:34 +333: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryResult hasData is true when summary is present
+00:34 +334: /Users/ab/code/candela-desktop/test/services/telemetry_service_test.dart: TelemetryResult hasData is false for withError result
+00:34 +335: /Users/ab/code/candela-desktop/test/services/adc_service_test.dart: AdcService readAdcFile returns null for nonexistent path
+00:34 +336: /Users/ab/code/candela-desktop/test/services/adc_service_test.dart: AdcService AdcInfo isServiceAccount
+00:34 +337: /Users/ab/code/candela-desktop/test/services/adc_service_test.dart: AdcService AdcInfo isUserCredentials
+00:34 +338: /Users/ab/code/candela-desktop/test/services/adc_service_test.dart: AdcService AdcInfo displayType for unknown type falls back to ADC
+00:34 +339: /Users/ab/code/candela-desktop/test/services/adc_service_test.dart: AdcService AdcInfo with client email
+00:34 +340: /Users/ab/code/candela-desktop/test/services/adc_service_test.dart: AdcService AdcInfo with quota project
+00:37 +341: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService load returns defaults when file does not exist
+00:37 +342: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService load parses minimal YAML
+00:37 +343: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService load detects team mode when remote is set
+00:37 +344: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService load parses lmstudio_port
+00:37 +345: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService addProvider appends to providers list
+00:37 +346: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService addProvider appends to providers list
+00:37 +347: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService addProvider appends to providers list
+00:37 +348: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService addProvider appends to providers list
+00:37 +349: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService addProvider appends to providers list
+00:37 +350: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService addProvider appends to providers list
+00:37 +351: /Users/ab/code/candela-desktop/test/services/team_mode_auth_test.dart: Team mode — auth token handling sends Bearer token in Authorization header
+00:37 +352: /Users/ab/code/candela-desktop/test/services/team_mode_auth_test.dart: Team mode — auth token handling sends Bearer token in Authorization header
+00:37 +353: /Users/ab/code/candela-desktop/test/services/team_mode_auth_test.dart: Team mode — auth token handling sends Bearer token in Authorization header
+00:37 +354: /Users/ab/code/candela-desktop/test/services/team_mode_auth_test.dart: Team mode — auth token handling sends Bearer token in Authorization header
+00:37 +355: /Users/ab/code/candela-desktop/test/services/team_mode_auth_test.dart: Team mode — auth token handling sends Bearer token in Authorization header
+00:37 +356: /Users/ab/code/candela-desktop/test/services/team_mode_auth_test.dart: Team mode — auth token handling sends Bearer token in Authorization header
+00:37 +357: /Users/ab/code/candela-desktop/test/services/team_mode_auth_test.dart: Team mode — auth token handling sends Bearer token in Authorization header
+00:37 +358: /Users/ab/code/candela-desktop/test/services/team_mode_auth_test.dart: Team mode — auth token handling sends Bearer token in Authorization header
+00:37 +359: /Users/ab/code/candela-desktop/test/services/team_mode_auth_test.dart: Team mode — auth token handling sends Bearer token in Authorization header
+00:37 +360: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager port overrides configure applies port overrides to local providers
+00:37 +361: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService setPort updates port field
+00:38 +362: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService setPort updates port field
+00:38 +363: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService setPort updates port field
+00:38 +364: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService setPort updates port field
+00:38 +365: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService setPort updates port field
+00:38 +366: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService setPort updates port field
+00:38 +367: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService setPort updates port field
+00:38 +368: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService setPort updates port field
+00:38 +369: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService setPort updates port field
+00:38 +370: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService setPort updates port field
+00:38 +371: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService setPort updates port field
+00:38 +372: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService setPort updates port field
+00:38 +373: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService setPort updates port field
+00:38 +374: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService setPort updates port field
+00:38 +375: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService setPort updates port field
+00:38 +376: /Users/ab/code/candela-desktop/test/services/team_mode_auth_test.dart: Team mode — auth token handling 401 response returns authExpired error
+00:38 +377: /Users/ab/code/candela-desktop/test/services/team_mode_auth_test.dart: Team mode — auth token handling 401 response returns authExpired error
+00:38 +378: /Users/ab/code/candela-desktop/test/services/team_mode_auth_test.dart: Team mode — auth token handling 401 response returns authExpired error
+00:38 +379: /Users/ab/code/candela-desktop/test/services/team_mode_auth_test.dart: Team mode — auth token handling 401 response returns authExpired error
+00:38 +380: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService setPort updates lmstudio_port field
+00:38 +381: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService setPort updates lmstudio_port field
+00:38 +382: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService setPort updates lmstudio_port field
+00:38 +383: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService setPort updates lmstudio_port field
+00:38 +384: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart unknown key is a no-op
+00:38 +385: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart unknown key is a no-op
+00:38 +386: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart unknown key is a no-op
+00:38 +387: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart unknown key is a no-op
+00:38 +388: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart unknown key is a no-op
+00:38 +389: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart unknown key is a no-op
+00:38 +390: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart unknown key is a no-op
+00:38 +391: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart unknown key is a no-op
+00:38 +392: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart unknown key is a no-op
+00:38 +393: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart unknown key is a no-op
+00:38 +394: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart unknown key is a no-op
+00:38 +395: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart unknown key is a no-op
+00:38 +396: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart unknown key is a no-op
+00:38 +397: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart unknown key is a no-op
+00:38 +398: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart unknown key is a no-op
+00:38 +399: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart unknown key is a no-op
+00:38 +400: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart unknown key is a no-op
+00:38 +401: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart unknown key is a no-op
+00:38 +402: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart unknown key is a no-op
+00:38 +403: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart unknown key is a no-op
+00:38 +404: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart unknown key is a no-op
+00:38 +405: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart unknown key is a no-op
+00:38 +406: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart unknown key is a no-op
+00:38 +407: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart unknown key is a no-op
+00:38 +408: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart unknown key is a no-op
+00:38 +409: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart unknown key is a no-op
+00:38 +410: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService setMode preserves URLs with special characters
+00:38 +411: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart lmstudio (null binary) leaves state stopped
+00:38 +412: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart lmstudio (null binary) leaves state stopped
+00:38 +413: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart lmstudio (null binary) leaves state stopped
+00:38 +414: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart lmstudio (null binary) leaves state stopped
+00:38 +415: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart lmstudio (null binary) leaves state stopped
+00:38 +416: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart lmstudio (null binary) leaves state stopped
+00:38 +417: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart lmstudio (null binary) leaves state stopped
+00:38 +418: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart lmstudio (null binary) leaves state stopped
+00:38 +419: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart lmstudio (null binary) leaves state stopped
+00:38 +420: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart lmstudio (null binary) leaves state stopped
+00:38 +421: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart lmstudio (null binary) leaves state stopped
+00:38 +422: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart lmstudio (null binary) leaves state stopped
+00:38 +423: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart lmstudio (null binary) leaves state stopped
+00:38 +424: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart lmstudio (null binary) leaves state stopped
+00:39 +425: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart lmstudio (null binary) leaves state stopped
+00:39 +426: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart lmstudio (null binary) leaves state stopped
+00:39 +427: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths restart lmstudio (null binary) leaves state stopped
+00:39 +428: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService _yamlValue quotes strings that look like numbers
+00:39 +429: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll with no processes installed is a no-op
+00:39 +430: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll with no processes installed is a no-op
+00:39 +431: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll with no processes installed is a no-op
+00:39 +432: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll with no processes installed is a no-op
+00:39 +433: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll with no processes installed is a no-op
+00:39 +434: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll with no processes installed is a no-op
+00:39 +435: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll with no processes installed is a no-op
+00:39 +436: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll with no processes installed is a no-op
+00:39 +437: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll with no processes installed is a no-op
+00:39 +438: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll with no processes installed is a no-op
+00:39 +439: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll with no processes installed is a no-op
+00:39 +440: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll with no processes installed is a no-op
+00:39 +441: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll with no processes installed is a no-op
+00:39 +442: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll with no processes installed is a no-op
+00:39 +443: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll with no processes installed is a no-op
+00:39 +444: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll with no processes installed is a no-op
+00:39 +445: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll with no processes installed is a no-op
+00:39 +446: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll with no processes installed is a no-op
+00:39 +447: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll with no processes installed is a no-op
+00:39 +448: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll with no processes installed is a no-op
+00:39 +449: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll with no processes installed is a no-op
+00:39 +450: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll with no processes installed is a no-op
+00:39 +451: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll with no processes installed is a no-op
+00:39 +452: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll with no processes installed is a no-op
+00:39 +453: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll with no processes installed is a no-op
+00:39 +454: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService watchForChanges emits event when config file is modified
+00:39 +455: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService watchForChanges emits event when config file is modified
+00:39 +456: /Users/ab/code/candela-desktop/test/services/config_service_test.dart: ConfigService watchForChanges emits event when config file is modified
+00:40 +457: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths configure then startAll completes without throwing
+00:40 +458: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths configure then startAll completes without throwing
+00:40 +459: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths stop from stopping state to stopped is safe
+00:40 +460: /Users/ab/code/candela-desktop/test/services/budget_notification_service_test.dart: BudgetNotificationService — init does not fire before init
+00:40 +461: /Users/ab/code/candela-desktop/test/services/budget_notification_service_test.dart: BudgetNotificationService — init does not fire before init
+00:40 +462: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll skips processes that are not stopped
+00:40 +462: /Users/ab/code/candela-desktop/test/services/budget_notification_service_test.dart: BudgetNotificationService — init init calls adapter.initialize
+[BudgetNotificationService] initialized
+00:40 +463: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll skips processes that are not stopped
+00:40 +463: /Users/ab/code/candela-desktop/test/services/budget_notification_service_test.dart: BudgetNotificationService — init init is idempotent
+[BudgetNotificationService] initialized
+00:40 +464: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll skips processes that are not stopped
+00:40 +464: /Users/ab/code/candela-desktop/test/services/budget_notification_service_test.dart: BudgetNotificationService — threshold logic no notification below 80%
+[BudgetNotificationService] initialized
+00:40 +465: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll skips processes that are not stopped
+00:40 +465: /Users/ab/code/candela-desktop/test/services/budget_notification_service_test.dart: BudgetNotificationService — threshold logic fires nearLimit at exactly 80%
+[BudgetNotificationService] initialized
+[BudgetNotificationService] fired: nearLimit (80% used)
+00:40 +466: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll skips processes that are not stopped
+00:40 +466: /Users/ab/code/candela-desktop/test/services/budget_notification_service_test.dart: BudgetNotificationService — threshold logic fires exhausted at 100%
+[BudgetNotificationService] initialized
+[BudgetNotificationService] fired: exhausted (100% used)
+00:40 +467: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll skips processes that are not stopped
+00:40 +467: /Users/ab/code/candela-desktop/test/services/budget_notification_service_test.dart: BudgetNotificationService — threshold logic fires exhausted even when over limit
+[BudgetNotificationService] initialized
+[BudgetNotificationService] fired: exhausted (100% used)
+00:40 +468: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll skips processes that are not stopped
+00:40 +468: /Users/ab/code/candela-desktop/test/services/budget_notification_service_test.dart: BudgetNotificationService — threshold logic skips nearLimit when exhausted fires directly
+[BudgetNotificationService] initialized
+[BudgetNotificationService] fired: exhausted (100% used)
+00:40 +469: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll skips processes that are not stopped
+00:40 +469: /Users/ab/code/candela-desktop/test/services/budget_notification_service_test.dart: BudgetNotificationService — de-duplication same threshold not fired twice in same period
+[BudgetNotificationService] initialized
+[BudgetNotificationService] fired: nearLimit (80% used)
+00:40 +470: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll skips processes that are not stopped
+00:40 +470: /Users/ab/code/candela-desktop/test/services/budget_notification_service_test.dart: BudgetNotificationService — de-duplication escalates from 80% to 100% in same period
+[BudgetNotificationService] initialized
+[BudgetNotificationService] fired: nearLimit (80% used)
+[BudgetNotificationService] fired: exhausted (100% used)
+00:40 +471: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll skips processes that are not stopped
+00:40 +471: /Users/ab/code/candela-desktop/test/services/budget_notification_service_test.dart: BudgetNotificationService — de-duplication does not re-fire 80% after 100%
+[BudgetNotificationService] initialized
+[BudgetNotificationService] fired: exhausted (100% used)
+00:40 +472: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll skips processes that are not stopped
+00:40 +472: /Users/ab/code/candela-desktop/test/services/budget_notification_service_test.dart: BudgetNotificationService — period rollover resets threshold tracking on period rollover
+[BudgetNotificationService] initialized
+[BudgetNotificationService] fired: exhausted (100% used)
+[BudgetNotificationService] fired: exhausted (100% used)
+00:40 +473: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll skips processes that are not stopped
+00:40 +473: /Users/ab/code/candela-desktop/test/services/budget_notification_service_test.dart: BudgetNotificationService — period rollover lastPeriodEnd updates after evaluate
+[BudgetNotificationService] initialized
+[BudgetNotificationService] fired: nearLimit (80% used)
+00:40 +474: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll skips processes that are not stopped
+00:40 +475: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll skips processes that are not stopped
+00:40 +476: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll skips processes that are not stopped
+00:40 +477: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll skips processes that are not stopped
+00:40 +478: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll skips processes that are not stopped
+00:40 +479: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll skips processes that are not stopped
+00:40 +480: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll skips processes that are not stopped
+00:40 +481: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll skips processes that are not stopped
+00:40 +482: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll skips processes that are not stopped
+00:40 +483: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll skips processes that are not stopped
+00:40 +484: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll skips processes that are not stopped
+00:40 +485: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll skips processes that are not stopped
+00:40 +486: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll skips processes that are not stopped
+00:40 +487: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll skips processes that are not stopped
+00:40 +488: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager start/stop early-return paths startAll skips processes that are not stopped
+00:41 +489: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning completes without error when no processes configured
+00:41 +490: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning completes without error when no processes configured
+00:41 +491: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning completes without error when no processes configured
+00:41 +492: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning completes without error when no processes configured
+00:41 +493: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning completes without error when no processes configured
+00:41 +494: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning completes without error when no processes configured
+00:41 +495: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning completes without error when no processes configured
+00:41 +496: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning completes without error when no processes configured
+00:41 +497: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning completes without error when no processes configured
+00:41 +498: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning completes without error when no processes configured
+00:41 +499: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning completes without error when no processes configured
+00:41 +500: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning completes without error when no processes configured
+00:41 +501: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning completes without error when no processes configured
+00:41 +502: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning completes without error when no processes configured
+00:41 +503: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning marks lmstudio as notInstalled when binary missing
+00:42 +504: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning marks lmstudio as notInstalled when binary missing
+00:42 +505: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning marks lmstudio as notInstalled when binary missing
+00:42 +506: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning marks lmstudio as notInstalled when binary missing
+00:42 +507: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning marks lmstudio as notInstalled when binary missing
+00:42 +508: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning marks lmstudio as notInstalled when binary missing
+00:42 +509: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning marks lmstudio as notInstalled when binary missing
+00:42 +510: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with ollama configured resolves to a valid state
+00:42 +511: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with ollama configured resolves to a valid state
+00:42 +512: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with ollama configured resolves to a valid state
+00:42 +513: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with ollama configured resolves to a valid state
+00:42 +514: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with ollama configured resolves to a valid state
+00:42 +515: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with ollama configured resolves to a valid state
+00:42 +516: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with ollama configured resolves to a valid state
+00:42 +517: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with ollama configured resolves to a valid state
+00:42 +518: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with ollama configured resolves to a valid state
+00:42 +519: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with ollama configured resolves to a valid state
+00:42 +520: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with ollama configured resolves to a valid state
+00:42 +521: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with ollama configured resolves to a valid state
+00:42 +522: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with ollama configured resolves to a valid state
+00:42 +523: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with ollama configured resolves to a valid state
+00:42 +524: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with ollama configured resolves to a valid state
+00:42 +525: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with ollama configured resolves to a valid state
+00:42 +526: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with ollama configured resolves to a valid state
+00:42 +527: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with ollama configured resolves to a valid state
+00:42 +528: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with ollama configured resolves to a valid state
+00:42 +529: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with ollama configured resolves to a valid state
+00:42 +530: /Users/ab/code/candela-desktop/test/services/diagnostic_runner_test.dart: DiagnosticRunner runAll — gcloud ok, valid token, proxy up history is cleared and repopulated on second run
+00:42 +531: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with proxy configured resolves to a valid state
+00:42 +532: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with proxy configured resolves to a valid state
+00:42 +533: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with proxy configured resolves to a valid state
+00:42 +534: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with proxy configured resolves to a valid state
+00:42 +535: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with proxy configured resolves to a valid state
+00:42 +536: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with proxy configured resolves to a valid state
+00:42 +537: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with proxy configured resolves to a valid state
+00:42 +538: /Users/ab/code/candela-desktop/test/services/process_manager_test.dart: ProcessManager detectRunning detectRunning with proxy configured resolves to a valid state
+00:43 +539: /Users/ab/code/candela-desktop/test/widgets/diagnostic_log_test.dart: DiagnosticLog — empty state shows placeholder when no entries
+00:45 +540: /Users/ab/code/candela-desktop/test/widgets/area_chart_test.dart: CandelaAreaChart — empty state shows emptyMessage when data is empty
+00:45 +541: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows provider display name
+00:45 +542: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows provider display name
+00:45 +543: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows provider display name
+00:45 +544: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows provider display name
+00:45 +545: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows provider display name
+00:45 +546: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows provider display name
+00:45 +547: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows provider display name
+00:45 +548: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows provider display name
+00:45 +549: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows provider display name
+00:45 +550: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows provider display name
+00:45 +551: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows provider display name
+00:45 +552: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows provider display name
+00:45 +553: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows provider display name
+00:45 +554: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows provider display name
+00:45 +555: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows provider display name
+00:45 +556: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows provider display name
+00:45 +557: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows provider display name
+00:45 +558: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows provider display name
+00:45 +559: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows provider display name
+00:45 +560: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows provider display name
+00:45 +561: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows provider display name
+00:45 +562: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows provider display name
+00:45 +563: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows provider display name
+00:46 +564: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows provider display name
+00:46 +565: /Users/ab/code/candela-desktop/test/widgets/identity_card_test.dart: IdentityCard shows email when authenticated
+00:46 +566: /Users/ab/code/candela-desktop/test/widgets/identity_card_test.dart: IdentityCard shows email when authenticated
+00:46 +567: /Users/ab/code/candela-desktop/test/widgets/identity_card_test.dart: IdentityCard shows email when authenticated
+00:46 +568: /Users/ab/code/candela-desktop/test/widgets/identity_card_test.dart: IdentityCard shows email when authenticated
+00:46 +569: /Users/ab/code/candela-desktop/test/widgets/identity_card_test.dart: IdentityCard shows email when authenticated
+00:46 +570: /Users/ab/code/candela-desktop/test/widgets/identity_card_test.dart: IdentityCard shows email when authenticated
+00:46 +571: /Users/ab/code/candela-desktop/test/widgets/identity_card_test.dart: IdentityCard shows email when authenticated
+00:46 +572: /Users/ab/code/candela-desktop/test/widgets/identity_card_test.dart: IdentityCard shows email when authenticated
+00:46 +573: /Users/ab/code/candela-desktop/test/widgets/identity_card_test.dart: IdentityCard shows email when authenticated
+00:46 +574: /Users/ab/code/candela-desktop/test/widgets/identity_card_test.dart: IdentityCard shows email when authenticated
+00:46 +575: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows project and region
+00:46 +576: /Users/ab/code/candela-desktop/test/widgets/diagnostic_log_test.dart: DiagnosticLog — timestamp formatting zero-padded timestamp for single-digit components
+00:46 +577: /Users/ab/code/candela-desktop/test/widgets/identity_card_test.dart: IdentityCard shows Not authenticated when no email
+00:46 +578: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows models count
+00:46 +579: /Users/ab/code/candela-desktop/test/widgets/identity_card_test.dart: IdentityCard shows GCP project when set
+00:46 +580: /Users/ab/code/candela-desktop/test/widgets/identity_card_test.dart: IdentityCard shows GCP project when set
+00:46 +581: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows remove button when onRemove provided
+00:46 +582: /Users/ab/code/candela-desktop/test/widgets/identity_card_test.dart: IdentityCard shows expired token status
+00:46 +583: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard hides remove button when onRemove is null
+00:46 +584: /Users/ab/code/candela-desktop/test/widgets/identity_card_test.dart: IdentityCard shows no token status
+00:46 +585: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows fix command for copy
+00:46 +586: /Users/ab/code/candela-desktop/test/widgets/identity_card_test.dart: IdentityCard shows ADC badge when present
+00:46 +587: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard shows Fix → button when fixUrl is set
+00:46 +588: /Users/ab/code/candela-desktop/test/widgets/identity_card_test.dart: IdentityCard shows initials in avatar
+00:46 +589: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard tapping card with models opens detail dialog
+00:46 +590: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard tapping card with models opens detail dialog
+00:46 +591: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard tapping card with models opens detail dialog
+00:46 +592: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard tapping card with models opens detail dialog
+00:46 +593: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard tapping card with models opens detail dialog
+00:47 +594: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard detail dialog shows latency when set
+00:47 +595: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard detail dialog Close button dismisses it
+00:47 +596: /Users/ab/code/candela-desktop/test/widgets/provider_card_test.dart: ProviderCard detail dialog shows project and region rows
+00:47 +597: /Users/ab/code/candela-desktop/test/widgets/stat_card_test.dart: StatCard renders title, value and subtitle
+00:48 +598: /Users/ab/code/candela-desktop/test/widgets/sidebar_test.dart: CandelaSidebar — rendering renders sidebar widget tree
+00:48 +599: /Users/ab/code/candela-desktop/test/widgets/sidebar_test.dart: CandelaSidebar — rendering renders sidebar widget tree
+00:49 +600: /Users/ab/code/candela-desktop/test/widgets/sidebar_test.dart: CandelaSidebar — rendering renders sidebar widget tree
+00:49 +601: /Users/ab/code/candela-desktop/test/widgets/sidebar_test.dart: CandelaSidebar — rendering renders sidebar widget tree
+00:49 +602: /Users/ab/code/candela-desktop/test/widgets/sidebar_test.dart: CandelaSidebar — rendering renders sidebar widget tree
+00:49 +603: /Users/ab/code/candela-desktop/test/widgets/model_breakdown_table_test.dart: ModelBreakdownTable — empty state shows empty state message when models list is empty
+00:49 +604: /Users/ab/code/candela-desktop/test/widgets/budget_waterfall_card_test.dart: BudgetWaterfallCard shows Budget & Grants header
+00:49 +605: /Users/ab/code/candela-desktop/test/widgets/budget_waterfall_card_test.dart: BudgetWaterfallCard shows Budget & Grants header
+00:49 +606: /Users/ab/code/candela-desktop/test/widgets/budget_waterfall_card_test.dart: BudgetWaterfallCard shows Budget & Grants header
+00:49 +607: /Users/ab/code/candela-desktop/test/widgets/budget_waterfall_card_test.dart: BudgetWaterfallCard shows Budget & Grants header
+00:49 +608: /Users/ab/code/candela-desktop/test/widgets/budget_waterfall_card_test.dart: BudgetWaterfallCard shows Budget & Grants header
+00:49 +609: /Users/ab/code/candela-desktop/test/widgets/budget_waterfall_card_test.dart: BudgetWaterfallCard shows Budget & Grants header
+00:50 +610: /Users/ab/code/candela-desktop/test/widgets/budget_waterfall_card_test.dart: BudgetWaterfallCard shows Budget & Grants header
+00:50 +610: /Users/ab/code/candela-desktop/test/widgets/sidebar_test.dart: CandelaSidebar — rendering shows Auth & Debug nav item
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "Auth & Debug": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///Users/ab/code/candela-desktop/test/widgets/sidebar_test.dart:74:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1682:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/ab/code/candela-desktop/test/widgets/sidebar_test.dart line 74
+The test description was:
+  shows Auth & Debug nav item
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:50 +610 -1: /Users/ab/code/candela-desktop/test/widgets/budget_waterfall_card_test.dart: BudgetWaterfallCard shows Budget & Grants header
+00:50 +610 -1: /Users/ab/code/candela-desktop/test/widgets/sidebar_test.dart: CandelaSidebar — rendering shows Auth & Debug nav item [E]
+  Test failed. See exception logs above.
+  The test description was: shows Auth & Debug nav item
+  
+00:50 +611 -1: /Users/ab/code/candela-desktop/test/widgets/budget_waterfall_card_test.dart: BudgetWaterfallCard shows Budget & Grants header
+00:50 +612 -1: /Users/ab/code/candela-desktop/test/widgets/budget_waterfall_card_test.dart: BudgetWaterfallCard shows Budget & Grants header
+00:50 +613 -1: /Users/ab/code/candela-desktop/test/widgets/budget_waterfall_card_test.dart: BudgetWaterfallCard shows Budget & Grants header
+00:50 +614 -1: /Users/ab/code/candela-desktop/test/widgets/budget_waterfall_card_test.dart: BudgetWaterfallCard shows Budget & Grants header
+00:50 +615 -1: /Users/ab/code/candela-desktop/test/widgets/sidebar_test.dart: CandelaSidebar — rendering shows Traces nav item
+00:50 +616 -1: /Users/ab/code/candela-desktop/test/widgets/model_breakdown_table_test.dart: ModelBreakdownTable — default sort (cost descending) highest-cost model appears first by default
+00:50 +617 -1: /Users/ab/code/candela-desktop/test/widgets/budget_waterfall_card_test.dart: BudgetWaterfallCard shows Daily Budget label
+00:50 +618 -1: /Users/ab/code/candela-desktop/test/widgets/sidebar_test.dart: CandelaSidebar — rendering shows Models nav item
+00:50 +619 -1: /Users/ab/code/candela-desktop/test/widgets/model_breakdown_table_test.dart: ModelBreakdownTable — sorting tapping Calls header sorts by call count
+00:50 +620 -1: /Users/ab/code/candela-desktop/test/widgets/model_breakdown_table_test.dart: ModelBreakdownTable — sorting tapping Calls header sorts by call count
+00:50 +621 -1: /Users/ab/code/candela-desktop/test/widgets/model_breakdown_table_test.dart: ModelBreakdownTable — sorting tapping Calls header sorts by call count
+00:50 +622 -1: /Users/ab/code/candela-desktop/test/widgets/model_breakdown_table_test.dart: ModelBreakdownTable — sorting tapping Calls header sorts by call count
+00:50 +623 -1: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector renders all three range labels
+00:50 +624 -1: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector renders all three range labels
+00:50 +625 -1: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector renders all three range labels
+00:50 +626 -1: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector renders all three range labels
+00:51 +627 -1: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector renders all three range labels
+00:51 +628 -1: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector renders all three range labels
+00:51 +629 -1: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector renders all three range labels
+00:51 +630 -1: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector renders all three range labels
+00:51 +631 -1: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector renders all three range labels
+00:51 +632 -1: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector renders all three range labels
+00:51 +633 -1: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector renders all three range labels
+00:51 +634 -1: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector renders all three range labels
+00:51 +635 -1: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector renders all three range labels
+00:51 +636 -1: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector renders all three range labels
+00:51 +637 -1: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector renders all three range labels
+00:51 +638 -1: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector renders all three range labels
+00:51 +638 -1: /Users/ab/code/candela-desktop/test/widgets/sidebar_test.dart: CandelaSidebar — navigation callbacks tapping Auth & Debug calls onItemSelected(1)
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following assertion was thrown running a test:
+The finder "Found 0 widgets with text "Auth & Debug": []" (used in a call to "tap()") could not find
+any matching widgets.
+
+When the exception was thrown, this was the stack:
+#0      WidgetController._getElementPoint (package:flutter_test/src/controller.dart:2090:7)
+#1      WidgetController.getCenter (package:flutter_test/src/controller.dart:1942:12)
+#2      WidgetController.tap (package:flutter_test/src/controller.dart:1075:7)
+#3      main.<anonymous closure>.<anonymous closure> (file:///Users/ab/code/candela-desktop/test/widgets/sidebar_test.dart:131:20)
+<asynchronous suspension>
+#4      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#5      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1682:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+The test description was:
+  tapping Auth & Debug calls onItemSelected(1)
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:51 +638 -2: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector renders all three range labels
+00:51 +638 -2: /Users/ab/code/candela-desktop/test/widgets/sidebar_test.dart: CandelaSidebar — navigation callbacks tapping Auth & Debug calls onItemSelected(1) [E]
+  Test failed. See exception logs above.
+  The test description was: tapping Auth & Debug calls onItemSelected(1)
+  
+00:51 +639 -2: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector renders all three range labels
+00:51 +640 -2: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector renders all three range labels
+00:51 +641 -2: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector renders all three range labels
+00:52 +642 -2: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector renders all three range labels
+00:52 +643 -2: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector renders all three range labels
+00:52 +644 -2: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector renders all three range labels
+00:52 +645 -2: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector renders all three range labels
+00:52 +646 -2: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector renders all three range labels
+00:52 +647 -2: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector renders all three range labels
+00:52 +648 -2: /Users/ab/code/candela-desktop/test/widgets/sidebar_test.dart: CandelaSidebar — active selection selectedIndex 1 renders with shield active icon
+00:52 +649 -2: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector calls onChanged when a different chip is tapped
+00:52 +650 -2: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector calls onChanged when a different chip is tapped
+00:52 +651 -2: /Users/ab/code/candela-desktop/test/widgets/sidebar_test.dart: CandelaSidebar — active selection selectedIndex 3 renders with timeline active icon
+00:52 +652 -2: /Users/ab/code/candela-desktop/test/widgets/sidebar_test.dart: CandelaSidebar — active selection selectedIndex 3 renders with timeline active icon
+00:52 +653 -2: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector does not call onChanged when already-selected chip is tapped
+00:52 +654 -2: /Users/ab/code/candela-desktop/test/widgets/sidebar_test.dart: CandelaSidebar — active selection selectedIndex 4 renders with memory active icon
+00:52 +655 -2: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector animates chip selection without throwing
+00:52 +656 -2: /Users/ab/code/candela-desktop/test/widgets/time_range_selector_test.dart: TimeRangeSelector animates chip selection without throwing
+00:52 +657 -2: /Users/ab/code/candela-desktop/test/widgets/sidebar_test.dart: CandelaSidebar — update service absent green dot version display visible
+00:53 +658 -2: /Users/ab/code/candela-desktop/test/widgets/config_card_test.dart: ConfigCard shows config path
+00:53 +659 -2: /Users/ab/code/candela-desktop/test/widgets/config_card_test.dart: ConfigCard shows config path
+00:53 +660 -2: /Users/ab/code/candela-desktop/test/widgets/config_card_test.dart: ConfigCard shows config path
+00:54 +661 -2: /Users/ab/code/candela-desktop/test/widgets/config_card_test.dart: ConfigCard shows config path
+00:54 +662 -2: /Users/ab/code/candela-desktop/test/widgets/runtime_control_card_test.dart: RuntimeControlCard — basic rendering renders without callbacks
+00:54 +663 -2: /Users/ab/code/candela-desktop/test/widgets/config_card_test.dart: ConfigCard shows Solo Mode badge
+00:54 +664 -2: /Users/ab/code/candela-desktop/test/widgets/config_card_test.dart: ConfigCard shows Solo Mode badge
+00:54 +665 -2: /Users/ab/code/candela-desktop/test/widgets/runtime_control_card_test.dart: RuntimeControlCard — state display running state renders without crash
+00:54 +666 -2: /Users/ab/code/candela-desktop/test/widgets/config_card_test.dart: ConfigCard shows Solo + Cloud badge
+00:54 +667 -2: /Users/ab/code/candela-desktop/test/widgets/runtime_control_card_test.dart: RuntimeControlCard — state display starting state renders without crash
+00:54 +668 -2: /Users/ab/code/candela-desktop/test/widgets/config_card_test.dart: ConfigCard shows Team Mode badge with remote URL
+00:54 +669 -2: /Users/ab/code/candela-desktop/test/widgets/runtime_control_card_test.dart: RuntimeControlCard — state display error state shows error message
+00:54 +670 -2: /Users/ab/code/candela-desktop/test/widgets/config_card_test.dart: ConfigCard shows port chips
+00:54 +671 -2: /Users/ab/code/candela-desktop/test/widgets/config_card_test.dart: ConfigCard shows port chips
+00:54 +672 -2: /Users/ab/code/candela-desktop/test/widgets/runtime_control_card_test.dart: RuntimeControlCard — state display stopping state renders without crash
+00:54 +673 -2: /Users/ab/code/candela-desktop/test/widgets/config_card_test.dart: ConfigCard shows error issues
+00:54 +674 -2: /Users/ab/code/candela-desktop/test/widgets/runtime_control_card_test.dart: RuntimeControlCard — callbacks onStart is called when Start tapped
+00:54 +675 -2: /Users/ab/code/candela-desktop/test/widgets/config_card_test.dart: ConfigCard shows warning issues
+00:54 +676 -2: /Users/ab/code/candela-desktop/test/widgets/runtime_control_card_test.dart: RuntimeControlCard — callbacks onStop is called when Stop tapped
+00:54 +677 -2: /Users/ab/code/candela-desktop/test/widgets/config_card_test.dart: ConfigCard shows providers list in solo+cloud mode
+00:54 +678 -2: /Users/ab/code/candela-desktop/test/widgets/config_card_test.dart: ConfigCard shows providers list in solo+cloud mode
+00:54 +679 -2: /Users/ab/code/candela-desktop/test/widgets/runtime_control_card_test.dart: RuntimeControlCard — vLLM process renders vLLM process
+00:54 +680 -2: /Users/ab/code/candela-desktop/test/widgets/config_card_test.dart: ConfigCard shows last modified time
+00:54 +681 -2: /Users/ab/code/candela-desktop/test/widgets/runtime_control_card_test.dart: RuntimeControlCard — proxy process renders proxy process
+00:54 +682 -2: /Users/ab/code/candela-desktop/test/widgets/config_card_test.dart: ConfigCard tapping mode badge opens Switch Mode dialog
+00:54 +683 -2: /Users/ab/code/candela-desktop/test/widgets/config_card_test.dart: ConfigCard Switch Mode dialog shows Cancel button
+00:54 +684 -2: /Users/ab/code/candela-desktop/test/widgets/config_card_test.dart: ConfigCard Switch Mode dialog can be dismissed via Cancel
+00:54 +685 -2: /Users/ab/code/candela-desktop/test/widgets/config_card_test.dart: ConfigCard shows info issues
+00:54 +686 -2: /Users/ab/code/candela-desktop/test/widgets/config_card_test.dart: ConfigCard shows edit icon for port chip when onPortChanged is set
+00:54 +687 -2: /Users/ab/code/candela-desktop/test/widgets/config_card_test.dart: ConfigCard tapping port chip opens port editor dialog
+00:55 +688 -2: /Users/ab/code/candela-desktop/test/widgets/config_card_test.dart: ConfigCard port editor dialog can be dismissed
+00:55 +689 -2: /Users/ab/code/candela-desktop/test/widgets/config_card_test.dart: ConfigCard Team Mode dialog shows current remote URL
+00:55 +690 -2: Some tests failed.

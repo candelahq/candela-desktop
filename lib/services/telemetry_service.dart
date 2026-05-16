@@ -139,7 +139,7 @@ class TelemetryService {
     }
 
     return TelemetryResult(
-      summary: _buildSummary(filtered, range, now),
+      summary: buildSummary(filtered, range, now),
       models: _buildModelBreakdown(filtered),
       spans: filtered,
       isTeamMode: isTeamMode,
@@ -456,7 +456,7 @@ class TelemetryService {
   // ── Aggregation ─────────────────────────────────────────────────────────────
 
   /// H3: [now] is passed in from [fetch] to ensure consistent bucket alignment.
-  UsageSummary _buildSummary(
+  UsageSummary buildSummary(
       List<SpanRecord> spans, TokenTimeRange range, DateTime now) {
     int totalIn = 0, totalOut = 0;
     double totalCost = 0, totalMs = 0;

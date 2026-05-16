@@ -10,6 +10,7 @@ import '../../theme/colors.dart';
 import '../../widgets/area_chart.dart';
 import '../../widgets/budget_waterfall_card.dart';
 import '../../widgets/model_breakdown_table.dart';
+import '../../widgets/model_selector_dropdown.dart';
 import '../../widgets/stat_card.dart';
 import '../../widgets/time_range_selector.dart';
 import '../../providers.dart';
@@ -31,9 +32,11 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   TokenTimeRange _range = TokenTimeRange.d7;
   TelemetryResult? _result;
+  UsageSummary? _filteredSummary;
   bool _loading = true;
   String? _error;
   bool _isTeamMode = false;
+  String? _selectedModel;
   // C6: track whether init has already run to prevent re-entrant timer creation.
   bool _initialized = false;
   Timer? _autoRefresh;
@@ -136,6 +139,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       _loading = false;
       _error = _errorMessage(result);
     });
+    _recalculateSummary();
     // Fire threshold notifications when budget data is available.
     if (result?.budget != null) {
       unawaited(_notifSvc.evaluate(result!.budget!));
@@ -166,6 +170,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _fetch();
   }
 
+  void _setSelectedModel(String? model) {
+    setState(() => _selectedModel = model);
+    _recalculateSummary();
+  }
+
+  void _recalculateSummary() {
+    if (_result == null || _svc == null) {
+      setState(() => _filteredSummary = null);
+      return;
+    }
+    if (_selectedModel == null) {
+      setState(() => _filteredSummary = _result!.summary);
+      return;
+    }
+    final filteredSpans =
+        _result!.spans.where((s) => s.model == _selectedModel).toList();
+    final newSummary =
+        _svc!.buildSummary(filteredSpans, _range, DateTime.now());
+    setState(() => _filteredSummary = newSummary);
+  }
+
   @override
   void dispose() {
     _autoRefresh?.cancel();
@@ -177,6 +202,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final uniqueModels =
+        _result?.models.map((m) => m.model).toSet().toList() ?? [];
+
     return Scaffold(
       backgroundColor: CandelaColors.bgPrimary,
       body: Column(
@@ -187,10 +215,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             onRefresh: _fetch,
             loading: _loading,
             isTeamMode: _isTeamMode,
+            models: uniqueModels,
+            selectedModel: _selectedModel,
+            onModelChanged: _setSelectedModel,
           ),
           Expanded(
             child: _Body(
               result: _result,
+              filteredSummary: _filteredSummary,
               loading: _loading,
               error: _error,
             ),
@@ -209,6 +241,9 @@ class _Header extends StatelessWidget {
   final VoidCallback onRefresh;
   final bool loading;
   final bool isTeamMode;
+  final List<String> models;
+  final String? selectedModel;
+  final ValueChanged<String?> onModelChanged;
 
   const _Header({
     required this.range,
@@ -216,6 +251,9 @@ class _Header extends StatelessWidget {
     required this.onRefresh,
     required this.loading,
     required this.isTeamMode,
+    required this.models,
+    required this.selectedModel,
+    required this.onModelChanged,
   });
 
   @override
@@ -253,6 +291,14 @@ class _Header extends StatelessWidget {
             ],
           ),
           const Spacer(),
+          if (models.isNotEmpty) ...[
+            ModelSelectorDropdown(
+              models: models,
+              selected: selectedModel,
+              onChanged: onModelChanged,
+            ),
+            const SizedBox(width: 10),
+          ],
           TimeRangeSelector(value: range, onChanged: onRangeChanged),
           const SizedBox(width: 10),
           _RefreshButton(onRefresh: onRefresh, loading: loading),
@@ -334,11 +380,15 @@ class _RefreshButton extends StatelessWidget {
 
 class _Body extends StatelessWidget {
   final TelemetryResult? result;
+  final UsageSummary? filteredSummary;
   final bool loading;
   final String? error;
 
   const _Body(
-      {required this.result, required this.loading, required this.error});
+      {required this.result,
+      required this.filteredSummary,
+      required this.loading,
+      required this.error});
 
   @override
   Widget build(BuildContext context) {
@@ -359,9 +409,9 @@ class _Body extends StatelessWidget {
             ),
             const SizedBox(height: 20),
           ],
-          _StatGrid(summary: result?.summary, loading: loading),
+          _StatGrid(summary: filteredSummary, loading: loading),
           const SizedBox(height: 20),
-          _ChartRow(summary: result?.summary),
+          _ChartRow(summary: filteredSummary),
           const SizedBox(height: 20),
           ModelBreakdownTable(models: result?.models ?? []),
         ],

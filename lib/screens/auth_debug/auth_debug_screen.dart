@@ -11,6 +11,7 @@ import '../../models/candela_config.dart';
 import '../../models/provider_status.dart';
 import '../../providers.dart';
 import '../../services/config_service.dart';
+import '../../models/diagnostic_entry.dart';
 
 import 'identity_card.dart';
 import 'config_card.dart';
@@ -68,61 +69,78 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
     final gen = ++_loadGeneration;
     if (mounted) setState(() => _loading = true);
 
-    // Parallelize independent gcloud subprocess calls (~800ms savings).
-    final installed = await _gcloud.isInstalled();
-    final results = await Future.wait([
-      installed ? _gcloud.getActiveAccount() : Future<String?>.value(null),
-      installed ? _gcloud.getProject() : Future<String?>.value(null),
-      _adc.readAdcFile(),
-      installed ? _gcloud.getTokenInfo() : Future<TokenInfo?>.value(null),
-      _configService.load(),
-      // Also fetch the regular gcloud auth token (used by team mode dashboard).
-      installed ? _gcloud.getAccessToken() : Future<TokenInfo?>.value(null),
-    ]);
-    if (gen != _loadGeneration) return; // stale — abort
+    try {
+      // Parallelize independent gcloud subprocess calls (~800ms savings).
+      final installed = await _gcloud.isInstalled();
+      final results = await Future.wait([
+        installed ? _gcloud.getActiveAccount() : Future<String?>.value(null),
+        installed ? _gcloud.getProject() : Future<String?>.value(null),
+        _adc.readAdcFile(),
+        installed ? _gcloud.getTokenInfo() : Future<TokenInfo?>.value(null),
+        _configService.load(),
+        // Also fetch the regular gcloud auth token (used by team mode dashboard).
+        installed ? _gcloud.getAccessToken() : Future<TokenInfo?>.value(null),
+      ]);
+      if (gen != _loadGeneration) return; // stale — abort
 
-    final account = results[0] as String?;
-    final project = results[1] as String?;
-    final adcInfo = results[2] as AdcInfo?;
-    final tokenInfo = results[3] as TokenInfo?;
-    final config = results[4] as CandelaConfig;
-    final dashboardToken = results[5] as TokenInfo?;
+      final account = results[0] as String?;
+      final project = results[1] as String?;
+      final adcInfo = results[2] as AdcInfo?;
+      final tokenInfo = results[3] as TokenInfo?;
+      final config = results[4] as CandelaConfig;
+      final dashboardToken = results[5] as TokenInfo?;
 
-    if (!mounted) return;
-    setState(() {
-      _identity = IdentityState(
-        email: account,
-        project: project,
-        adcInfo: adcInfo,
-        tokenInfo: tokenInfo,
-        gcloudInstalled: installed,
-        dashboardTokenInfo: dashboardToken,
+      if (!mounted) return;
+      setState(() {
+        _identity = IdentityState(
+          email: account,
+          project: project,
+          adcInfo: adcInfo,
+          tokenInfo: tokenInfo,
+          gcloudInstalled: installed,
+          dashboardTokenInfo: dashboardToken,
+        );
+        _config = config;
+        _loading = false;
+      });
+
+      // Sync process manager with config.
+      if (!mounted || gen != _loadGeneration) return;
+      final pm = ref.read(processManagerProvider);
+      pm.configure(
+        providerNames: config.providers.map((p) => p.name).toList(),
+        proxyPort: config.port.toString(),
+        portOverrides: {
+          'lmstudio': config.lmStudioPort.toString(),
+        },
       );
-      _config = config;
-      _loading = false;
-    });
+      await pm.detectRunning();
+      if (!mounted || gen != _loadGeneration) return;
 
-    // Sync process manager with config.
-    if (!mounted || gen != _loadGeneration) return;
-    final pm = ref.read(processManagerProvider);
-    pm.configure(
-      providerNames: config.providers.map((p) => p.name).toList(),
-      proxyPort: config.port.toString(),
-      portOverrides: {
-        'lmstudio': config.lmStudioPort.toString(),
-      },
-    );
-    await pm.detectRunning();
-    if (!mounted || gen != _loadGeneration) return;
+      // Run provider tests.
+      _runProviderTests(config, project, tokenInfo).catchError((e) {
+        debugPrint('Provider tests failed: $e');
+      });
 
-    // Run provider tests.
-    _runProviderTests(config, project, tokenInfo);
+      // Auto-run diagnostics on first load.
+      _diagnostics.runAll().catchError((e) {
+        debugPrint('Diagnostics failed: $e');
+        return const DiagnosticSummary(passed: 0, failed: 0, warned: 0);
+      });
 
-    // Auto-run diagnostics on first load.
-    _diagnostics.runAll();
-
-    // Check CLI install status.
-    _checkCliStatus();
+      // Check CLI install status.
+      _checkCliStatus().catchError((e) {
+        debugPrint('Check CLI status failed: $e');
+      });
+    } catch (e, st) {
+      debugPrint('AuthDebugScreen loadAll error: $e\n$st');
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _cliError = 'Initialization failed: $e';
+        });
+      }
+    }
   }
 
   Future<void> _runProviderTests(

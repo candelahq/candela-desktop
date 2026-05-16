@@ -282,9 +282,11 @@ class TelemetryService {
         try {
           final usageJson = jsonDecode(usageResp.body) as Map<String, dynamic>;
           budget = _parseBudget(usageJson['budget']);
-          grants = _parseGrants(usageJson['active_grants']);
-          final rawRemaining =
-              (usageJson['total_remaining_usd'] as num?)?.toDouble();
+          grants =
+              _parseGrants(_field(usageJson, 'activeGrants', 'active_grants'));
+          final rawRemaining = _parseNum(
+                  _field(usageJson, 'totalRemainingUsd', 'total_remaining_usd'))
+              ?.toDouble();
           // Clamp server value: must be non-negative and finite.
           // Guards against buggy/malicious responses (NaN, -$n, Infinity).
           if (rawRemaining != null &&
@@ -307,8 +309,12 @@ class TelemetryService {
       // Fallback: synthesize from summary time series.
       final summaryJson = jsonDecode(summaryResp.body) as Map<String, dynamic>;
       final spans = _spansFromTimeSeries(
-        summaryJson['cost_over_time'] as List<dynamic>? ?? [],
-        summaryJson['tokens_over_time'] as List<dynamic>? ?? [],
+        (_field(summaryJson, 'costOverTime', 'cost_over_time')
+                as List<dynamic>?) ??
+            [],
+        (_field(summaryJson, 'tokensOverTime', 'tokens_over_time')
+                as List<dynamic>?) ??
+            [],
       );
       return (spans, null, budget, grants, totalRemainingUsd);
     } on FormatException {
@@ -335,10 +341,13 @@ class TelemetryService {
   static BudgetInfo? _parseBudget(dynamic raw) {
     if (raw is! Map<String, dynamic>) return null;
     try {
-      final limitUsd = (raw['limit_usd'] as num?)?.toDouble() ?? 0.0;
-      final spentUsd = (raw['spent_usd'] as num?)?.toDouble() ?? 0.0;
-      final tokensUsed = (raw['tokens_used'] as num?)?.toInt() ?? 0;
-      final periodEndRaw = raw['period_end'] as String?;
+      final limitUsd =
+          _parseNum(_field(raw, 'limitUsd', 'limit_usd'))?.toDouble() ?? 0.0;
+      final spentUsd =
+          _parseNum(_field(raw, 'spentUsd', 'spent_usd'))?.toDouble() ?? 0.0;
+      final tokensUsed =
+          _parseNum(_field(raw, 'tokensUsed', 'tokens_used'))?.toInt() ?? 0;
+      final periodEndRaw = (_field(raw, 'periodEnd', 'period_end')) as String?;
       final periodEnd = periodEndRaw != null
           ? DateTime.tryParse(periodEndRaw) ?? DateTime.now().toUtc()
           : DateTime.now().toUtc().add(const Duration(days: 1));
@@ -360,15 +369,20 @@ class TelemetryService {
     for (final item in raw) {
       if (item is! Map<String, dynamic>) continue;
       try {
-        final expiresRaw = item['expires_at'] as String?;
+        final expiresRaw = (_field(item, 'expiresAt', 'expires_at')) as String?;
         grants.add(GrantInfo(
           // Use .toString() for string fields — guards against int IDs from
           // schema evolution (e.g. proto3 int64 JSON → numeric type).
           id: item['id']?.toString() ?? '',
-          amountUsd: (item['amount_usd'] as num?)?.toDouble() ?? 0.0,
-          spentUsd: (item['spent_usd'] as num?)?.toDouble() ?? 0.0,
-          reason: item['reason']?.toString() ?? '',
-          grantedBy: item['granted_by']?.toString() ?? '',
+          amountUsd:
+              _parseNum(_field(item, 'amountUsd', 'amount_usd'))?.toDouble() ??
+                  0.0,
+          spentUsd:
+              _parseNum(_field(item, 'spentUsd', 'spent_usd'))?.toDouble() ??
+                  0.0,
+          reason: (_field(item, 'reason', 'reason'))?.toString() ?? '',
+          grantedBy:
+              (_field(item, 'grantedBy', 'granted_by'))?.toString() ?? '',
           expiresAt: expiresRaw != null ? DateTime.tryParse(expiresRaw) : null,
         ));
       } catch (_) {
@@ -380,18 +394,39 @@ class TelemetryService {
 
   // ── Synthesis helpers ───────────────────────────────────────────────────────
 
+  /// Parse a numeric value that may be a JSON number OR a proto3 int64 string.
+  /// Proto3 encodes int64/uint64 fields as JSON strings (e.g. "21" not 21).
+  static num? _parseNum(dynamic v) {
+    if (v is num) return v;
+    if (v is String) return num.tryParse(v);
+    return null;
+  }
+
+  /// Lookup a value under either its camelCase or snake_case key.
+  /// Proto3 JSON uses camelCase by default; some backends may use snake_case.
+  static dynamic _field(Map<String, dynamic> map, String camel, String snake) {
+    return map[camel] ?? map[snake];
+  }
+
   List<SpanRecord> _spansFromModelBreakdown(
       List<dynamic> models, DateTime start, DateTime end) {
     final spans = <SpanRecord>[];
     for (final m in models) {
       final map = m as Map<String, dynamic>;
       // C4: cap callCount to prevent OOM loop from malicious server response.
-      final callCount = ((map['call_count'] as num?)?.toInt() ?? 1)
-          .clamp(1, _maxSyntheticSpans);
-      final inputTok = (map['input_tokens'] as num?)?.toInt() ?? 0;
-      final outputTok = (map['output_tokens'] as num?)?.toInt() ?? 0;
-      final cost = (map['cost_usd'] as num?)?.toDouble() ?? 0.0;
-      final latency = (map['avg_latency_ms'] as num?)?.toDouble() ?? 0.0;
+      // Proto3 JSON encodes int64 as strings, so use _parseNum for safe parsing.
+      final callCount =
+          (_parseNum(_field(map, 'callCount', 'call_count'))?.toInt() ?? 1)
+              .clamp(1, _maxSyntheticSpans);
+      final inputTok =
+          _parseNum(_field(map, 'inputTokens', 'input_tokens'))?.toInt() ?? 0;
+      final outputTok =
+          _parseNum(_field(map, 'outputTokens', 'output_tokens'))?.toInt() ?? 0;
+      final cost =
+          _parseNum(_field(map, 'costUsd', 'cost_usd'))?.toDouble() ?? 0.0;
+      final latency = _parseNum(_field(map, 'avgLatencyMs', 'avg_latency_ms'))
+              ?.toDouble() ??
+          0.0;
       final model = map['model'] as String? ?? 'unknown';
       final provider = map['provider'] as String? ?? 'team';
 
@@ -420,7 +455,7 @@ class TelemetryService {
     final tokenMap = {
       for (final t in tokenSeries)
         (t as Map<String, dynamic>)['timestamp'] as String? ?? '':
-            (t['value'] as num?)?.toInt() ?? 0,
+            _parseNum(t['value'])?.toInt() ?? 0,
     };
 
     return costSeries.map((point) {
@@ -434,7 +469,7 @@ class TelemetryService {
         inputTokens: 0,
         outputTokens: 0,
         totalTokens: tokenMap[ts] ?? 0,
-        costUsd: (p['value'] as num?)?.toDouble() ?? 0.0,
+        costUsd: _parseNum(p['value'])?.toDouble() ?? 0.0,
         durationMs: 0,
         status: 'ok',
         timestamp: DateTime.tryParse(ts) ?? DateTime.now(),

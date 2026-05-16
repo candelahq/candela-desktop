@@ -77,7 +77,8 @@ class _ProcessRow extends StatelessWidget {
     final isRunning = process.state == ProcessState.running;
     final isError = process.state == ProcessState.error;
     final isWorking = process.state == ProcessState.starting ||
-        process.state == ProcessState.stopping;
+        process.state == ProcessState.stopping ||
+        process.state == ProcessState.detecting;
     final notInstalled = process.state == ProcessState.notInstalled;
 
     return Row(
@@ -130,6 +131,14 @@ class _ProcessRow extends StatelessWidget {
               else if (notInstalled)
                 const Text(
                   'Not installed or not found in PATH',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: CandelaColors.textMuted,
+                  ),
+                )
+              else if (process.state == ProcessState.detecting)
+                const Text(
+                  'Detecting...',
                   style: TextStyle(
                     fontSize: 11,
                     color: CandelaColors.textMuted,
@@ -268,6 +277,10 @@ class _StatusBadge extends StatelessWidget {
       case ProcessState.stopped:
         color = CandelaColors.textMuted;
         text = 'STOPPED';
+        break;
+      case ProcessState.detecting:
+        color = CandelaColors.textMuted;
+        text = 'DETECTING';
         break;
       case ProcessState.notInstalled:
         color = CandelaColors.textMuted;

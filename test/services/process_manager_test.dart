@@ -60,10 +60,10 @@ void main() {
       expect(pm.get('vllm'), isNotNull);
     });
 
-    test('all processes start in stopped state', () {
+    test('all processes start in detecting state', () {
       pm.configure(providerNames: ['ollama', 'vllm']);
       for (final p in pm.all) {
-        expect(p.state, ProcessState.stopped);
+        expect(p.state, ProcessState.detecting);
         expect(p.pid, isNull);
         expect(p.startedAt, isNull);
       }
@@ -274,11 +274,11 @@ void main() {
         () async {
       pm.configure(providerNames: ['lmstudio']);
       final lmstudio = pm.get('lmstudio')!;
-      expect(lmstudio.state, ProcessState.stopped);
+      expect(lmstudio.state, ProcessState.detecting);
       // lmstudio has no CLI binary — start() hits the null-binary early return.
       await pm.start('lmstudio');
-      // State should remain stopped (binary == null path).
-      expect(lmstudio.state, ProcessState.stopped);
+      // State should remain detecting (binary == null path).
+      expect(lmstudio.state, ProcessState.detecting);
     });
 
     test('stop unknown key is a no-op', () async {
@@ -329,8 +329,8 @@ void main() {
       // but on dev machines it may actually start.
       expect(
           pm.get('proxy')!.state,
-          anyOf(ProcessState.stopped, ProcessState.notInstalled,
-              ProcessState.running));
+          anyOf(ProcessState.detecting, ProcessState.stopped,
+              ProcessState.notInstalled, ProcessState.running));
     });
 
     test('isInstalled returns false for unknown binary name', () async {

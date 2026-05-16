@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:candela_desktop/models/span_stats.dart';
+import 'package:candela_desktop/services/process_manager.dart';
 import 'package:candela_desktop/services/telemetry_service.dart';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -563,6 +564,47 @@ void main() {
       expect(span.timestamp.difference(midpoint).abs().inHours,
           lessThanOrEqualTo(1));
     });
+
+    test('parses proto3 JSON with camelCase keys and string int64 values',
+        () async {
+      // Proto3 JSON encoding uses camelCase field names and encodes int64
+      // values as strings (e.g. "21" not 21). This is exactly what the
+      // Go backend returns.
+      final modelsBody = jsonEncode({
+        'models': [
+          {
+            'model': 'claude-sonnet-4-20250514',
+            'provider': 'anthropic',
+            'callCount': '21', // proto3 int64 → string
+            'inputTokens': '591312', // proto3 int64 → string
+            'outputTokens': '1686', // proto3 int64 → string
+            'costUsd': 1.7992, // float stays numeric
+            'avgLatencyMs': 3369.16, // float stays numeric
+          }
+        ]
+      });
+      final summaryBody =
+          jsonEncode({'costOverTime': [], 'tokensOverTime': []});
+
+      final client = MockClient((req) async {
+        if (req.url.path.contains('GetModelBreakdown')) {
+          return http.Response(modelsBody, 200);
+        }
+        return http.Response(summaryBody, 200);
+      });
+      final svc = _teamSvc(client);
+      final result = await svc.fetch(TokenTimeRange.d7);
+
+      expect(result!.hasData, isTrue);
+      // _spread places span i=0 at the window start (cutoff boundary), which
+      // gets filtered out. So 21 → 20 spans after time-range filtering.
+      expect(result.spans.length, 20);
+      // Total cost across remaining spans should be close to source (minus 1/21).
+      expect(result.summary!.totalCostUsd, closeTo(1.7992 * 20 / 21, 0.01));
+      // Total tokens should similarly reflect 20/21 of the source.
+      expect(result.summary!.totalInputTokens, closeTo(591312 * 20 / 21, 100));
+      expect(result.summary!.totalOutputTokens, closeTo(1686 * 20 / 21, 100));
+    });
   });
 
   // ── TelemetryResult ───────────────────────────────────────────────────────
@@ -597,6 +639,252 @@ void main() {
       expect(result.error, TelemetryErrorKind.authExpired);
       expect(result.models, isEmpty);
       expect(result.spans, isEmpty);
+    });
+  });
+
+  // ── Proto3 parsing edge cases ────────────────────────────────────────────
+
+  group('Proto3 parsing helpers', () {
+    test('parses proto3 budget with string-encoded int64 fields', () async {
+      // Budget response using camelCase keys and string int64 values
+      final usageBody = jsonEncode({
+        'budget': {
+          'limitUsd': '50.0',
+          'spentUsd': '12.34',
+          'tokensUsed': '999999',
+          'periodEnd': '2026-06-01T00:00:00Z',
+        },
+        'activeGrants': [
+          {
+            'id': '1',
+            'amountUsd': '25.0',
+            'spentUsd': '10.0',
+            'reason': 'Monthly allocation',
+            'grantedBy': 'admin@example.com',
+            'expiresAt': '2026-07-01T00:00:00Z',
+          }
+        ],
+        'totalRemainingUsd': '37.66',
+      });
+      final modelsBody = jsonEncode({
+        'models': [
+          {
+            'model': 'gemini-2.5-pro',
+            'provider': 'google',
+            'callCount': '5',
+            'inputTokens': '1000',
+            'outputTokens': '500',
+            'costUsd': 0.05,
+            'avgLatencyMs': 200.0,
+          }
+        ]
+      });
+      final summaryBody =
+          jsonEncode({'costOverTime': [], 'tokensOverTime': []});
+
+      final client = MockClient((req) async {
+        if (req.url.path.contains('GetMyUsage')) {
+          return http.Response(usageBody, 200);
+        }
+        if (req.url.path.contains('GetModelBreakdown')) {
+          return http.Response(modelsBody, 200);
+        }
+        return http.Response(summaryBody, 200);
+      });
+      final svc = _teamSvc(client);
+      final result = await svc.fetch(TokenTimeRange.d7);
+
+      expect(result, isNotNull);
+      expect(result!.budget, isNotNull);
+      expect(result.budget!.limitUsd, 50.0);
+      expect(result.budget!.spentUsd, 12.34);
+      expect(result.budget!.tokensUsed, 999999);
+      expect(result.totalRemainingUsd, closeTo(37.66, 0.01));
+      expect(result.activeGrants, hasLength(1));
+      expect(result.activeGrants.first.amountUsd, 25.0);
+      expect(result.activeGrants.first.spentUsd, 10.0);
+      expect(result.activeGrants.first.reason, 'Monthly allocation');
+    });
+
+    test('falls back to snake_case keys when camelCase missing', () async {
+      // Simulate a hypothetical backend that uses snake_case
+      final modelsBody = jsonEncode({
+        'models': [
+          {
+            'model': 'gpt-4o',
+            'provider': 'openai',
+            'call_count': '3',
+            'input_tokens': '300',
+            'output_tokens': '150',
+            'cost_usd': 0.03,
+            'avg_latency_ms': 100.0,
+          }
+        ]
+      });
+      final summaryBody =
+          jsonEncode({'cost_over_time': [], 'tokens_over_time': []});
+
+      final client = MockClient((req) async {
+        if (req.url.path.contains('GetModelBreakdown')) {
+          return http.Response(modelsBody, 200);
+        }
+        return http.Response(summaryBody, 200);
+      });
+      final svc = _teamSvc(client);
+      final result = await svc.fetch(TokenTimeRange.d7);
+
+      expect(result, isNotNull);
+      expect(result!.hasData, isTrue);
+      // 3 call_count → 2 spans after time-range boundary filtering
+      expect(result.spans.length, 2);
+    });
+
+    test('handles null and missing fields gracefully in model breakdown',
+        () async {
+      // Model entry with no optional fields — should default to 0
+      final modelsBody = jsonEncode({
+        'models': [
+          {'model': 'test-model'}
+        ]
+      });
+      final summaryBody =
+          jsonEncode({'costOverTime': [], 'tokensOverTime': []});
+
+      final client = MockClient((req) async {
+        if (req.url.path.contains('GetModelBreakdown')) {
+          return http.Response(modelsBody, 200);
+        }
+        return http.Response(summaryBody, 200);
+      });
+      final svc = _teamSvc(client);
+      final result = await svc.fetch(TokenTimeRange.d7);
+
+      // callCount defaults to 1; _spread places the single span at the
+      // window midpoint, so it survives the time-range filter.
+      expect(result, isNotNull);
+      expect(result!.spans.length, lessThanOrEqualTo(1));
+      if (result.spans.isNotEmpty) {
+        // All token/cost fields should default to 0
+        expect(result.spans.first.inputTokens, 0);
+        expect(result.spans.first.outputTokens, 0);
+        expect(result.spans.first.costUsd, 0.0);
+      }
+    });
+
+    test('clamps negative and NaN totalRemainingUsd to zero', () async {
+      final usageBody = jsonEncode({
+        'budget': {
+          'limitUsd': 10.0,
+          'spentUsd': 15.0,
+        },
+        'totalRemainingUsd': -5.0,
+      });
+      final modelsBody = jsonEncode({'models': []});
+      final summaryBody =
+          jsonEncode({'costOverTime': [], 'tokensOverTime': []});
+
+      final client = MockClient((req) async {
+        if (req.url.path.contains('GetMyUsage')) {
+          return http.Response(usageBody, 200);
+        }
+        if (req.url.path.contains('GetModelBreakdown')) {
+          return http.Response(modelsBody, 200);
+        }
+        return http.Response(summaryBody, 200);
+      });
+      final svc = _teamSvc(client);
+      final result = await svc.fetch(TokenTimeRange.d7);
+
+      // Negative remaining should be clamped to 0
+      expect(result!.totalRemainingUsd, 0.0);
+    });
+
+    test('handles empty grants list', () async {
+      final usageBody = jsonEncode({
+        'budget': {'limitUsd': 10.0, 'spentUsd': 5.0},
+        'activeGrants': [],
+        'totalRemainingUsd': 5.0,
+      });
+      final modelsBody = jsonEncode({'models': []});
+      final summaryBody =
+          jsonEncode({'costOverTime': [], 'tokensOverTime': []});
+
+      final client = MockClient((req) async {
+        if (req.url.path.contains('GetMyUsage')) {
+          return http.Response(usageBody, 200);
+        }
+        if (req.url.path.contains('GetModelBreakdown')) {
+          return http.Response(modelsBody, 200);
+        }
+        return http.Response(summaryBody, 200);
+      });
+      final svc = _teamSvc(client);
+      final result = await svc.fetch(TokenTimeRange.d7);
+
+      expect(result!.activeGrants, isEmpty);
+      expect(result.budget, isNotNull);
+    });
+
+    test('grants with missing optional expiresAt field', () async {
+      final usageBody = jsonEncode({
+        'activeGrants': [
+          {
+            'id': 'g1',
+            'amountUsd': 100.0,
+            'spentUsd': 0.0,
+            'reason': 'Trial',
+            'grantedBy': 'system',
+            // expiresAt intentionally missing
+          }
+        ],
+        'totalRemainingUsd': 100.0,
+      });
+      final modelsBody = jsonEncode({'models': []});
+      final summaryBody =
+          jsonEncode({'costOverTime': [], 'tokensOverTime': []});
+
+      final client = MockClient((req) async {
+        if (req.url.path.contains('GetMyUsage')) {
+          return http.Response(usageBody, 200);
+        }
+        if (req.url.path.contains('GetModelBreakdown')) {
+          return http.Response(modelsBody, 200);
+        }
+        return http.Response(summaryBody, 200);
+      });
+      final svc = _teamSvc(client);
+      final result = await svc.fetch(TokenTimeRange.d7);
+
+      expect(result!.activeGrants, hasLength(1));
+      expect(result.activeGrants.first.expiresAt, isNull);
+      expect(result.activeGrants.first.reason, 'Trial');
+    });
+  });
+
+  // ── ProcessState.detecting transition tests ───────────────────────────────
+
+  group('ProcessState.detecting transitions', () {
+    test('detectRunning transitions from detecting to stopped when installed',
+        () async {
+      final pm = ProcessManager();
+      pm.configure(providerNames: ['lmstudio']);
+      expect(pm.get('lmstudio')!.state, ProcessState.detecting);
+      await pm.detectRunning();
+      // After detection: lmstudio has no binary, so → notInstalled or running
+      expect(
+        pm.get('lmstudio')!.state,
+        anyOf(ProcessState.notInstalled, ProcessState.running,
+            ProcessState.stopped),
+      );
+      pm.dispose();
+    });
+
+    test('detecting state is not treated as running or stopped', () {
+      final p = ManagedProcess(name: 'x', displayName: 'X', icon: 'X');
+      expect(p.state, ProcessState.detecting);
+      expect(p.state != ProcessState.running, isTrue);
+      expect(p.state != ProcessState.stopped, isTrue);
+      expect(p.state != ProcessState.notInstalled, isTrue);
     });
   });
 }

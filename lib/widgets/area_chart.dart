@@ -48,40 +48,45 @@ class _CandelaAreaChartState extends State<CandelaAreaChart> {
 
     return SizedBox(
       height: widget.height,
-      child: MouseRegion(
-        onHover: (e) => _onHover(e.localPosition),
-        onExit: (_) => setState(() {
-          _hoveredIndex = null;
-          _hoverPos = null;
-        }),
-        child: Stack(
-          children: [
-            CustomPaint(
-              painter: _AreaPainter(
-                data: widget.data,
-                color: widget.color,
-                hoveredIndex: _hoveredIndex,
-              ),
-              size: Size.infinite,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          return MouseRegion(
+            onHover: (e) => _onHover(e.localPosition, width),
+            onExit: (_) => setState(() {
+              _hoveredIndex = null;
+              _hoverPos = null;
+            }),
+            child: Stack(
+              children: [
+                CustomPaint(
+                  painter: _AreaPainter(
+                    data: widget.data,
+                    color: widget.color,
+                    hoveredIndex: _hoveredIndex,
+                  ),
+                  child: const SizedBox.expand(),
+                ),
+                if (_hoveredIndex != null && _hoverPos != null)
+                  _Tooltip(
+                    pos: _hoverPos!,
+                    label: widget.data[_hoveredIndex!].label,
+                    value:
+                        widget.formatValue(widget.data[_hoveredIndex!].value),
+                    containerWidth: width,
+                    containerHeight: widget.height,
+                  ),
+              ],
             ),
-            if (_hoveredIndex != null && _hoverPos != null)
-              _Tooltip(
-                pos: _hoverPos!,
-                label: widget.data[_hoveredIndex!].label,
-                value: widget.formatValue(widget.data[_hoveredIndex!].value),
-                containerWidth: context.size?.width ?? 400,
-                containerHeight: widget.height,
-              ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
-  void _onHover(Offset pos) {
+  void _onHover(Offset pos, double width) {
     const padL = 48.0, padR = 12.0;
-    final w = context.size?.width ?? 400;
-    final chartW = w - padL - padR;
+    final chartW = width - padL - padR;
     if (chartW <= 0 || widget.data.isEmpty) return;
 
     final relX = pos.dx - padL;

@@ -6,7 +6,15 @@ import 'package:safe_change_notifier/safe_change_notifier.dart';
 import 'package:http/http.dart' as http;
 
 /// State of a managed process.
-enum ProcessState { stopped, starting, running, stopping, error, notInstalled }
+enum ProcessState {
+  detecting,
+  stopped,
+  starting,
+  running,
+  stopping,
+  error,
+  notInstalled
+}
 
 /// A locally managed process (Ollama, vLLM, LM Studio, Proxy).
 class ManagedProcess {
@@ -27,7 +35,7 @@ class ManagedProcess {
     required this.name,
     required this.displayName,
     required this.icon,
-    this.state = ProcessState.stopped,
+    this.state = ProcessState.detecting,
     this.port,
   });
 
@@ -159,6 +167,9 @@ class ProcessManager extends SafeChangeNotifier {
         _startHealthPolling(entries[i].key);
       } else if (!results[i].installed) {
         p.state = ProcessState.notInstalled;
+      } else {
+        // Installed but not running — transition from detecting to stopped.
+        p.state = ProcessState.stopped;
       }
     }
     if (isDisposed) return;

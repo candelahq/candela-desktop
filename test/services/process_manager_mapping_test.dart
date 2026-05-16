@@ -69,13 +69,13 @@ void main() {
   });
 
   group('ManagedProcess — state transitions', () {
-    test('state starts as stopped', () {
+    test('state starts as detecting', () {
       final p = ManagedProcess(
         name: 'test',
         displayName: 'Test',
         icon: 'T',
       );
-      expect(p.state, ProcessState.stopped);
+      expect(p.state, ProcessState.detecting);
     });
 
     test('can transition to starting', () {

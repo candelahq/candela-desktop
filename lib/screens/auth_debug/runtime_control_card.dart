@@ -107,6 +107,7 @@ class RuntimeControlCard extends StatelessWidget {
       ProcessState.running => ('Running', CandelaColors.success),
       ProcessState.starting => ('Starting...', CandelaColors.accent),
       ProcessState.stopping => ('Stopping...', CandelaColors.accent),
+      ProcessState.detecting => ('Detecting...', CandelaColors.accent),
       ProcessState.error => ('Error', CandelaColors.error),
       ProcessState.notInstalled => ('Not installed', CandelaColors.textMuted),
       ProcessState.stopped => ('Stopped', CandelaColors.textMuted),
@@ -119,7 +120,8 @@ class RuntimeControlCard extends StatelessWidget {
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         if (process.state == ProcessState.starting ||
-            process.state == ProcessState.stopping)
+            process.state == ProcessState.stopping ||
+            process.state == ProcessState.detecting)
           Padding(
             padding: const EdgeInsets.only(right: 4),
             child: SizedBox(

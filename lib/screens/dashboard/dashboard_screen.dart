@@ -33,6 +33,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   TokenTimeRange _range = TokenTimeRange.d7;
   TelemetryResult? _result;
   UsageSummary? _filteredSummary;
+  DateTime _fetchedAt = DateTime.now();
   bool _loading = true;
   String? _error;
   bool _isTeamMode = false;
@@ -136,6 +137,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (!mounted) return;
     setState(() {
       _result = result;
+      _fetchedAt = DateTime.now();
       _loading = false;
       _error = _errorMessage(result);
     });
@@ -186,8 +188,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
     final filteredSpans =
         _result!.spans.where((s) => s.model == _selectedModel).toList();
-    final newSummary =
-        _svc!.buildSummary(filteredSpans, _range, DateTime.now());
+    final newSummary = _svc!.buildSummary(filteredSpans, _range, _fetchedAt);
     setState(() => _filteredSummary = newSummary);
   }
 

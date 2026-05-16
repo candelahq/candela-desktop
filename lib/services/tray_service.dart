@@ -73,6 +73,7 @@ class TrayService with TrayListener {
         ProcessState.running => '● Running :${p.port}',
         ProcessState.starting => '◐ Starting...',
         ProcessState.stopping => '◐ Stopping...',
+        ProcessState.detecting => '◐ Detecting...',
         ProcessState.error => '✖ Error',
         ProcessState.notInstalled => '○ Not installed',
         ProcessState.stopped => '○ Stopped',

@@ -32,6 +32,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   bool _isTeamMode = false;
   String? _selectedModel;
   UsageSummary? _filteredSummary;
+  DateTime _fetchedAt = DateTime.now();
 
   void _setSelectedModel(String? model) {
     setState(() => _selectedModel = model);
@@ -50,7 +51,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     final filteredSpans =
         _result!.spans.where((s) => s.model == _selectedModel).toList();
     final newSummary =
-        _svc!.buildSummary(filteredSpans, TokenTimeRange.h24, DateTime.now());
+        _svc!.buildSummary(filteredSpans, TokenTimeRange.h24, _fetchedAt);
     setState(() => _filteredSummary = newSummary);
   }
 
@@ -73,9 +74,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     if (isTeam) {
       final gcloud = GCloudService();
       final audience = config.audience ?? config.remote ?? '';
+
       final tokenInfo = audience.isNotEmpty
           ? await gcloud.getIdToken(audience)
           : await gcloud.getTokenInfo();
+
       svc = TelemetryService(
         port: config.port,
         remoteUrl: config.remote,
@@ -104,9 +107,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     setState(() => _loading = true);
     try {
       final result = await _svc!.fetch(TokenTimeRange.h24);
+
       if (!mounted) return;
       setState(() {
         _result = result;
+        _fetchedAt = DateTime.now();
         _loading = false;
         _error = result == null
             ? 'Could not reach the Candela proxy.'
@@ -116,6 +121,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                     ? 'Backend unreachable.'
                     : null;
       });
+
       _recalculateSummary();
     } finally {
       _isFetching = false;

@@ -218,6 +218,13 @@ class _AppShellState extends ConsumerState<AppShell> with WindowListener {
           Expanded(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 200),
+              // Use a simple layout that just shows the current child.
+              // The default Stack-based layoutBuilder queries children's
+              // sizes during build, which triggers "Cannot get size during
+              // build" errors when chart widgets are transitioning in.
+              layoutBuilder: (currentChild, previousChildren) {
+                return currentChild ?? const SizedBox.shrink();
+              },
               child: KeyedSubtree(
                 key: ValueKey(_selectedIndex),
                 child: _pages[_selectedIndex],

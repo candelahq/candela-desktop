@@ -73,9 +73,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     if (isTeam) {
       final gcloud = GCloudService();
       final audience = config.audience ?? config.remote ?? '';
+
       final tokenInfo = audience.isNotEmpty
           ? await gcloud.getIdToken(audience)
           : await gcloud.getTokenInfo();
+
       svc = TelemetryService(
         port: config.port,
         remoteUrl: config.remote,
@@ -104,6 +106,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     setState(() => _loading = true);
     try {
       final result = await _svc!.fetch(TokenTimeRange.h24);
+
       if (!mounted) return;
       setState(() {
         _result = result;
@@ -116,6 +119,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                     ? 'Backend unreachable.'
                     : null;
       });
+
       _recalculateSummary();
     } finally {
       _isFetching = false;

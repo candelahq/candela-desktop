@@ -42,7 +42,7 @@ void main() {
 
       // All new processes start fresh.
       for (final p in pm.all) {
-        expect(p.state, ProcessState.stopped);
+        expect(p.state, ProcessState.detecting);
         expect(p.pid, isNull);
         expect(p.recentLogs, isEmpty);
       }
@@ -60,7 +60,7 @@ void main() {
 
       pm.configure(providerNames: ['vllm']);
       expect(pm.get('ollama'), isNull);
-      expect(pm.get('vllm')!.state, ProcessState.stopped);
+      expect(pm.get('vllm')!.state, ProcessState.detecting);
     });
   });
 }

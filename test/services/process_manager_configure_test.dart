@@ -62,13 +62,13 @@ void main() {
       expect(p.uptimeString, contains('h'));
     });
 
-    test('initial state is stopped', () {
+    test('initial state is detecting', () {
       final p = ManagedProcess(
         name: 'test',
         displayName: 'Test',
         icon: '🧪',
       );
-      expect(p.state, ProcessState.stopped);
+      expect(p.state, ProcessState.detecting);
       expect(p.pid, isNull);
       expect(p.errorMessage, isNull);
     });

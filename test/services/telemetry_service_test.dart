@@ -563,6 +563,47 @@ void main() {
       expect(span.timestamp.difference(midpoint).abs().inHours,
           lessThanOrEqualTo(1));
     });
+
+    test('parses proto3 JSON with camelCase keys and string int64 values',
+        () async {
+      // Proto3 JSON encoding uses camelCase field names and encodes int64
+      // values as strings (e.g. "21" not 21). This is exactly what the
+      // Go backend returns.
+      final modelsBody = jsonEncode({
+        'models': [
+          {
+            'model': 'claude-sonnet-4-20250514',
+            'provider': 'anthropic',
+            'callCount': '21', // proto3 int64 → string
+            'inputTokens': '591312', // proto3 int64 → string
+            'outputTokens': '1686', // proto3 int64 → string
+            'costUsd': 1.7992, // float stays numeric
+            'avgLatencyMs': 3369.16, // float stays numeric
+          }
+        ]
+      });
+      final summaryBody =
+          jsonEncode({'costOverTime': [], 'tokensOverTime': []});
+
+      final client = MockClient((req) async {
+        if (req.url.path.contains('GetModelBreakdown')) {
+          return http.Response(modelsBody, 200);
+        }
+        return http.Response(summaryBody, 200);
+      });
+      final svc = _teamSvc(client);
+      final result = await svc.fetch(TokenTimeRange.d7);
+
+      expect(result!.hasData, isTrue);
+      // _spread places span i=0 at the window start (cutoff boundary), which
+      // gets filtered out. So 21 → 20 spans after time-range filtering.
+      expect(result.spans.length, 20);
+      // Total cost across remaining spans should be close to source (minus 1/21).
+      expect(result.summary!.totalCostUsd, closeTo(1.7992 * 20 / 21, 0.01));
+      // Total tokens should similarly reflect 20/21 of the source.
+      expect(result.summary!.totalInputTokens, closeTo(591312 * 20 / 21, 100));
+      expect(result.summary!.totalOutputTokens, closeTo(1686 * 20 / 21, 100));
+    });
   });
 
   // ── TelemetryResult ───────────────────────────────────────────────────────

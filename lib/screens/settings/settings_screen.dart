@@ -239,7 +239,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ButtonSegment(value: 'system-only', label: Text('System')),
             ],
             selected: {cachingMode},
-            onSelectionChanged: (selected) => _setCachingMode(selected.first),
+            onSelectionChanged: (selected) {
+              if (selected.isNotEmpty) _setCachingMode(selected.first);
+            },
             style: SegmentedButton.styleFrom(
               backgroundColor: CandelaColors.bgTertiary,
               foregroundColor: CandelaColors.textPrimary,

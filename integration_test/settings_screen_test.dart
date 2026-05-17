@@ -71,7 +71,8 @@ void main() {
       await settleWithTimeout(tester);
 
       // Theme segmented button has System, Dark, Light options.
-      expect(find.text('System'), findsOneWidget);
+      // Note: 'System' may appear in both theme and caching sections.
+      expect(find.text('System'), findsWidgets);
       expect(find.text('Dark'), findsOneWidget);
       expect(find.text('Light'), findsOneWidget);
     });

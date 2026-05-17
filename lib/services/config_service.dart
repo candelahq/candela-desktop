@@ -212,7 +212,8 @@ class ConfigService {
       String cachingMode;
       if (rawCaching == true) {
         cachingMode = 'auto';
-      } else if (rawCaching is String) {
+      } else if (rawCaching is String &&
+          const ['off', 'auto', 'system-only'].contains(rawCaching)) {
         cachingMode = rawCaching;
       } else {
         cachingMode = 'off';
@@ -601,14 +602,13 @@ class ConfigService {
     }
 
     // Hot-apply to the running proxy (best-effort).
-    await _applycachingToProxy(mode);
+    final config = await load();
+    await _applyCachingToProxy(mode, config.port);
   }
 
   /// Send caching mode to the running proxy for immediate effect.
-  Future<void> _applycachingToProxy(String mode) async {
+  Future<void> _applyCachingToProxy(String mode, int port) async {
     try {
-      final config = await load();
-      final port = config.port;
       final client = HttpClient()
         ..connectionTimeout = const Duration(seconds: 2);
       final request = await client.postUrl(

@@ -123,10 +123,13 @@ enum TokenTimeRange {
   const TokenTimeRange(this.label, this.duration);
 
   /// Returns the window start for a given [now] timestamp.
-  /// [todayUtc] snaps to UTC midnight; rolling ranges subtract [duration].
+  /// [todayUtc] snaps to UTC midnight (converted to local for chart labels);
+  /// rolling ranges subtract [duration].
   DateTime startFrom(DateTime now) {
     if (this == todayUtc) {
-      return DateTime.utc(now.toUtc().year, now.toUtc().month, now.toUtc().day);
+      final utcMidnight =
+          DateTime.utc(now.toUtc().year, now.toUtc().month, now.toUtc().day);
+      return utcMidnight.toLocal();
     }
     return now.subtract(duration);
   }

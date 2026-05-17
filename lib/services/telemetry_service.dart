@@ -341,11 +341,7 @@ class TelemetryService {
   ) {
     const n = 24;
     final start = range.startFrom(now);
-    final windowDuration = now.difference(start);
-    final bucketMs = (windowDuration.inMilliseconds > 0
-            ? windowDuration.inMilliseconds
-            : range.duration.inMilliseconds) ~/
-        n;
+    final bucketMs = range.duration.inMilliseconds ~/ n;
 
     final sums = List<double>.filled(n, 0.0);
     for (final s in spans) {

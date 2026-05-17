@@ -357,7 +357,7 @@ class TelemetryService {
   }
 
   String _label(DateTime t, TokenTimeRange r) {
-    if (r == TokenTimeRange.h24) {
+    if (r == TokenTimeRange.h24 || r == TokenTimeRange.todayUtc) {
       return '${t.hour.toString().padLeft(2, '0')}:'
           '${t.minute.toString().padLeft(2, '0')}';
     }

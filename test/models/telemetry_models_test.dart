@@ -186,10 +186,12 @@ void main() {
       expect(TokenTimeRange.d30.duration, const Duration(days: 30));
     });
 
-    test('todayUtc.startFrom snaps to UTC midnight', () {
+    test('todayUtc.startFrom snaps to UTC midnight (in local time)', () {
       final now = DateTime.utc(2025, 6, 15, 14, 30);
       final start = TokenTimeRange.todayUtc.startFrom(now);
-      expect(start, DateTime.utc(2025, 6, 15));
+      // startFrom returns UTC midnight converted to local for chart labels.
+      final expectedUtcMidnight = DateTime.utc(2025, 6, 15);
+      expect(start, expectedUtcMidnight.toLocal());
     });
 
     test('h24.startFrom subtracts 24h from now', () {

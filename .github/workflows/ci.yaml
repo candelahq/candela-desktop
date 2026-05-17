@@ -2,8 +2,9 @@
 # Runs on all PRs and pushes to main.
 #
 # Jobs:
-#   lint  — fast, Linux: format + static analysis
-#   test  — macOS + Linux: Flutter widget/integration tests
+#   lint              — fast, Linux: format + static analysis
+#   test              — macOS + Linux: Flutter widget/integration tests
+#   integration-test  — macOS only: E2E tests that launch the full app
 
 name: CI
 
@@ -84,3 +85,25 @@ jobs:
             echo "::error::Coverage ${COVERAGE}% is below minimum threshold of 45%"
             exit 1
           fi
+
+  integration-test:
+    name: Integration Tests (macOS)
+    runs-on: macos-latest
+    timeout-minutes: 20
+    needs: [lint] # Gate on lint passing first to fail fast.
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Run integration tests
+        run: |
+          for test_file in integration_test/*_test.dart; do
+            echo "── Running $test_file ──"
+            flutter test "$test_file" -d macos || exit 1
+          done

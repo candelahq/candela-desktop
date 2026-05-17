@@ -224,26 +224,37 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Widget _buildPerformanceSection() {
     final config = _config;
-    final cachingEnabled = config?.vertexAI?.promptCaching ?? false;
+    final cachingMode = config?.vertexAI?.cachingMode ?? 'off';
     return _SettingsSection(
       title: 'Performance',
       icon: Icons.speed_outlined,
       children: [
         _SettingsRow(
           label: 'Anthropic prompt caching',
-          subtitle: 'Cache system prompt & history for ~10× cost reduction',
-          child: Switch(
-            value: cachingEnabled,
-            onChanged: _togglePromptCaching,
-            activeTrackColor: CandelaColors.accent,
+          subtitle: 'Inject cache_control breakpoints to reduce costs',
+          child: SegmentedButton<String>(
+            segments: const [
+              ButtonSegment(value: 'off', label: Text('Off')),
+              ButtonSegment(value: 'auto', label: Text('Auto')),
+              ButtonSegment(value: 'system-only', label: Text('System')),
+            ],
+            selected: {cachingMode},
+            onSelectionChanged: (selected) => _setCachingMode(selected.first),
+            style: SegmentedButton.styleFrom(
+              backgroundColor: CandelaColors.bgTertiary,
+              foregroundColor: CandelaColors.textPrimary,
+              selectedBackgroundColor: CandelaColors.accent,
+              selectedForegroundColor: Colors.white,
+              textStyle: const TextStyle(fontSize: 12),
+            ),
           ),
         ),
       ],
     );
   }
 
-  Future<void> _togglePromptCaching(bool value) async {
-    await ref.read(configServiceProvider).setPromptCaching(value);
+  Future<void> _setCachingMode(String mode) async {
+    await ref.read(configServiceProvider).setCachingMode(mode);
     await _loadAll();
   }
 

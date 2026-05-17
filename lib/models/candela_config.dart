@@ -47,11 +47,22 @@ class ProviderConfig {
 class VertexAIConfig {
   final String? project;
   final String? region;
-  final bool promptCaching;
 
-  const VertexAIConfig({this.project, this.region, this.promptCaching = false});
+  /// Caching mode: 'off', 'auto', or 'system-only'.
+  /// 'auto' = system prompt + last user message (recommended).
+  /// 'system-only' = cache only the system prompt.
+  final String cachingMode;
+
+  const VertexAIConfig({
+    this.project,
+    this.region,
+    this.cachingMode = 'off',
+  });
 
   String get effectiveRegion => region ?? 'us-central1';
+
+  /// Whether any caching is enabled (auto or system-only).
+  bool get cachingEnabled => cachingMode != 'off';
 }
 
 /// Per-model pricing overrides for accurate cost tracking.

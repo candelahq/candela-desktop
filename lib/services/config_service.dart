@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
@@ -206,10 +207,20 @@ class ConfigService {
     final vtx =
         yaml['vertex_ai'] is YamlMap ? yaml['vertex_ai'] as YamlMap : null;
     if (vtx != null) {
+      // Backward compat: bool true → 'auto', false → 'off'.
+      final rawCaching = vtx['prompt_caching'];
+      String cachingMode;
+      if (rawCaching == true) {
+        cachingMode = 'auto';
+      } else if (rawCaching is String) {
+        cachingMode = rawCaching;
+      } else {
+        cachingMode = 'off';
+      }
       vertexAI = VertexAIConfig(
         project: vtx['project'] as String?,
         region: vtx['region'] as String?,
-        promptCaching: vtx['prompt_caching'] == true,
+        cachingMode: cachingMode,
       );
     }
 
@@ -564,11 +575,11 @@ class ConfigService {
     await _writeRaw(file, editor.toString());
   }
 
-  /// Toggle prompt caching under `vertex_ai.prompt_caching`.
+  /// Set caching mode under `vertex_ai.prompt_caching`.
   ///
-  /// When enabled, the proxy injects `cache_control` breakpoints into
-  /// Anthropic requests, reducing costs ~10x for multi-turn conversations.
-  Future<void> setPromptCaching(bool enabled) async {
+  /// Valid modes: 'off', 'auto', 'system-only'.
+  /// Also calls the running proxy's runtime API for immediate effect.
+  Future<void> setCachingMode(String mode) async {
     final resolvedPath = _resolveConfigPath();
     final file = File(resolvedPath);
 
@@ -577,16 +588,39 @@ class ConfigService {
       final parsed = loadYaml(content);
       final editor = YamlEditor(content);
       if (parsed is YamlMap && parsed.containsKey('vertex_ai')) {
-        editor.update(['vertex_ai', 'prompt_caching'], enabled);
+        editor.update(['vertex_ai', 'prompt_caching'], mode);
       } else {
-        editor.update(['vertex_ai'], {'prompt_caching': enabled});
+        editor.update(['vertex_ai'], {'prompt_caching': mode});
       }
       await _writeRaw(file, editor.toString());
     } else {
       await _writeYaml(file, {
         'config_version': 1,
-        'vertex_ai': {'prompt_caching': enabled},
+        'vertex_ai': {'prompt_caching': mode},
       });
+    }
+
+    // Hot-apply to the running proxy (best-effort).
+    await _applycachingToProxy(mode);
+  }
+
+  /// Send caching mode to the running proxy for immediate effect.
+  Future<void> _applycachingToProxy(String mode) async {
+    try {
+      final config = await load();
+      final port = config.port;
+      final client = HttpClient()
+        ..connectionTimeout = const Duration(seconds: 2);
+      final request = await client.postUrl(
+        Uri.parse('http://127.0.0.1:$port/_local/api/config/caching'),
+      );
+      request.headers.contentType = ContentType.json;
+      request.write(jsonEncode({'anthropic': mode}));
+      final response = await request.close();
+      await response.drain<void>();
+      client.close();
+    } catch (_) {
+      // Proxy may not be running — that's fine, config is persisted.
     }
   }
 

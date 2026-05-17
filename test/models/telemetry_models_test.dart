@@ -191,7 +191,13 @@ void main() {
       final start = TokenTimeRange.todayUtc.startFrom(now);
       // startFrom returns UTC midnight converted to local for chart labels.
       final expectedUtcMidnight = DateTime.utc(2025, 6, 15);
-      expect(start, expectedUtcMidnight.toLocal());
+      // Compare instants (timezone-agnostic) since CI runners are in UTC
+      // where toLocal() produces a local DateTime with the same instant.
+      expect(
+        start.millisecondsSinceEpoch,
+        expectedUtcMidnight.millisecondsSinceEpoch,
+      );
+      expect(start.isUtc, isFalse);
     });
 
     test('h24.startFrom subtracts 24h from now', () {

@@ -45,6 +45,7 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
   int _loadGeneration = 0; // cancellation guard
 
   // CLI status state.
+  bool _cliCheckDone = false; // Prevents banner flash before async check.
   bool _cliInstalled = false;
   bool _brewAvailable = true;
   String? _cliInstalledVersion;
@@ -249,18 +250,28 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
   /// Check if the candela CLI is installed and whether an upgrade is available.
   Future<void> _checkCliStatus() async {
     final brew = ref.read(brewServiceProvider);
-    final brewOk = await brew.isBrewInstalled();
-    final installed = await brew.isFormulaInstalled('candelahq/tap/candela');
 
+    // Run brew availability + formula check in parallel (~400ms savings).
+    final checks = await Future.wait([
+      brew.isBrewInstalled(),
+      brew.isFormulaInstalled('candelahq/tap/candela'),
+    ]);
+    final brewOk = checks[0];
+    final installed = checks[1];
+
+    // Single `brew info --json=v2` call extracts both installed + latest
+    // version. Previously this was two identical subprocess invocations.
     String? currentVer;
     String? latestVer;
     if (installed) {
-      currentVer = await brew.installedVersion('candelahq/tap/candela');
-      latestVer = await brew.latestVersion('candelahq/tap/candela');
+      final versions = await brew.formulaVersions('candelahq/tap/candela');
+      currentVer = versions.$1;
+      latestVer = versions.$2;
     }
 
     if (!_disposed && mounted) {
       setState(() {
+        _cliCheckDone = true;
         _brewAvailable = brewOk;
         _cliInstalled = installed;
         _cliInstalledVersion = currentVer;
@@ -436,17 +447,21 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // CLI install/upgrade banner
-                      CliStatusBanner(
-                        isInstalled: _cliInstalled,
-                        installedVersion: _cliInstalledVersion,
-                        latestVersion: _cliLatestVersion,
-                        isBrewAvailable: _brewAvailable,
-                        isLoading: _cliActionLoading,
-                        error: _cliError,
-                        onAction: _onCliAction,
-                        onDismissError: () => setState(() => _cliError = null),
-                      ),
+                      // CLI install/upgrade banner — only show after the
+                      // async brew check completes to avoid a false
+                      // "not installed" flash on every page open.
+                      if (_cliCheckDone || _cliError != null)
+                        CliStatusBanner(
+                          isInstalled: _cliInstalled,
+                          installedVersion: _cliInstalledVersion,
+                          latestVersion: _cliLatestVersion,
+                          isBrewAvailable: _brewAvailable,
+                          isLoading: _cliActionLoading,
+                          error: _cliError,
+                          onAction: _onCliAction,
+                          onDismissError: () =>
+                              setState(() => _cliError = null),
+                        ),
                       // Section 1: Identity + Config
                       if (_identity != null)
                         IdentityCard(identity: _identity!, onRefresh: _loadAll),

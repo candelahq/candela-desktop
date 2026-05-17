@@ -97,6 +97,47 @@ class BrewService {
     }
   }
 
+  /// Get both installed and latest version in a single `brew info` call.
+  ///
+  /// Returns (installedVersion, latestVersion). Either may be null.
+  /// This avoids spawning two identical `brew info --json=v2` subprocesses.
+  Future<(String?, String?)> formulaVersions(String formula) async {
+    try {
+      final result = await Process.run(
+        'brew',
+        ['info', '--json=v2', formula],
+      );
+      if (result.exitCode != 0) return (null, null);
+
+      final json = jsonDecode(result.stdout as String) as Map<String, dynamic>;
+      final formulae = json['formulae'] as List<dynamic>?;
+      if (formulae != null && formulae.isNotEmpty) {
+        final f = formulae[0];
+        // Installed version.
+        String? installed;
+        final installedList = f['installed'] as List<dynamic>?;
+        if (installedList != null && installedList.isNotEmpty) {
+          installed = installedList.last['version'] as String?;
+        }
+        // Latest stable version.
+        final versions = f['versions'] as Map<String, dynamic>?;
+        final latest = versions?['stable'] as String?;
+        return (installed, latest);
+      }
+
+      // Cask fallback.
+      final casks = json['casks'] as List<dynamic>?;
+      if (casks != null && casks.isNotEmpty) {
+        final c = casks[0];
+        return (c['installed'] as String?, c['version'] as String?);
+      }
+
+      return (null, null);
+    } catch (_) {
+      return (null, null);
+    }
+  }
+
   /// Install a formula: `brew install candelahq/tap/candela`.
   Future<BrewResult> install(String formula) async {
     return _runBrew(['install', formula]);

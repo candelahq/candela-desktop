@@ -450,7 +450,7 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
                       // CLI install/upgrade banner — only show after the
                       // async brew check completes to avoid a false
                       // "not installed" flash on every page open.
-                      if (_cliCheckDone)
+                      if (_cliCheckDone || _cliError != null)
                         CliStatusBanner(
                           isInstalled: _cliInstalled,
                           installedVersion: _cliInstalledVersion,

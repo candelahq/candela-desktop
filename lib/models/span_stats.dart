@@ -112,6 +112,8 @@ class ModelBreakdown {
 // ── Time range ───────────────────────────────────────────────────────────────
 
 enum TokenTimeRange {
+  /// Today from UTC midnight — matches the web dashboard and budget reset period.
+  todayUtc('Today', Duration(hours: 24)),
   h24('24h', Duration(hours: 24)),
   d7('7d', Duration(days: 7)),
   d30('30d', Duration(days: 30));
@@ -119,4 +121,16 @@ enum TokenTimeRange {
   final String label;
   final Duration duration;
   const TokenTimeRange(this.label, this.duration);
+
+  /// Returns the window start for a given [now] timestamp.
+  /// [todayUtc] snaps to UTC midnight (converted to local for chart labels);
+  /// rolling ranges subtract [duration].
+  DateTime startFrom(DateTime now) {
+    if (this == todayUtc) {
+      final utcMidnight =
+          DateTime.utc(now.toUtc().year, now.toUtc().month, now.toUtc().day);
+      return utcMidnight.toLocal();
+    }
+    return now.subtract(duration);
+  }
 }

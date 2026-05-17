@@ -133,7 +133,7 @@ class TelemetryService {
       );
     }
 
-    final cutoff = now.subtract(range.duration);
+    final cutoff = range.startFrom(now);
     final filtered = spans.where((s) => s.timestamp.isAfter(cutoff)).toList();
 
     // Return empty-state result if all spans fall outside the requested window.
@@ -164,7 +164,10 @@ class TelemetryService {
   Future<(List<SpanRecord>, TelemetryErrorKind?)> _fetchLocal(
       TokenTimeRange range) async {
     // Use a larger limit for longer ranges — 500 is not enough for 7d/30d views.
-    final limit = range == TokenTimeRange.h24 ? 500 : 2000;
+    final limit =
+        range == TokenTimeRange.h24 || range == TokenTimeRange.todayUtc
+            ? 500
+            : 2000;
     try {
       final uri = Uri.http(
           'localhost:$port', '/_local/api/traces', {'limit': '$limit'});
@@ -201,7 +204,7 @@ class TelemetryService {
         double?
       )> _fetchRemote(TokenTimeRange range, DateTime now) async {
     final base = remoteUrl!.replaceAll(RegExp(r'/$'), '');
-    final start = now.subtract(range.duration);
+    final start = range.startFrom(now);
 
     final api = _connectApiFactory(base, authToken);
 
@@ -337,7 +340,7 @@ class TelemetryService {
     double Function(SpanRecord) val,
   ) {
     const n = 24;
-    final start = now.subtract(range.duration);
+    final start = range.startFrom(now);
     final bucketMs = range.duration.inMilliseconds ~/ n;
 
     final sums = List<double>.filled(n, 0.0);
@@ -354,7 +357,7 @@ class TelemetryService {
   }
 
   String _label(DateTime t, TokenTimeRange r) {
-    if (r == TokenTimeRange.h24) {
+    if (r == TokenTimeRange.h24 || r == TokenTimeRange.todayUtc) {
       return '${t.hour.toString().padLeft(2, '0')}:'
           '${t.minute.toString().padLeft(2, '0')}';
     }

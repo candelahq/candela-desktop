@@ -51,7 +51,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     final filteredSpans =
         _result!.spans.where((s) => s.model == _selectedModel).toList();
     final newSummary =
-        _svc!.buildSummary(filteredSpans, TokenTimeRange.h24, _fetchedAt);
+        _svc!.buildSummary(filteredSpans, TokenTimeRange.todayUtc, _fetchedAt);
     setState(() => _filteredSummary = newSummary);
   }
 
@@ -106,7 +106,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     _isFetching = true;
     setState(() => _loading = true);
     try {
-      final result = await _svc!.fetch(TokenTimeRange.h24);
+      final result = await _svc!.fetch(TokenTimeRange.todayUtc);
 
       if (!mounted) return;
       setState(() {

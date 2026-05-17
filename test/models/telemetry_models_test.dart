@@ -168,20 +168,42 @@ void main() {
   // ── TokenTimeRange tests ────────────────────────────────────────────────────
 
   group('TokenTimeRange', () {
-    test('has exactly 3 values', () {
-      expect(TokenTimeRange.values.length, 3);
+    test('has exactly 4 values', () {
+      expect(TokenTimeRange.values.length, 4);
     });
 
     test('labels are human-readable', () {
+      expect(TokenTimeRange.todayUtc.label, 'Today');
       expect(TokenTimeRange.h24.label, '24h');
       expect(TokenTimeRange.d7.label, '7d');
       expect(TokenTimeRange.d30.label, '30d');
     });
 
     test('durations are correct', () {
+      expect(TokenTimeRange.todayUtc.duration, const Duration(hours: 24));
       expect(TokenTimeRange.h24.duration, const Duration(hours: 24));
       expect(TokenTimeRange.d7.duration, const Duration(days: 7));
       expect(TokenTimeRange.d30.duration, const Duration(days: 30));
+    });
+
+    test('todayUtc.startFrom snaps to UTC midnight (in local time)', () {
+      final now = DateTime.utc(2025, 6, 15, 14, 30);
+      final start = TokenTimeRange.todayUtc.startFrom(now);
+      // startFrom returns UTC midnight converted to local for chart labels.
+      final expectedUtcMidnight = DateTime.utc(2025, 6, 15);
+      // Compare instants (timezone-agnostic) since CI runners are in UTC
+      // where toLocal() produces a local DateTime with the same instant.
+      expect(
+        start.millisecondsSinceEpoch,
+        expectedUtcMidnight.millisecondsSinceEpoch,
+      );
+      expect(start.isUtc, isFalse);
+    });
+
+    test('h24.startFrom subtracts 24h from now', () {
+      final now = DateTime.utc(2025, 6, 15, 14, 30);
+      final start = TokenTimeRange.h24.startFrom(now);
+      expect(start, DateTime.utc(2025, 6, 14, 14, 30));
     });
   });
 

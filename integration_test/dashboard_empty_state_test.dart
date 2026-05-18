@@ -28,7 +28,7 @@ void main() {
   group('Dashboard empty state', () {
     testWidgets('renders without crash when proxy is unreachable',
         (tester) async {
-      await pumpApp(tester, overrides: config.overrides);
+      await pumpApp(tester, configHelper: config);
 
       // Navigate to Dashboard.
       await tester.tap(find.text('Dashboard'));
@@ -40,7 +40,7 @@ void main() {
     });
 
     testWidgets('Today screen handles proxy down gracefully', (tester) async {
-      await pumpApp(tester, overrides: config.overrides);
+      await pumpApp(tester, configHelper: config);
 
       // We start on Today — it should render without crash even when the
       // proxy is unreachable. The screen may show zero-value stats,
@@ -53,7 +53,7 @@ void main() {
     });
 
     testWidgets('Traces screen handles no data gracefully', (tester) async {
-      await pumpApp(tester, overrides: config.overrides);
+      await pumpApp(tester, configHelper: config);
 
       await tester.tap(find.text('Traces'));
       await settleWithTimeout(tester, duration: const Duration(seconds: 3));
@@ -63,7 +63,7 @@ void main() {
     });
 
     testWidgets('Models screen handles no data gracefully', (tester) async {
-      await pumpApp(tester, overrides: config.overrides);
+      await pumpApp(tester, configHelper: config);
 
       await tester.tap(find.text('Models'));
       await settleWithTimeout(tester, duration: const Duration(seconds: 3));

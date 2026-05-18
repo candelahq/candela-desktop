@@ -27,7 +27,7 @@ void main() {
 
   group('Sidebar navigation', () {
     testWidgets('can navigate to every tab without crashing', (tester) async {
-      await pumpApp(tester, overrides: config.overrides);
+      await pumpApp(tester, configHelper: config);
 
       // Start on Today (index 0) — text appears in sidebar + heading.
       expect(find.text('Today'), findsWidgets);
@@ -56,7 +56,7 @@ void main() {
     });
 
     testWidgets('navigating back to Today works', (tester) async {
-      await pumpApp(tester, overrides: config.overrides);
+      await pumpApp(tester, configHelper: config);
 
       // Navigate away from Today.
       await tester.tap(find.text('Dashboard'));
@@ -70,7 +70,7 @@ void main() {
     });
 
     testWidgets('rapid tab switching does not crash', (tester) async {
-      await pumpApp(tester, overrides: config.overrides);
+      await pumpApp(tester, configHelper: config);
 
       // Rapidly switch tabs without waiting for settle.
       final tabNames = [
@@ -94,7 +94,7 @@ void main() {
     });
 
     testWidgets('sidebar shows version string', (tester) async {
-      await pumpApp(tester, overrides: config.overrides);
+      await pumpApp(tester, configHelper: config);
       expect(find.textContaining('v0.0.0-test'), findsOneWidget);
     });
   });

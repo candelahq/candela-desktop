@@ -29,7 +29,7 @@ void main() {
 
   group('Onboarding flow', () {
     testWidgets('shows onboarding when no config exists', (tester) async {
-      await pumpApp(tester, overrides: config.overrides);
+      await pumpApp(tester, configHelper: config);
 
       // Should see the welcome screen (step 0 — mode selection).
       expect(find.text('Welcome to Candela'), findsOneWidget);
@@ -43,7 +43,7 @@ void main() {
 
     testWidgets('skip to defaults creates config and enters main app',
         (tester) async {
-      await pumpApp(tester, overrides: config.overrides);
+      await pumpApp(tester, configHelper: config);
 
       // Verify we're on onboarding.
       expect(find.text('Welcome to Candela'), findsOneWidget);
@@ -62,7 +62,7 @@ void main() {
 
     testWidgets('solo mode skips details and goes to provider selection',
         (tester) async {
-      await pumpApp(tester, overrides: config.overrides);
+      await pumpApp(tester, configHelper: config);
 
       // Tap Solo mode card.
       await tester.tap(find.text('Solo'));
@@ -75,7 +75,7 @@ void main() {
     });
 
     testWidgets('solo mode → select provider → get started', (tester) async {
-      await pumpApp(tester, overrides: config.overrides);
+      await pumpApp(tester, configHelper: config);
 
       // Step 0: Select Solo.
       await tester.tap(find.text('Solo'));
@@ -99,7 +99,7 @@ void main() {
     });
 
     testWidgets('team mode shows details step with URL fields', (tester) async {
-      await pumpApp(tester, overrides: config.overrides);
+      await pumpApp(tester, configHelper: config);
 
       // Select Team mode.
       await tester.tap(find.text('Team'));
@@ -118,7 +118,7 @@ void main() {
 
     testWidgets('back button from provider step returns to mode selection',
         (tester) async {
-      await pumpApp(tester, overrides: config.overrides);
+      await pumpApp(tester, configHelper: config);
 
       // Go to providers via Solo.
       await tester.tap(find.text('Solo'));

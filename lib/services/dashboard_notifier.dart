@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
-import 'package:safe_change_notifier/safe_change_notifier.dart';
 import '../models/budget_info.dart';
 import '../models/candela_config.dart';
 import '../models/span_stats.dart';
@@ -66,10 +65,17 @@ class DashboardState {
 /// 3. **Visibility-aware polling**: Pauses the timer when the app lifecycle
 ///    reports [AppLifecycleState.paused] or [hidden], and resumes with an
 ///    immediate fetch when the app returns to the foreground.
-class DashboardNotifier extends SafeChangeNotifier {
+class DashboardNotifier extends ChangeNotifier {
   TelemetryService? _telemetry;
   final GCloudService? _gcloud;
   Timer? _refreshTimer;
+  bool _disposed = false;
+
+  /// Safe notification — prevents crashes if called after [dispose].
+  @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
+  }
 
   /// Minimum interval between actual network fetches.
   /// Set to slightly less than the polling interval so the fetch triggered
@@ -259,6 +265,7 @@ class DashboardNotifier extends SafeChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     _refreshTimer?.cancel();
     _telemetry?.dispose();
     super.dispose();

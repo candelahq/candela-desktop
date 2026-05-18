@@ -66,19 +66,57 @@ class MockConnectApi extends ConnectApiService {
   final GetUsageSummaryResponse? summaryResponse;
   final GetModelBreakdownResponse? modelResponse;
   final GetMyUsageResponse? usageResponse;
+  final GetDashboardDataResponse? dashboardDataResponse;
   final ConnectException? throwOnSummary;
   final ConnectException? throwOnModels;
   final ConnectException? throwOnUsage;
+  final ConnectException? throwOnDashboardData;
   String? capturedAuthToken;
 
   MockConnectApi({
     this.summaryResponse,
     this.modelResponse,
     this.usageResponse,
+    this.dashboardDataResponse,
     this.throwOnSummary,
     this.throwOnModels,
     this.throwOnUsage,
+    this.throwOnDashboardData,
   }) : super(baseUrl: 'http://test', authToken: null);
+
+  @override
+  Future<GetDashboardDataResponse> getDashboardData({
+    required DateTime start,
+    required DateTime end,
+    bool includeBudget = true,
+  }) async {
+    // If an explicit error is configured for GetDashboardData, throw it.
+    if (throwOnDashboardData != null) throw throwOnDashboardData!;
+    // If any of the legacy error injectors are set, propagate the first one
+    // so existing tests that configure throwOnSummary/throwOnModels still work.
+    if (throwOnSummary != null) throw throwOnSummary!;
+    if (throwOnModels != null) throw throwOnModels!;
+
+    // If a specific dashboardDataResponse was provided, use it directly.
+    if (dashboardDataResponse != null) return dashboardDataResponse!;
+
+    // Otherwise, synthesize from the individual response mocks.
+    final resp = GetDashboardDataResponse();
+    final models = modelResponse ?? GetModelBreakdownResponse();
+    resp.models.addAll(models.models);
+
+    // Carry budget/grant data from usageResponse into BudgetContext.
+    final usage = usageResponse;
+    if (usage != null) {
+      final bc = GetDashboardDataResponse_BudgetContext();
+      if (usage.hasBudget()) bc.budget = usage.budget;
+      bc.totalRemainingUsd = usage.totalRemainingUsd;
+      bc.activeGrants.addAll(usage.activeGrants);
+      resp.budgetContext = bc;
+    }
+
+    return resp;
+  }
 
   @override
   Future<GetUsageSummaryResponse> getUsageSummary({

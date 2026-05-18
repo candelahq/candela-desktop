@@ -12,7 +12,18 @@ abstract final class DashboardService {
   /// Fully-qualified name of the DashboardService service.
   static const name = 'candela.v1.DashboardService';
 
-  /// GetUsageSummary returns aggregated token usage, cost, and request counts.
+  /// GetDashboardData returns a consolidated dashboard view including usage
+  /// summary, per-model breakdown, and (if authenticated) per-user budget
+  /// context. Replaces the concurrent fan-out of GetUsageSummary +
+  /// GetModelBreakdown + GetMyUsage with a single round-trip.
+  static const getDashboardData = connect.Spec(
+    '/$name/GetDashboardData',
+    connect.StreamType.unary,
+    candelav1dashboard_service.GetDashboardDataRequest.new,
+    candelav1dashboard_service.GetDashboardDataResponse.new,
+  );
+
+  /// Deprecated: use GetDashboardData instead.
   static const getUsageSummary = connect.Spec(
     '/$name/GetUsageSummary',
     connect.StreamType.unary,
@@ -20,7 +31,7 @@ abstract final class DashboardService {
     candelav1dashboard_service.GetUsageSummaryResponse.new,
   );
 
-  /// GetModelBreakdown returns usage broken down by model.
+  /// Deprecated: use GetDashboardData instead.
   static const getModelBreakdown = connect.Spec(
     '/$name/GetModelBreakdown',
     connect.StreamType.unary,
@@ -36,7 +47,7 @@ abstract final class DashboardService {
     candelav1dashboard_service.GetLatencyPercentilesResponse.new,
   );
 
-  /// GetMyUsage returns the calling user's personal usage summary (BigQuery).
+  /// Deprecated: use GetDashboardData with include_budget=true instead.
   /// For real-time budget/grant progress, see UserService.GetMyBudget.
   static const getMyUsage = connect.Spec(
     '/$name/GetMyUsage',

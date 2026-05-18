@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:safe_change_notifier/safe_change_notifier.dart';
 
 /// How the app was installed — determines update mechanism.
 enum InstallChannel {
@@ -36,7 +35,7 @@ enum UpdateStatus {
 /// - Homebrew installs → "run `brew upgrade candela`"
 /// - Nix installs → "run `nix profile upgrade`"
 /// - Direct installs → fallback message
-class UpdateService extends SafeChangeNotifier {
+class UpdateService extends ChangeNotifier {
   static const _releaseFeedUrl =
       'https://api.github.com/repos/candelahq/candela-desktop/releases/latest';
 

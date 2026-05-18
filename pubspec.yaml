@@ -53,7 +53,6 @@ dependencies:
   # Budget threshold notifications (macOS/Linux/Windows banners)
   flutter_local_notifications: ^18.0.1
   intl: ^0.20.2
-  safe_change_notifier: ^0.4.0+1
   connectrpc: ^1.0.0
   protobuf: ^4.2.0
   fixnum: ^1.1.1

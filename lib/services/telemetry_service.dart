@@ -30,9 +30,8 @@ enum TelemetryErrorKind {
 ///   Reads from `/_local/api/traces` on the candela sidecar (SQLite).
 ///
 /// **Team mode** (`remoteUrl != null`)
-///   Calls ConnectRPC `GetDashboardData` (consolidated) on the candela
-///   server. Falls back to the legacy 3-RPC fan-out if the server returns
-///   Unimplemented (graceful rollout). Uses a gcloud ADC Bearer token.
+///   Calls ConnectRPC `GetUsageSummary` + `GetModelBreakdown` + `GetMyUsage`
+///   on the candela-analysis server. Uses a gcloud ADC Bearer token.
 ///
 /// Inject [httpClient] in tests to avoid real network calls.
 class TelemetryService {
@@ -210,20 +209,9 @@ class TelemetryService {
     final api = _connectApiFactory(base, authToken);
 
     try {
-      // ── Consolidated path: single RPC (GetDashboardData) ─────────────────
-      return await _fetchDashboardData(api, start, now);
+      // Try the consolidated RPC first (single round-trip).
+      return await _fetchConsolidated(api, start, now);
     } on ConnectException catch (e) {
-      // Graceful rollback: if the server hasn't been updated yet, the new RPC
-      // returns Unimplemented. Fall back to the legacy 3-RPC fan-out so the
-      // desktop app works across deploy boundaries.
-      if (e.code == Code.unimplemented) {
-        debugPrint(
-          '[TelemetryService] GetDashboardData not available, '
-          'falling back to legacy RPCs',
-        );
-        return _fetchRemoteLegacy(api, start, now);
-      }
-
       // C1/C3: distinguish 401 (auth expired) from other errors.
       if (e.code == Code.unauthenticated) {
         return (
@@ -235,6 +223,32 @@ class TelemetryService {
         );
       }
 
+      // If server doesn't support GetDashboardData yet, fall back to legacy.
+      if (e.code == Code.unimplemented) {
+        debugPrint(
+            '[TelemetryService] GetDashboardData not available, falling back');
+        try {
+          return await _fetchLegacy(api, start, now);
+        } on ConnectException catch (e2) {
+          if (e2.code == Code.unauthenticated) {
+            return (
+              <SpanRecord>[],
+              TelemetryErrorKind.authExpired,
+              null,
+              <GrantInfo>[],
+              null
+            );
+          }
+          return (
+            <SpanRecord>[],
+            TelemetryErrorKind.unreachable,
+            null,
+            <GrantInfo>[],
+            null
+          );
+        }
+      }
+
       return (
         <SpanRecord>[],
         TelemetryErrorKind.unreachable,
@@ -253,43 +267,39 @@ class TelemetryService {
     }
   }
 
-  /// Consolidated single-RPC fetch via GetDashboardData.
+  /// Consolidated path: single GetDashboardData RPC.
   Future<
-      (
-        List<SpanRecord>,
-        TelemetryErrorKind?,
-        BudgetInfo?,
-        List<GrantInfo>,
-        double?
-      )> _fetchDashboardData(
-    ConnectApiService api,
-    DateTime start,
-    DateTime now,
-  ) async {
+          (
+            List<SpanRecord>,
+            TelemetryErrorKind?,
+            BudgetInfo?,
+            List<GrantInfo>,
+            double?
+          )>
+      _fetchConsolidated(
+          ConnectApiService api, DateTime start, DateTime now) async {
     final resp = await api.getDashboardData(
       start: start,
       end: now,
       includeBudget: true,
     );
 
-    // Parse budget/grant data (non-fatal if missing).
+    // Parse budget from the new BudgetContext.
     BudgetInfo? budget;
     List<GrantInfo> grants = [];
     double? totalRemainingUsd;
-    try {
-      budget = ConnectApiService.budgetFromDashboard(
-        resp,
-        referenceNow: now,
-      );
-      grants = ConnectApiService.grantsFromDashboard(resp);
-      if (resp.hasBudgetContext()) {
+
+    if (resp.hasBudgetContext()) {
+      try {
+        budget = ConnectApiService.budgetFromDashboard(resp.budgetContext);
+        grants = ConnectApiService.grantsFromDashboard(resp.budgetContext);
         final rawRemaining = resp.budgetContext.totalRemainingUsd;
         if (!rawRemaining.isNaN && !rawRemaining.isInfinite) {
           totalRemainingUsd = rawRemaining.clamp(0.0, 1e9);
         }
+      } catch (_) {
+        // Budget data is display-only — swallow parse errors.
       }
-    } catch (_) {
-      // Budget data is display-only — swallow parse errors.
     }
 
     // Convert proto ModelUsage → SpanRecord for the chart pipeline.
@@ -297,90 +307,62 @@ class TelemetryService {
     return (spans, null, budget, grants, totalRemainingUsd);
   }
 
-  /// Legacy 3-RPC fan-out fallback for servers that haven't been updated yet.
+  /// Legacy fallback: concurrent GetUsageSummary + GetModelBreakdown + GetMyUsage.
   Future<
-      (
-        List<SpanRecord>,
-        TelemetryErrorKind?,
-        BudgetInfo?,
-        List<GrantInfo>,
-        double?
-      )> _fetchRemoteLegacy(
-    ConnectApiService api,
-    DateTime start,
-    DateTime now,
-  ) async {
-    try {
-      // Fire RPCs concurrently. GetMyUsage is non-fatal.
-      // ignore: deprecated_member_use_from_same_package
-      final summaryFuture = api.getUsageSummary(start: start, end: now);
-      // ignore: deprecated_member_use_from_same_package
-      final modelsFuture = api.getModelBreakdown(start: start, end: now);
-      // ignore: deprecated_member_use_from_same_package
-      final usageFuture = api
-          .getMyUsage(start: start, end: now)
-          .then<GetMyUsageResponse?>((r) => r)
-          .catchError((Object e) {
-        debugPrint('[TelemetryService] GetMyUsage failed (non-fatal): $e');
-        return null;
-      });
+          (
+            List<SpanRecord>,
+            TelemetryErrorKind?,
+            BudgetInfo?,
+            List<GrantInfo>,
+            double?
+          )>
+      _fetchLegacy(ConnectApiService api, DateTime start, DateTime now) async {
+    // ignore: deprecated_member_use_from_same_package
+    final summaryFuture = api.getUsageSummary(start: start, end: now);
+    // ignore: deprecated_member_use_from_same_package
+    final modelsFuture = api.getModelBreakdown(start: start, end: now);
+    // ignore: deprecated_member_use_from_same_package
+    final usageFuture = api
+        .getMyUsage(start: start, end: now)
+        .then<GetMyUsageResponse?>((r) => r)
+        .catchError((Object e) {
+      debugPrint('[TelemetryService] GetMyUsage failed (non-fatal): $e');
+      return null;
+    });
 
-      final results = await Future.wait([
-        summaryFuture,
-        modelsFuture,
-        usageFuture,
-      ]);
+    final results = await Future.wait([
+      summaryFuture,
+      modelsFuture,
+      usageFuture,
+    ]);
 
-      final modelsResp = results[1] as GetModelBreakdownResponse;
-      final usageResp = results[2] as GetMyUsageResponse?;
+    final modelsResp = results[1] as GetModelBreakdownResponse;
+    final usageResp = results[2] as GetMyUsageResponse?;
 
-      // Parse budget/grant data from GetMyUsage (non-fatal if missing/error).
-      BudgetInfo? budget;
-      List<GrantInfo> grants = [];
-      double? totalRemainingUsd;
-      if (usageResp != null) {
-        try {
-          budget = ConnectApiService.budgetFromProto(usageResp);
-          grants = ConnectApiService.grantsFromProto(usageResp);
-          final rawRemaining = usageResp.totalRemainingUsd;
-          if (!rawRemaining.isNaN && !rawRemaining.isInfinite) {
-            totalRemainingUsd = rawRemaining.clamp(0.0, 1e9);
-          }
-        } catch (_) {
-          // Budget data is display-only — swallow parse errors.
+    // Parse budget/grant data from GetMyUsage (non-fatal if missing/error).
+    BudgetInfo? budget;
+    List<GrantInfo> grants = [];
+    double? totalRemainingUsd;
+    if (usageResp != null) {
+      try {
+        // ignore: deprecated_member_use
+        budget = ConnectApiService.budgetFromProto(usageResp);
+        // ignore: deprecated_member_use
+        grants = ConnectApiService.grantsFromProto(usageResp);
+        final rawRemaining = usageResp.totalRemainingUsd;
+        // Clamp server value: must be non-negative and finite.
+        if (!rawRemaining.isNaN && !rawRemaining.isInfinite) {
+          totalRemainingUsd = rawRemaining.clamp(0.0, 1e9);
         }
+      } catch (_) {
+        // Budget data is display-only — swallow parse errors.
       }
-
-      // Convert proto ModelUsage → SpanRecord for the chart pipeline.
-      final spans =
-          ConnectApiService.spansFromModels(modelsResp.models, start, now);
-      return (spans, null, budget, grants, totalRemainingUsd);
-    } on ConnectException catch (e) {
-      if (e.code == Code.unauthenticated) {
-        return (
-          <SpanRecord>[],
-          TelemetryErrorKind.authExpired,
-          null,
-          <GrantInfo>[],
-          null
-        );
-      }
-      return (
-        <SpanRecord>[],
-        TelemetryErrorKind.unreachable,
-        null,
-        <GrantInfo>[],
-        null
-      );
-    } catch (_) {
-      return (
-        <SpanRecord>[],
-        TelemetryErrorKind.unreachable,
-        null,
-        <GrantInfo>[],
-        null
-      );
     }
+
+    // Convert proto ModelUsage → SpanRecord for the chart pipeline.
+    final spans =
+        ConnectApiService.spansFromModels(modelsResp.models, start, now);
+    return (spans, null, budget, grants, totalRemainingUsd);
   }
 
   // ── Aggregation ─────────────────────────────────────────────────────────────

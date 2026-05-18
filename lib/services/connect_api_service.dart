@@ -7,7 +7,6 @@ import 'package:connectrpc/protocol/connect.dart' as connect_protocol;
 import 'package:fixnum/fixnum.dart';
 import 'package:flutter/foundation.dart';
 
-import '../gen/candela/types/user.pb.dart';
 import '../gen/candela/v1/dashboard_service.connect.client.dart';
 import '../gen/candela/v1/dashboard_service.pb.dart';
 import '../gen/candela/types/common.pb.dart' as common;
@@ -81,44 +80,46 @@ class ConnectApiService {
   }
 
   /// Fetch usage summary for the given time range.
+  @Deprecated('Use getDashboardData instead')
   Future<GetUsageSummaryResponse> getUsageSummary({
     required DateTime start,
     required DateTime end,
   }) {
     final req = GetUsageSummaryRequest()
       ..timeRange = _makeTimeRange(start, end);
+    // ignore: deprecated_member_use
     return _dashboard.getUsageSummary(req, headers: _headers);
   }
 
   /// Fetch model-level breakdown for the given time range.
+  @Deprecated('Use getDashboardData instead')
   Future<GetModelBreakdownResponse> getModelBreakdown({
     required DateTime start,
     required DateTime end,
   }) {
     final req = GetModelBreakdownRequest()
       ..timeRange = _makeTimeRange(start, end);
+    // ignore: deprecated_member_use
     return _dashboard.getModelBreakdown(req, headers: _headers);
   }
 
   /// Fetch the current user's personal usage (budget, grants, models).
-  @Deprecated('Use getDashboardData instead')
+  @Deprecated('Use getDashboardData with includeBudget: true instead')
   Future<GetMyUsageResponse> getMyUsage({
     required DateTime start,
     required DateTime end,
   }) {
     final req = GetMyUsageRequest()..timeRange = _makeTimeRange(start, end);
+    // ignore: deprecated_member_use
     return _dashboard.getMyUsage(req, headers: _headers);
   }
 
-  /// Fetch a consolidated dashboard snapshot: usage summary, model breakdown,
-  /// and (optionally) budget context — all in a single RPC round-trip.
-  ///
-  /// Replaces the concurrent fan-out of [getUsageSummary] +
-  /// [getModelBreakdown] + [getMyUsage].
+  /// Fetch consolidated dashboard data (summary + models + optional budget)
+  /// in a single RPC round-trip.
   Future<GetDashboardDataResponse> getDashboardData({
     required DateTime start,
     required DateTime end,
-    bool includeBudget = true,
+    bool includeBudget = false,
   }) {
     final req = GetDashboardDataRequest()
       ..timeRange = _makeTimeRange(start, end)
@@ -169,34 +170,10 @@ class ConnectApiService {
   }
 
   /// Convert proto [GetMyUsageResponse] → domain [BudgetInfo].
-  static BudgetInfo? budgetFromProto(
-    GetMyUsageResponse resp, {
-    DateTime? referenceNow,
-  }) {
+  @Deprecated('Use budgetFromDashboard instead')
+  static BudgetInfo? budgetFromProto(GetMyUsageResponse resp) {
     if (!resp.hasBudget()) return null;
-    return _budgetFromUserBudget(resp.budget, referenceNow: referenceNow);
-  }
-
-  /// Convert proto [GetDashboardDataResponse] → domain [BudgetInfo].
-  static BudgetInfo? budgetFromDashboard(
-    GetDashboardDataResponse resp, {
-    DateTime? referenceNow,
-  }) {
-    if (!resp.hasBudgetContext() || !resp.budgetContext.hasBudget()) {
-      return null;
-    }
-    return _budgetFromUserBudget(
-      resp.budgetContext.budget,
-      referenceNow: referenceNow,
-    );
-  }
-
-  /// Shared conversion from proto [UserBudget] → domain [BudgetInfo].
-  static BudgetInfo _budgetFromUserBudget(
-    UserBudget b, {
-    DateTime? referenceNow,
-  }) {
-    final now = referenceNow ?? DateTime.now().toUtc();
+    final b = resp.budget;
     return BudgetInfo(
       limitUsd: b.limitUsd,
       spentUsd: b.spentUsd,
@@ -204,31 +181,54 @@ class ConnectApiService {
       period: BudgetPeriodKind.daily,
       periodEnd: b.hasPeriodEnd()
           ? _fromTimestamp(b.periodEnd)
-          : now.add(const Duration(days: 1)),
+          : DateTime.now().toUtc().add(const Duration(days: 1)),
     );
   }
 
   /// Convert proto [BudgetGrant] list → domain [GrantInfo] list.
+  @Deprecated('Use grantsFromDashboard instead')
   static List<GrantInfo> grantsFromProto(GetMyUsageResponse resp) {
-    return resp.activeGrants.map(_grantFromBudgetGrant).toList();
+    return resp.activeGrants.map((g) {
+      return GrantInfo(
+        id: g.id,
+        amountUsd: g.amountUsd,
+        spentUsd: g.spentUsd,
+        reason: g.reason,
+        grantedBy: g.grantedBy,
+        expiresAt: g.hasExpiresAt() ? _fromTimestamp(g.expiresAt) : null,
+      );
+    }).toList();
   }
 
-  /// Convert grants from [GetDashboardDataResponse] → domain [GrantInfo] list.
-  static List<GrantInfo> grantsFromDashboard(GetDashboardDataResponse resp) {
-    if (!resp.hasBudgetContext()) return [];
-    return resp.budgetContext.activeGrants.map(_grantFromBudgetGrant).toList();
-  }
-
-  /// Shared conversion from a single proto [BudgetGrant] → domain [GrantInfo].
-  static GrantInfo _grantFromBudgetGrant(BudgetGrant g) {
-    return GrantInfo(
-      id: g.id,
-      amountUsd: g.amountUsd,
-      spentUsd: g.spentUsd,
-      reason: g.reason,
-      grantedBy: g.grantedBy,
-      expiresAt: g.hasExpiresAt() ? _fromTimestamp(g.expiresAt) : null,
+  /// Convert [GetDashboardDataResponse_BudgetContext] → domain [BudgetInfo].
+  static BudgetInfo? budgetFromDashboard(
+      GetDashboardDataResponse_BudgetContext ctx) {
+    if (!ctx.hasBudget()) return null;
+    final b = ctx.budget;
+    return BudgetInfo(
+      limitUsd: b.limitUsd,
+      spentUsd: b.spentUsd,
+      tokensUsed: b.tokensUsed.toInt(),
+      period: BudgetPeriodKind.daily,
+      periodEnd: b.hasPeriodEnd()
+          ? _fromTimestamp(b.periodEnd)
+          : DateTime.now().toUtc().add(const Duration(days: 1)),
     );
+  }
+
+  /// Convert [GetDashboardDataResponse_BudgetContext] grants → [GrantInfo] list.
+  static List<GrantInfo> grantsFromDashboard(
+      GetDashboardDataResponse_BudgetContext ctx) {
+    return ctx.activeGrants.map((g) {
+      return GrantInfo(
+        id: g.id,
+        amountUsd: g.amountUsd,
+        spentUsd: g.spentUsd,
+        reason: g.reason,
+        grantedBy: g.grantedBy,
+        expiresAt: g.hasExpiresAt() ? _fromTimestamp(g.expiresAt) : null,
+      );
+    }).toList();
   }
 
   /// Evenly spread synthetic spans across a time window.

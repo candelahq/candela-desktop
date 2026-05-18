@@ -66,59 +66,57 @@ class MockConnectApi extends ConnectApiService {
   final GetUsageSummaryResponse? summaryResponse;
   final GetModelBreakdownResponse? modelResponse;
   final GetMyUsageResponse? usageResponse;
-  final GetDashboardDataResponse? dashboardDataResponse;
+  final GetDashboardDataResponse? dashboardResponse;
   final ConnectException? throwOnSummary;
   final ConnectException? throwOnModels;
   final ConnectException? throwOnUsage;
-  final ConnectException? throwOnDashboardData;
+  final ConnectException? throwOnDashboard;
   String? capturedAuthToken;
 
   MockConnectApi({
     this.summaryResponse,
     this.modelResponse,
     this.usageResponse,
-    this.dashboardDataResponse,
+    this.dashboardResponse,
     this.throwOnSummary,
     this.throwOnModels,
     this.throwOnUsage,
-    this.throwOnDashboardData,
+    this.throwOnDashboard,
   }) : super(baseUrl: 'http://test', authToken: null);
 
   @override
   Future<GetDashboardDataResponse> getDashboardData({
     required DateTime start,
     required DateTime end,
-    bool includeBudget = true,
+    bool includeBudget = false,
   }) async {
-    // If an explicit error is configured for GetDashboardData, throw it.
-    if (throwOnDashboardData != null) throw throwOnDashboardData!;
-    // If any of the legacy error injectors are set, propagate the first one
-    // so existing tests that configure throwOnSummary/throwOnModels still work.
+    if (throwOnDashboard != null) throw throwOnDashboard!;
+    // If throwOnSummary is set, propagate it as if the consolidated endpoint
+    // also fails (same server would fail both).
     if (throwOnSummary != null) throw throwOnSummary!;
-    if (throwOnModels != null) throw throwOnModels!;
 
-    // If a specific dashboardDataResponse was provided, use it directly.
-    if (dashboardDataResponse != null) return dashboardDataResponse!;
+    // If an explicit dashboardResponse was provided, return it directly.
+    if (dashboardResponse != null) return dashboardResponse!;
 
-    // Otherwise, synthesize from the individual response mocks.
+    // Otherwise compose from legacy mock fields so existing tests work.
     final resp = GetDashboardDataResponse();
-    final models = modelResponse ?? GetModelBreakdownResponse();
-    resp.models.addAll(models.models);
-
-    // Carry budget/grant data from usageResponse into BudgetContext.
-    final usage = usageResponse;
-    if (usage != null) {
+    if (modelResponse != null) {
+      resp.models.addAll(modelResponse!.models);
+    }
+    if (usageResponse != null && includeBudget) {
       final bc = GetDashboardDataResponse_BudgetContext();
-      if (usage.hasBudget()) bc.budget = usage.budget;
-      bc.totalRemainingUsd = usage.totalRemainingUsd;
-      bc.activeGrants.addAll(usage.activeGrants);
+      if (usageResponse!.hasBudget()) {
+        bc.budget = usageResponse!.budget;
+        bc.totalRemainingUsd = usageResponse!.totalRemainingUsd;
+      }
+      bc.activeGrants.addAll(usageResponse!.activeGrants);
       resp.budgetContext = bc;
     }
-
     return resp;
   }
 
   @override
+  // ignore: deprecated_member_use_from_same_package
   Future<GetUsageSummaryResponse> getUsageSummary({
     required DateTime start,
     required DateTime end,
@@ -128,6 +126,7 @@ class MockConnectApi extends ConnectApiService {
   }
 
   @override
+  // ignore: deprecated_member_use_from_same_package
   Future<GetModelBreakdownResponse> getModelBreakdown({
     required DateTime start,
     required DateTime end,
@@ -137,6 +136,7 @@ class MockConnectApi extends ConnectApiService {
   }
 
   @override
+  // ignore: deprecated_member_use_from_same_package
   Future<GetMyUsageResponse> getMyUsage({
     required DateTime start,
     required DateTime end,

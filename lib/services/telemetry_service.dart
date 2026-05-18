@@ -277,11 +277,16 @@ class TelemetryService {
     List<GrantInfo> grants = [];
     double? totalRemainingUsd;
     try {
-      budget = ConnectApiService.budgetFromDashboard(resp);
+      budget = ConnectApiService.budgetFromDashboard(
+        resp,
+        referenceNow: now,
+      );
       grants = ConnectApiService.grantsFromDashboard(resp);
-      final rawRemaining = resp.totalRemainingUsd;
-      if (!rawRemaining.isNaN && !rawRemaining.isInfinite) {
-        totalRemainingUsd = rawRemaining.clamp(0.0, 1e9);
+      if (resp.hasBudgetContext()) {
+        final rawRemaining = resp.budgetContext.totalRemainingUsd;
+        if (!rawRemaining.isNaN && !rawRemaining.isInfinite) {
+          totalRemainingUsd = rawRemaining.clamp(0.0, 1e9);
+        }
       }
     } catch (_) {
       // Budget data is display-only — swallow parse errors.

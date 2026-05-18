@@ -42,14 +42,14 @@ class MockConnectApi extends ConnectApiService {
     final models = modelResponse ?? GetModelBreakdownResponse();
     resp.models.addAll(models.models);
 
-    // Carry budget/grant data from usageResponse if present.
-    // Note: throwOnUsage is NOT propagated here — budget parsing failures
-    // are non-fatal in the consolidated path (handled in _fetchDashboardData).
+    // Carry budget/grant data from usageResponse into BudgetContext.
     final usage = usageResponse;
-    if (usage != null) {
-      if (usage.hasBudget()) resp.budget = usage.budget;
-      resp.totalRemainingUsd = usage.totalRemainingUsd;
-      resp.activeGrants.addAll(usage.activeGrants);
+    if (usage != null && usage.hasBudget()) {
+      final bc = GetDashboardDataResponse_BudgetContext();
+      bc.budget = usage.budget;
+      bc.totalRemainingUsd = usage.totalRemainingUsd;
+      bc.activeGrants.addAll(usage.activeGrants);
+      resp.budgetContext = bc;
     }
 
     return resp;

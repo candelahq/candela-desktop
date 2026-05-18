@@ -2048,85 +2048,15 @@ class GetDashboardDataRequest extends $pb.GeneratedMessage {
   void clearIncludeBudget() => $_clearField(4);
 }
 
-class GetDashboardDataResponse extends $pb.GeneratedMessage {
-  factory GetDashboardDataResponse({
-    $fixnum.Int64? totalTraces,
-    $fixnum.Int64? totalSpans,
-    $fixnum.Int64? totalLlmCalls,
-    $fixnum.Int64? totalInputTokens,
-    $fixnum.Int64? totalOutputTokens,
-    $core.double? totalCostUsd,
-    $core.double? avgLatencyMs,
-    $core.double? errorRate,
-    $fixnum.Int64? totalCacheReadTokens,
-    $fixnum.Int64? totalCacheCreationTokens,
-    $core.Iterable<TimeSeriesPoint>? tracesOverTime,
-    $core.Iterable<TimeSeriesPoint>? costOverTime,
-    $core.Iterable<TimeSeriesPoint>? tokensOverTime,
-    $core.Iterable<TimeSeriesPoint>? cacheReadTokensOverTime,
-    $core.Iterable<TimeSeriesPoint>? cacheCreationTokensOverTime,
-    $core.Iterable<TimeSeriesPoint>? inputTokensOverTime,
-    $core.Iterable<TimeSeriesPoint>? outputTokensOverTime,
-    $core.Iterable<ModelUsage>? models,
+/// Per-user budget context (populated when include_budget=true + auth).
+/// Absent when budget was not requested or user is unauthenticated.
+class GetDashboardDataResponse_BudgetContext extends $pb.GeneratedMessage {
+  factory GetDashboardDataResponse_BudgetContext({
     $7.UserBudget? budget,
     $core.double? totalRemainingUsd,
     $core.Iterable<$7.BudgetGrant>? activeGrants,
   }) {
     final $result = create();
-    if (totalTraces != null) {
-      $result.totalTraces = totalTraces;
-    }
-    if (totalSpans != null) {
-      $result.totalSpans = totalSpans;
-    }
-    if (totalLlmCalls != null) {
-      $result.totalLlmCalls = totalLlmCalls;
-    }
-    if (totalInputTokens != null) {
-      $result.totalInputTokens = totalInputTokens;
-    }
-    if (totalOutputTokens != null) {
-      $result.totalOutputTokens = totalOutputTokens;
-    }
-    if (totalCostUsd != null) {
-      $result.totalCostUsd = totalCostUsd;
-    }
-    if (avgLatencyMs != null) {
-      $result.avgLatencyMs = avgLatencyMs;
-    }
-    if (errorRate != null) {
-      $result.errorRate = errorRate;
-    }
-    if (totalCacheReadTokens != null) {
-      $result.totalCacheReadTokens = totalCacheReadTokens;
-    }
-    if (totalCacheCreationTokens != null) {
-      $result.totalCacheCreationTokens = totalCacheCreationTokens;
-    }
-    if (tracesOverTime != null) {
-      $result.tracesOverTime.addAll(tracesOverTime);
-    }
-    if (costOverTime != null) {
-      $result.costOverTime.addAll(costOverTime);
-    }
-    if (tokensOverTime != null) {
-      $result.tokensOverTime.addAll(tokensOverTime);
-    }
-    if (cacheReadTokensOverTime != null) {
-      $result.cacheReadTokensOverTime.addAll(cacheReadTokensOverTime);
-    }
-    if (cacheCreationTokensOverTime != null) {
-      $result.cacheCreationTokensOverTime.addAll(cacheCreationTokensOverTime);
-    }
-    if (inputTokensOverTime != null) {
-      $result.inputTokensOverTime.addAll(inputTokensOverTime);
-    }
-    if (outputTokensOverTime != null) {
-      $result.outputTokensOverTime.addAll(outputTokensOverTime);
-    }
-    if (models != null) {
-      $result.models.addAll(models);
-    }
     if (budget != null) {
       $result.budget = budget;
     }
@@ -2135,6 +2065,100 @@ class GetDashboardDataResponse extends $pb.GeneratedMessage {
     }
     if (activeGrants != null) {
       $result.activeGrants.addAll(activeGrants);
+    }
+    return $result;
+  }
+  GetDashboardDataResponse_BudgetContext._() : super();
+  factory GetDashboardDataResponse_BudgetContext.fromBuffer(
+          $core.List<$core.int> i,
+          [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(i, r);
+  factory GetDashboardDataResponse_BudgetContext.fromJson($core.String i,
+          [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetDashboardDataResponse.BudgetContext',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'candela.v1'),
+      createEmptyInstance: create)
+    ..aOM<$7.UserBudget>(1, _omitFieldNames ? '' : 'budget',
+        subBuilder: $7.UserBudget.create)
+    ..a<$core.double>(
+        2, _omitFieldNames ? '' : 'totalRemainingUsd', $pb.PbFieldType.OD)
+    ..pc<$7.BudgetGrant>(
+        3, _omitFieldNames ? '' : 'activeGrants', $pb.PbFieldType.PM,
+        subBuilder: $7.BudgetGrant.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetDashboardDataResponse_BudgetContext clone() =>
+      GetDashboardDataResponse_BudgetContext()..mergeFromMessage(this);
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetDashboardDataResponse_BudgetContext copyWith(
+          void Function(GetDashboardDataResponse_BudgetContext) updates) =>
+      super.copyWith((message) =>
+              updates(message as GetDashboardDataResponse_BudgetContext))
+          as GetDashboardDataResponse_BudgetContext;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static GetDashboardDataResponse_BudgetContext create() =>
+      GetDashboardDataResponse_BudgetContext._();
+  GetDashboardDataResponse_BudgetContext createEmptyInstance() => create();
+  static $pb.PbList<GetDashboardDataResponse_BudgetContext> createRepeated() =>
+      $pb.PbList<GetDashboardDataResponse_BudgetContext>();
+  @$core.pragma('dart2js:noInline')
+  static GetDashboardDataResponse_BudgetContext getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<
+          GetDashboardDataResponse_BudgetContext>(create);
+  static GetDashboardDataResponse_BudgetContext? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $7.UserBudget get budget => $_getN(0);
+  @$pb.TagNumber(1)
+  set budget($7.UserBudget v) {
+    $_setField(1, v);
+  }
+
+  @$pb.TagNumber(1)
+  $core.bool hasBudget() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearBudget() => $_clearField(1);
+  @$pb.TagNumber(1)
+  $7.UserBudget ensureBudget() => $_ensure(0);
+
+  @$pb.TagNumber(2)
+  $core.double get totalRemainingUsd => $_getN(1);
+  @$pb.TagNumber(2)
+  set totalRemainingUsd($core.double v) {
+    $_setDouble(1, v);
+  }
+
+  @$pb.TagNumber(2)
+  $core.bool hasTotalRemainingUsd() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearTotalRemainingUsd() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $pb.PbList<$7.BudgetGrant> get activeGrants => $_getList(2);
+}
+
+class GetDashboardDataResponse extends $pb.GeneratedMessage {
+  factory GetDashboardDataResponse({
+    GetUsageSummaryResponse? summary,
+    $core.Iterable<ModelUsage>? models,
+    GetDashboardDataResponse_BudgetContext? budgetContext,
+  }) {
+    final $result = create();
+    if (summary != null) {
+      $result.summary = summary;
+    }
+    if (models != null) {
+      $result.models.addAll(models);
+    }
+    if (budgetContext != null) {
+      $result.budgetContext = budgetContext;
     }
     return $result;
   }
@@ -2150,50 +2174,13 @@ class GetDashboardDataResponse extends $pb.GeneratedMessage {
       _omitMessageNames ? '' : 'GetDashboardDataResponse',
       package: const $pb.PackageName(_omitMessageNames ? '' : 'candela.v1'),
       createEmptyInstance: create)
-    ..aInt64(1, _omitFieldNames ? '' : 'totalTraces')
-    ..aInt64(2, _omitFieldNames ? '' : 'totalSpans')
-    ..aInt64(3, _omitFieldNames ? '' : 'totalLlmCalls')
-    ..aInt64(4, _omitFieldNames ? '' : 'totalInputTokens')
-    ..aInt64(5, _omitFieldNames ? '' : 'totalOutputTokens')
-    ..a<$core.double>(
-        6, _omitFieldNames ? '' : 'totalCostUsd', $pb.PbFieldType.OD)
-    ..a<$core.double>(
-        7, _omitFieldNames ? '' : 'avgLatencyMs', $pb.PbFieldType.OD)
-    ..a<$core.double>(8, _omitFieldNames ? '' : 'errorRate', $pb.PbFieldType.OD)
-    ..aInt64(9, _omitFieldNames ? '' : 'totalCacheReadTokens')
-    ..aInt64(10, _omitFieldNames ? '' : 'totalCacheCreationTokens')
-    ..pc<TimeSeriesPoint>(
-        20, _omitFieldNames ? '' : 'tracesOverTime', $pb.PbFieldType.PM,
-        subBuilder: TimeSeriesPoint.create)
-    ..pc<TimeSeriesPoint>(
-        21, _omitFieldNames ? '' : 'costOverTime', $pb.PbFieldType.PM,
-        subBuilder: TimeSeriesPoint.create)
-    ..pc<TimeSeriesPoint>(
-        22, _omitFieldNames ? '' : 'tokensOverTime', $pb.PbFieldType.PM,
-        subBuilder: TimeSeriesPoint.create)
-    ..pc<TimeSeriesPoint>(23, _omitFieldNames ? '' : 'cacheReadTokensOverTime',
-        $pb.PbFieldType.PM,
-        subBuilder: TimeSeriesPoint.create)
-    ..pc<TimeSeriesPoint>(
-        24,
-        _omitFieldNames ? '' : 'cacheCreationTokensOverTime',
-        $pb.PbFieldType.PM,
-        subBuilder: TimeSeriesPoint.create)
-    ..pc<TimeSeriesPoint>(
-        25, _omitFieldNames ? '' : 'inputTokensOverTime', $pb.PbFieldType.PM,
-        subBuilder: TimeSeriesPoint.create)
-    ..pc<TimeSeriesPoint>(
-        26, _omitFieldNames ? '' : 'outputTokensOverTime', $pb.PbFieldType.PM,
-        subBuilder: TimeSeriesPoint.create)
-    ..pc<ModelUsage>(30, _omitFieldNames ? '' : 'models', $pb.PbFieldType.PM,
+    ..aOM<GetUsageSummaryResponse>(1, _omitFieldNames ? '' : 'summary',
+        subBuilder: GetUsageSummaryResponse.create)
+    ..pc<ModelUsage>(2, _omitFieldNames ? '' : 'models', $pb.PbFieldType.PM,
         subBuilder: ModelUsage.create)
-    ..aOM<$7.UserBudget>(40, _omitFieldNames ? '' : 'budget',
-        subBuilder: $7.UserBudget.create)
-    ..a<$core.double>(
-        41, _omitFieldNames ? '' : 'totalRemainingUsd', $pb.PbFieldType.OD)
-    ..pc<$7.BudgetGrant>(
-        42, _omitFieldNames ? '' : 'activeGrants', $pb.PbFieldType.PM,
-        subBuilder: $7.BudgetGrant.create)
+    ..aOM<GetDashboardDataResponse_BudgetContext>(
+        3, _omitFieldNames ? '' : 'budgetContext',
+        subBuilder: GetDashboardDataResponse_BudgetContext.create)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -2217,183 +2204,38 @@ class GetDashboardDataResponse extends $pb.GeneratedMessage {
       $pb.GeneratedMessage.$_defaultFor<GetDashboardDataResponse>(create);
   static GetDashboardDataResponse? _defaultInstance;
 
-  /// ── Aggregate summary ──
+  /// Consolidated usage summary and time series.
   @$pb.TagNumber(1)
-  $fixnum.Int64 get totalTraces => $_getI64(0);
+  GetUsageSummaryResponse get summary => $_getN(0);
   @$pb.TagNumber(1)
-  set totalTraces($fixnum.Int64 v) {
-    $_setInt64(0, v);
+  set summary(GetUsageSummaryResponse v) {
+    $_setField(1, v);
   }
 
   @$pb.TagNumber(1)
-  $core.bool hasTotalTraces() => $_has(0);
+  $core.bool hasSummary() => $_has(0);
   @$pb.TagNumber(1)
-  void clearTotalTraces() => $_clearField(1);
+  void clearSummary() => $_clearField(1);
+  @$pb.TagNumber(1)
+  GetUsageSummaryResponse ensureSummary() => $_ensure(0);
 
+  /// Per-model breakdown.
   @$pb.TagNumber(2)
-  $fixnum.Int64 get totalSpans => $_getI64(1);
-  @$pb.TagNumber(2)
-  set totalSpans($fixnum.Int64 v) {
-    $_setInt64(1, v);
-  }
-
-  @$pb.TagNumber(2)
-  $core.bool hasTotalSpans() => $_has(1);
-  @$pb.TagNumber(2)
-  void clearTotalSpans() => $_clearField(2);
+  $pb.PbList<ModelUsage> get models => $_getList(1);
 
   @$pb.TagNumber(3)
-  $fixnum.Int64 get totalLlmCalls => $_getI64(2);
+  GetDashboardDataResponse_BudgetContext get budgetContext => $_getN(2);
   @$pb.TagNumber(3)
-  set totalLlmCalls($fixnum.Int64 v) {
-    $_setInt64(2, v);
+  set budgetContext(GetDashboardDataResponse_BudgetContext v) {
+    $_setField(3, v);
   }
 
   @$pb.TagNumber(3)
-  $core.bool hasTotalLlmCalls() => $_has(2);
+  $core.bool hasBudgetContext() => $_has(2);
   @$pb.TagNumber(3)
-  void clearTotalLlmCalls() => $_clearField(3);
-
-  @$pb.TagNumber(4)
-  $fixnum.Int64 get totalInputTokens => $_getI64(3);
-  @$pb.TagNumber(4)
-  set totalInputTokens($fixnum.Int64 v) {
-    $_setInt64(3, v);
-  }
-
-  @$pb.TagNumber(4)
-  $core.bool hasTotalInputTokens() => $_has(3);
-  @$pb.TagNumber(4)
-  void clearTotalInputTokens() => $_clearField(4);
-
-  @$pb.TagNumber(5)
-  $fixnum.Int64 get totalOutputTokens => $_getI64(4);
-  @$pb.TagNumber(5)
-  set totalOutputTokens($fixnum.Int64 v) {
-    $_setInt64(4, v);
-  }
-
-  @$pb.TagNumber(5)
-  $core.bool hasTotalOutputTokens() => $_has(4);
-  @$pb.TagNumber(5)
-  void clearTotalOutputTokens() => $_clearField(5);
-
-  @$pb.TagNumber(6)
-  $core.double get totalCostUsd => $_getN(5);
-  @$pb.TagNumber(6)
-  set totalCostUsd($core.double v) {
-    $_setDouble(5, v);
-  }
-
-  @$pb.TagNumber(6)
-  $core.bool hasTotalCostUsd() => $_has(5);
-  @$pb.TagNumber(6)
-  void clearTotalCostUsd() => $_clearField(6);
-
-  @$pb.TagNumber(7)
-  $core.double get avgLatencyMs => $_getN(6);
-  @$pb.TagNumber(7)
-  set avgLatencyMs($core.double v) {
-    $_setDouble(6, v);
-  }
-
-  @$pb.TagNumber(7)
-  $core.bool hasAvgLatencyMs() => $_has(6);
-  @$pb.TagNumber(7)
-  void clearAvgLatencyMs() => $_clearField(7);
-
-  @$pb.TagNumber(8)
-  $core.double get errorRate => $_getN(7);
-  @$pb.TagNumber(8)
-  set errorRate($core.double v) {
-    $_setDouble(7, v);
-  }
-
-  @$pb.TagNumber(8)
-  $core.bool hasErrorRate() => $_has(7);
-  @$pb.TagNumber(8)
-  void clearErrorRate() => $_clearField(8);
-
-  /// Cache metrics — subsets of total_input_tokens.
-  @$pb.TagNumber(9)
-  $fixnum.Int64 get totalCacheReadTokens => $_getI64(8);
-  @$pb.TagNumber(9)
-  set totalCacheReadTokens($fixnum.Int64 v) {
-    $_setInt64(8, v);
-  }
-
-  @$pb.TagNumber(9)
-  $core.bool hasTotalCacheReadTokens() => $_has(8);
-  @$pb.TagNumber(9)
-  void clearTotalCacheReadTokens() => $_clearField(9);
-
-  @$pb.TagNumber(10)
-  $fixnum.Int64 get totalCacheCreationTokens => $_getI64(9);
-  @$pb.TagNumber(10)
-  set totalCacheCreationTokens($fixnum.Int64 v) {
-    $_setInt64(9, v);
-  }
-
-  @$pb.TagNumber(10)
-  $core.bool hasTotalCacheCreationTokens() => $_has(9);
-  @$pb.TagNumber(10)
-  void clearTotalCacheCreationTokens() => $_clearField(10);
-
-  /// ── Time series for charts ──
-  @$pb.TagNumber(20)
-  $pb.PbList<TimeSeriesPoint> get tracesOverTime => $_getList(10);
-
-  @$pb.TagNumber(21)
-  $pb.PbList<TimeSeriesPoint> get costOverTime => $_getList(11);
-
-  @$pb.TagNumber(22)
-  $pb.PbList<TimeSeriesPoint> get tokensOverTime => $_getList(12);
-
-  @$pb.TagNumber(23)
-  $pb.PbList<TimeSeriesPoint> get cacheReadTokensOverTime => $_getList(13);
-
-  @$pb.TagNumber(24)
-  $pb.PbList<TimeSeriesPoint> get cacheCreationTokensOverTime => $_getList(14);
-
-  @$pb.TagNumber(25)
-  $pb.PbList<TimeSeriesPoint> get inputTokensOverTime => $_getList(15);
-
-  @$pb.TagNumber(26)
-  $pb.PbList<TimeSeriesPoint> get outputTokensOverTime => $_getList(16);
-
-  /// ── Per-model breakdown ──
-  @$pb.TagNumber(30)
-  $pb.PbList<ModelUsage> get models => $_getList(17);
-
-  /// ── Per-user budget context (populated when include_budget=true + auth) ──
-  @$pb.TagNumber(40)
-  $7.UserBudget get budget => $_getN(18);
-  @$pb.TagNumber(40)
-  set budget($7.UserBudget v) {
-    $_setField(40, v);
-  }
-
-  @$pb.TagNumber(40)
-  $core.bool hasBudget() => $_has(18);
-  @$pb.TagNumber(40)
-  void clearBudget() => $_clearField(40);
-  @$pb.TagNumber(40)
-  $7.UserBudget ensureBudget() => $_ensure(18);
-
-  @$pb.TagNumber(41)
-  $core.double get totalRemainingUsd => $_getN(19);
-  @$pb.TagNumber(41)
-  set totalRemainingUsd($core.double v) {
-    $_setDouble(19, v);
-  }
-
-  @$pb.TagNumber(41)
-  $core.bool hasTotalRemainingUsd() => $_has(19);
-  @$pb.TagNumber(41)
-  void clearTotalRemainingUsd() => $_clearField(41);
-
-  @$pb.TagNumber(42)
-  $pb.PbList<$7.BudgetGrant> get activeGrants => $_getList(20);
+  void clearBudgetContext() => $_clearField(3);
+  @$pb.TagNumber(3)
+  GetDashboardDataResponse_BudgetContext ensureBudgetContext() => $_ensure(2);
 }
 
 /// DashboardService provides aggregated metrics and usage data.

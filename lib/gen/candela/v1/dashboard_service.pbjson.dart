@@ -560,107 +560,41 @@ final $typed_data.Uint8List getDashboardDataRequestDescriptor = $convert.base64D
 const GetDashboardDataResponse$json = {
   '1': 'GetDashboardDataResponse',
   '2': [
-    {'1': 'total_traces', '3': 1, '4': 1, '5': 3, '10': 'totalTraces'},
-    {'1': 'total_spans', '3': 2, '4': 1, '5': 3, '10': 'totalSpans'},
-    {'1': 'total_llm_calls', '3': 3, '4': 1, '5': 3, '10': 'totalLlmCalls'},
     {
-      '1': 'total_input_tokens',
-      '3': 4,
+      '1': 'summary',
+      '3': 1,
       '4': 1,
-      '5': 3,
-      '10': 'totalInputTokens'
-    },
-    {
-      '1': 'total_output_tokens',
-      '3': 5,
-      '4': 1,
-      '5': 3,
-      '10': 'totalOutputTokens'
-    },
-    {'1': 'total_cost_usd', '3': 6, '4': 1, '5': 1, '10': 'totalCostUsd'},
-    {'1': 'avg_latency_ms', '3': 7, '4': 1, '5': 1, '10': 'avgLatencyMs'},
-    {'1': 'error_rate', '3': 8, '4': 1, '5': 1, '10': 'errorRate'},
-    {
-      '1': 'total_cache_read_tokens',
-      '3': 9,
-      '4': 1,
-      '5': 3,
-      '10': 'totalCacheReadTokens'
-    },
-    {
-      '1': 'total_cache_creation_tokens',
-      '3': 10,
-      '4': 1,
-      '5': 3,
-      '10': 'totalCacheCreationTokens'
-    },
-    {
-      '1': 'traces_over_time',
-      '3': 20,
-      '4': 3,
       '5': 11,
-      '6': '.candela.v1.TimeSeriesPoint',
-      '10': 'tracesOverTime'
-    },
-    {
-      '1': 'cost_over_time',
-      '3': 21,
-      '4': 3,
-      '5': 11,
-      '6': '.candela.v1.TimeSeriesPoint',
-      '10': 'costOverTime'
-    },
-    {
-      '1': 'tokens_over_time',
-      '3': 22,
-      '4': 3,
-      '5': 11,
-      '6': '.candela.v1.TimeSeriesPoint',
-      '10': 'tokensOverTime'
-    },
-    {
-      '1': 'cache_read_tokens_over_time',
-      '3': 23,
-      '4': 3,
-      '5': 11,
-      '6': '.candela.v1.TimeSeriesPoint',
-      '10': 'cacheReadTokensOverTime'
-    },
-    {
-      '1': 'cache_creation_tokens_over_time',
-      '3': 24,
-      '4': 3,
-      '5': 11,
-      '6': '.candela.v1.TimeSeriesPoint',
-      '10': 'cacheCreationTokensOverTime'
-    },
-    {
-      '1': 'input_tokens_over_time',
-      '3': 25,
-      '4': 3,
-      '5': 11,
-      '6': '.candela.v1.TimeSeriesPoint',
-      '10': 'inputTokensOverTime'
-    },
-    {
-      '1': 'output_tokens_over_time',
-      '3': 26,
-      '4': 3,
-      '5': 11,
-      '6': '.candela.v1.TimeSeriesPoint',
-      '10': 'outputTokensOverTime'
+      '6': '.candela.v1.GetUsageSummaryResponse',
+      '10': 'summary'
     },
     {
       '1': 'models',
-      '3': 30,
+      '3': 2,
       '4': 3,
       '5': 11,
       '6': '.candela.v1.ModelUsage',
       '10': 'models'
     },
     {
+      '1': 'budget_context',
+      '3': 3,
+      '4': 1,
+      '5': 11,
+      '6': '.candela.v1.GetDashboardDataResponse.BudgetContext',
+      '10': 'budgetContext'
+    },
+  ],
+  '3': [GetDashboardDataResponse_BudgetContext$json],
+};
+
+@$core.Deprecated('Use getDashboardDataResponseDescriptor instead')
+const GetDashboardDataResponse_BudgetContext$json = {
+  '1': 'BudgetContext',
+  '2': [
+    {
       '1': 'budget',
-      '3': 40,
+      '3': 1,
       '4': 1,
       '5': 11,
       '6': '.candela.types.UserBudget',
@@ -668,14 +602,14 @@ const GetDashboardDataResponse$json = {
     },
     {
       '1': 'total_remaining_usd',
-      '3': 41,
+      '3': 2,
       '4': 1,
       '5': 1,
       '10': 'totalRemainingUsd'
     },
     {
       '1': 'active_grants',
-      '3': 42,
+      '3': 3,
       '4': 3,
       '5': 11,
       '6': '.candela.types.BudgetGrant',
@@ -686,29 +620,14 @@ const GetDashboardDataResponse$json = {
 
 /// Descriptor for `GetDashboardDataResponse`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List getDashboardDataResponseDescriptor = $convert.base64Decode(
-    'ChhHZXREYXNoYm9hcmREYXRhUmVzcG9uc2USIQoMdG90YWxfdHJhY2VzGAEgASgDUgt0b3RhbF'
-    'RyYWNlcxIfCgt0b3RhbF9zcGFucxgCIAEoA1IKdG90YWxTcGFucxImCg90b3RhbF9sbG1fY2Fs'
-    'bHMYAyABKANSDXRvdGFsTGxtQ2FsbHMSLAoSdG90YWxfaW5wdXRfdG9rZW5zGAQgASgDUhB0b3'
-    'RhbElucHV0VG9rZW5zEi4KE3RvdGFsX291dHB1dF90b2tlbnMYBSABKANSEXRvdGFsT3V0cHV0'
-    'VG9rZW5zEiQKDnRvdGFsX2Nvc3RfdXNkGAYgASgBUgx0b3RhbENvc3RVc2QSJAoOYXZnX2xhdG'
-    'VuY3lfbXMYByABKAFSDGF2Z0xhdGVuY3lNcxIdCgplcnJvcl9yYXRlGAggASgBUgllcnJvclJh'
-    'dGUSNQoXdG90YWxfY2FjaGVfcmVhZF90b2tlbnMYCSABKANSFHRvdGFsQ2FjaGVSZWFkVG9rZW'
-    '5zEj0KG3RvdGFsX2NhY2hlX2NyZWF0aW9uX3Rva2VucxgKIAEoA1IYdG90YWxDYWNoZUNyZWF0'
-    'aW9uVG9rZW5zEkUKEHRyYWNlc19vdmVyX3RpbWUYFCADKAsyGy5jYW5kZWxhLnYxLlRpbWVTZX'
-    'JpZXNQb2ludFIOdHJhY2VzT3ZlclRpbWUSQQoOY29zdF9vdmVyX3RpbWUYFSADKAsyGy5jYW5k'
-    'ZWxhLnYxLlRpbWVTZXJpZXNQb2ludFIMY29zdE92ZXJUaW1lEkUKEHRva2Vuc19vdmVyX3RpbW'
-    'UYFiADKAsyGy5jYW5kZWxhLnYxLlRpbWVTZXJpZXNQb2ludFIOdG9rZW5zT3ZlclRpbWUSWQob'
-    'Y2FjaGVfcmVhZF90b2tlbnNfb3Zlcl90aW1lGBcgAygLMhsuY2FuZGVsYS52MS5UaW1lU2VyaW'
-    'VzUG9pbnRSF2NhY2hlUmVhZFRva2Vuc092ZXJUaW1lEmEKH2NhY2hlX2NyZWF0aW9uX3Rva2Vu'
-    'c19vdmVyX3RpbWUYGCADKAsyGy5jYW5kZWxhLnYxLlRpbWVTZXJpZXNQb2ludFIbY2FjaGVDcm'
-    'VhdGlvblRva2Vuc092ZXJUaW1lElAKFmlucHV0X3Rva2Vuc19vdmVyX3RpbWUYGSADKAsyGy5j'
-    'YW5kZWxhLnYxLlRpbWVTZXJpZXNQb2ludFITaW5wdXRUb2tlbnNPdmVyVGltZRJSChdvdXRwdX'
-    'RfdG9rZW5zX292ZXJfdGltZRgaIAMoCzIbLmNhbmRlbGEudjEuVGltZVNlcmllc1BvaW50UhRv'
-    'dXRwdXRUb2tlbnNPdmVyVGltZRIuCgZtb2RlbHMYHiADKAsyFi5jYW5kZWxhLnYxLk1vZGVsVX'
-    'NhZ2VSBm1vZGVscxIxCgZidWRnZXQYKCABKAsyGS5jYW5kZWxhLnR5cGVzLlVzZXJCdWRnZXRS'
-    'BmJ1ZGdldBIuChN0b3RhbF9yZW1haW5pbmdfdXNkGCkgASgBUhF0b3RhbFJlbWFpbmluZ1VzZB'
-    'I/Cg1hY3RpdmVfZ3JhbnRzGCogAygLMhouY2FuZGVsYS50eXBlcy5CdWRnZXRHcmFudFIMYWN0'
-    'aXZlR3JhbnRz');
+    'ChhHZXREYXNoYm9hcmREYXRhUmVzcG9uc2USPQoHc3VtbWFyeRgBIAEoCzIjLmNhbmRlbGEudj'
+    'EuR2V0VXNhZ2VTdW1tYXJ5UmVzcG9uc2VSB3N1bW1hcnkSLgoGbW9kZWxzGAIgAygLMhYuY2Fu'
+    'ZGVsYS52MS5Nb2RlbFVzYWdlUgZtb2RlbHMSWQoOYnVkZ2V0X2NvbnRleHQYAyABKAsyMi5jYW'
+    '5kZWxhLnYxLkdldERhc2hib2FyZERhdGFSZXNwb25zZS5CdWRnZXRDb250ZXh0Ug1idWRnZXRD'
+    'b250ZXh0GrMBCg1CdWRnZXRDb250ZXh0EjEKBmJ1ZGdldBgBIAEoCzIZLmNhbmRlbGEudHlwZX'
+    'MuVXNlckJ1ZGdldFIGYnVkZ2V0Ei4KE3RvdGFsX3JlbWFpbmluZ191c2QYAiABKAFSEXRvdGFs'
+    'UmVtYWluaW5nVXNkEj8KDWFjdGl2ZV9ncmFudHMYAyADKAsyGi5jYW5kZWxhLnR5cGVzLkJ1ZG'
+    'dldEdyYW50UgxhY3RpdmVHcmFudHM=');
 
 const $core.Map<$core.String, $core.dynamic> DashboardServiceBase$json = {
   '1': 'DashboardService',
@@ -761,12 +680,14 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.candela.types.TimeRange': $4.TimeRange$json,
   '.google.protobuf.Timestamp': $2.Timestamp$json,
   '.candela.v1.GetDashboardDataResponse': GetDashboardDataResponse$json,
+  '.candela.v1.GetUsageSummaryResponse': GetUsageSummaryResponse$json,
   '.candela.v1.TimeSeriesPoint': TimeSeriesPoint$json,
   '.candela.v1.ModelUsage': ModelUsage$json,
+  '.candela.v1.GetDashboardDataResponse.BudgetContext':
+      GetDashboardDataResponse_BudgetContext$json,
   '.candela.types.UserBudget': $7.UserBudget$json,
   '.candela.types.BudgetGrant': $7.BudgetGrant$json,
   '.candela.v1.GetUsageSummaryRequest': GetUsageSummaryRequest$json,
-  '.candela.v1.GetUsageSummaryResponse': GetUsageSummaryResponse$json,
   '.candela.v1.GetModelBreakdownRequest': GetModelBreakdownRequest$json,
   '.candela.v1.GetModelBreakdownResponse': GetModelBreakdownResponse$json,
   '.candela.v1.GetLatencyPercentilesRequest': GetLatencyPercentilesRequest$json,

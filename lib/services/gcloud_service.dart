@@ -2,10 +2,19 @@ import 'dart:convert';
 import 'dart:io';
 
 import '../models/identity_state.dart';
+import 'adc_service.dart';
 
-/// Interacts with the gcloud CLI to introspect auth and project state.
+/// Interacts with the gcloud CLI for operations that still require it,
+/// and uses [AdcService] for direct token refresh when possible.
+///
+/// Token operations (getTokenInfo, getAccessToken) now prefer direct OAuth2
+/// refresh via the ADC file, eliminating gcloud subprocess overhead for the
+/// hot path. gcloud is only used as a fallback or for operations that have
+/// no direct API equivalent (account listing, API checks).
 class GCloudService {
   static const _timeout = Duration(seconds: 10);
+
+  final AdcService _adcService = AdcService();
 
   /// Augmented PATH that includes common gcloud install locations.
   /// macOS GUI apps don't inherit shell PATH, so we search explicitly.
@@ -79,10 +88,16 @@ class GCloudService {
 
   /// Get an ADC access token and its real expiry.
   ///
-  /// Uses `--format=json` to retrieve the actual token expiry from gcloud
-  /// rather than relying on JWT decoding (ADC tokens are typically opaque
-  /// `ya29.*` tokens, not JWTs, so JWT decode falls through to a fallback).
+  /// Prefers direct OAuth2 token refresh via the ADC file (fast, no gcloud
+  /// subprocess). Falls back to `gcloud auth application-default
+  /// print-access-token --format=json` if the ADC file doesn't have
+  /// refresh credentials.
   Future<TokenInfo?> getTokenInfo() async {
+    // Try direct refresh first (no gcloud subprocess needed).
+    final directToken = await _adcService.refreshAccessToken();
+    if (directToken != null) return directToken;
+
+    // Fallback: gcloud subprocess.
     try {
       final result = await _run([
         'auth',
@@ -95,27 +110,22 @@ class GCloudService {
       final output = (result.stdout as String).trim();
       if (output.isEmpty) return null;
 
-      // --format=json returns a JSON object with `token` and `expiry` fields.
       try {
         final parsed = json.decode(output) as Map<String, dynamic>;
         final token = parsed['token'] as String?;
         if (token == null || token.isEmpty) return null;
 
-        // Extract the real expiry from gcloud's JSON response.
         DateTime? expiresAt;
         final expiryMap = parsed['expiry'] as Map<String, dynamic>?;
         if (expiryMap != null) {
           final datetimeStr = expiryMap['datetime'] as String?;
           if (datetimeStr != null) {
-            // gcloud returns UTC datetime like "2026-05-18 02:06:07.038436".
             expiresAt = DateTime.tryParse('${datetimeStr}Z');
           }
         }
 
         return _decodeJwt(token, knownExpiry: expiresAt);
       } catch (_) {
-        // If JSON parsing fails, the output might be a plain token string
-        // (older gcloud versions). Fall back to plain-token path.
         return _decodeJwt(output);
       }
     } catch (_) {
@@ -151,9 +161,14 @@ class GCloudService {
 
   /// Get a regular gcloud access token (not ADC) for team backend auth.
   ///
-  /// Uses `gcloud auth print-access-token --format=json` to get the real
-  /// token expiry. Falls back to [getTokenInfo] on failure.
+  /// Prefers direct OAuth2 refresh via ADC file. Falls back to gcloud
+  /// subprocess if needed.
   Future<TokenInfo?> getAccessToken() async {
+    // Try direct refresh first.
+    final directToken = await _adcService.refreshAccessToken();
+    if (directToken != null) return directToken;
+
+    // Fallback: gcloud subprocess.
     try {
       final result = await _run([
         'auth',
@@ -165,7 +180,6 @@ class GCloudService {
       final output = (result.stdout as String).trim();
       if (output.isEmpty) return getTokenInfo();
 
-      // --format=json returns a JSON object with `token` and `expiry` fields.
       try {
         final parsed = json.decode(output) as Map<String, dynamic>;
         final token =
@@ -183,7 +197,6 @@ class GCloudService {
 
         return _decodeJwt(token, knownExpiry: expiresAt);
       } catch (_) {
-        // Plain token fallback for older gcloud.
         return _decodeJwt(output);
       }
     } catch (_) {

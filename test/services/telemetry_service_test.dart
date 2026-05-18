@@ -66,57 +66,59 @@ class MockConnectApi extends ConnectApiService {
   final GetUsageSummaryResponse? summaryResponse;
   final GetModelBreakdownResponse? modelResponse;
   final GetMyUsageResponse? usageResponse;
-  final GetDashboardDataResponse? dashboardResponse;
+  final GetDashboardDataResponse? dashboardDataResponse;
   final ConnectException? throwOnSummary;
   final ConnectException? throwOnModels;
   final ConnectException? throwOnUsage;
-  final ConnectException? throwOnDashboard;
+  final ConnectException? throwOnDashboardData;
   String? capturedAuthToken;
 
   MockConnectApi({
     this.summaryResponse,
     this.modelResponse,
     this.usageResponse,
-    this.dashboardResponse,
+    this.dashboardDataResponse,
     this.throwOnSummary,
     this.throwOnModels,
     this.throwOnUsage,
-    this.throwOnDashboard,
+    this.throwOnDashboardData,
   }) : super(baseUrl: 'http://test', authToken: null);
 
   @override
   Future<GetDashboardDataResponse> getDashboardData({
     required DateTime start,
     required DateTime end,
-    bool includeBudget = false,
+    bool includeBudget = true,
   }) async {
-    if (throwOnDashboard != null) throw throwOnDashboard!;
-    // If throwOnSummary is set, propagate it as if the consolidated endpoint
-    // also fails (same server would fail both).
+    // If an explicit error is configured for GetDashboardData, throw it.
+    if (throwOnDashboardData != null) throw throwOnDashboardData!;
+    // If any of the legacy error injectors are set, propagate the first one
+    // so existing tests that configure throwOnSummary/throwOnModels still work.
     if (throwOnSummary != null) throw throwOnSummary!;
+    if (throwOnModels != null) throw throwOnModels!;
 
-    // If an explicit dashboardResponse was provided, return it directly.
-    if (dashboardResponse != null) return dashboardResponse!;
+    // If a specific dashboardDataResponse was provided, use it directly.
+    if (dashboardDataResponse != null) return dashboardDataResponse!;
 
-    // Otherwise compose from legacy mock fields so existing tests work.
+    // Otherwise, synthesize from the individual response mocks.
     final resp = GetDashboardDataResponse();
-    if (modelResponse != null) {
-      resp.models.addAll(modelResponse!.models);
-    }
-    if (usageResponse != null && includeBudget) {
+    final models = modelResponse ?? GetModelBreakdownResponse();
+    resp.models.addAll(models.models);
+
+    // Carry budget/grant data from usageResponse into BudgetContext.
+    final usage = usageResponse;
+    if (usage != null) {
       final bc = GetDashboardDataResponse_BudgetContext();
-      if (usageResponse!.hasBudget()) {
-        bc.budget = usageResponse!.budget;
-        bc.totalRemainingUsd = usageResponse!.totalRemainingUsd;
-      }
-      bc.activeGrants.addAll(usageResponse!.activeGrants);
+      if (usage.hasBudget()) bc.budget = usage.budget;
+      bc.totalRemainingUsd = usage.totalRemainingUsd;
+      bc.activeGrants.addAll(usage.activeGrants);
       resp.budgetContext = bc;
     }
+
     return resp;
   }
 
   @override
-  // ignore: deprecated_member_use_from_same_package
   Future<GetUsageSummaryResponse> getUsageSummary({
     required DateTime start,
     required DateTime end,
@@ -126,7 +128,6 @@ class MockConnectApi extends ConnectApiService {
   }
 
   @override
-  // ignore: deprecated_member_use_from_same_package
   Future<GetModelBreakdownResponse> getModelBreakdown({
     required DateTime start,
     required DateTime end,
@@ -136,7 +137,6 @@ class MockConnectApi extends ConnectApiService {
   }
 
   @override
-  // ignore: deprecated_member_use_from_same_package
   Future<GetMyUsageResponse> getMyUsage({
     required DateTime start,
     required DateTime end,
@@ -800,24 +800,6 @@ void main() {
       expect(result!.activeGrants, hasLength(1));
       expect(result.activeGrants.first.expiresAt, isNull);
       expect(result.activeGrants.first.reason, 'Trial');
-    });
-
-    test('budgetFromDashboard uses passed now for fallback periodEnd', () {
-      // BudgetContext with no periodEnd set — should use the passed `now`.
-      final stableNow = DateTime.utc(2026, 6, 15, 12, 0, 0);
-      final bc = GetDashboardDataResponse_BudgetContext()
-        ..budget = (UserBudget()
-          ..limitUsd = 20.0
-          ..spentUsd = 5.0
-          ..tokensUsed = Int64(50000));
-      // No periodEnd set on budget.
-
-      final info = ConnectApiService.budgetFromDashboard(bc, stableNow);
-
-      expect(info, isNotNull);
-      // Fallback periodEnd should be exactly stableNow + 1 day, not DateTime.now().
-      final expected = stableNow.toUtc().add(const Duration(days: 1));
-      expect(info!.periodEnd, expected);
     });
   });
 

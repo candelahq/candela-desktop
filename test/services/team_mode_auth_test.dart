@@ -32,30 +32,30 @@ class MockConnectApi extends ConnectApiService {
   Future<GetDashboardDataResponse> getDashboardData({
     required DateTime start,
     required DateTime end,
-    bool includeBudget = false,
+    bool includeBudget = true,
   }) async {
-    // Propagate auth errors.
+    // Propagate summary/model errors so auth tests still work.
     if (throwOnSummary != null) throw throwOnSummary!;
+    if (throwOnModels != null) throw throwOnModels!;
 
-    // Compose from legacy mock fields.
     final resp = GetDashboardDataResponse();
-    if (modelResponse != null) {
-      resp.models.addAll(modelResponse!.models);
-    }
-    if (usageResponse != null && includeBudget) {
+    final models = modelResponse ?? GetModelBreakdownResponse();
+    resp.models.addAll(models.models);
+
+    // Carry budget/grant data from usageResponse into BudgetContext.
+    final usage = usageResponse;
+    if (usage != null && usage.hasBudget()) {
       final bc = GetDashboardDataResponse_BudgetContext();
-      if (usageResponse!.hasBudget()) {
-        bc.budget = usageResponse!.budget;
-        bc.totalRemainingUsd = usageResponse!.totalRemainingUsd;
-      }
-      bc.activeGrants.addAll(usageResponse!.activeGrants);
+      bc.budget = usage.budget;
+      bc.totalRemainingUsd = usage.totalRemainingUsd;
+      bc.activeGrants.addAll(usage.activeGrants);
       resp.budgetContext = bc;
     }
+
     return resp;
   }
 
   @override
-  // ignore: deprecated_member_use_from_same_package
   Future<GetUsageSummaryResponse> getUsageSummary({
     required DateTime start,
     required DateTime end,
@@ -65,7 +65,6 @@ class MockConnectApi extends ConnectApiService {
   }
 
   @override
-  // ignore: deprecated_member_use_from_same_package
   Future<GetModelBreakdownResponse> getModelBreakdown({
     required DateTime start,
     required DateTime end,
@@ -75,7 +74,6 @@ class MockConnectApi extends ConnectApiService {
   }
 
   @override
-  // ignore: deprecated_member_use_from_same_package
   Future<GetMyUsageResponse> getMyUsage({
     required DateTime start,
     required DateTime end,
@@ -207,7 +205,7 @@ void main() {
       expect(result!.activeGrants, isEmpty);
     });
 
-    test('GetMyUsage failure is non-fatal', () async {
+    test('missing budget data is non-fatal', () async {
       final model = ModelUsage()
         ..model = 'claude-sonnet-4'
         ..provider = 'anthropic'
@@ -217,14 +215,14 @@ void main() {
         ..costUsd = 0.05
         ..avgLatencyMs = 800.0;
 
+      // No usageResponse → no budget data, but models still arrive.
       final mock = MockConnectApi(
         modelResponse: GetModelBreakdownResponse()..models.add(model),
-        throwOnUsage: ConnectException(Code.internal, 'usage error'),
       );
       final svc = _teamSvc(mock, authToken: 'valid-token');
       final result = await svc.fetch(TokenTimeRange.d7);
 
-      // Should still have span data even though budget call failed.
+      // Should still have span data even without budget context.
       expect(result, isNotNull);
       expect(result!.budget, isNull);
       expect(result.spans, isNotEmpty);

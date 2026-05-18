@@ -15,6 +15,16 @@ void main() {
       pm.dispose();
     });
 
+    test('notifyListeners is safe after dispose', () {
+      final pm = ProcessManager();
+      pm.configure(providerNames: ['ollama']);
+      pm.dispose();
+
+      // After dispose, notifyListeners should be a no-op (not throw).
+      // Calling configure after dispose exercises the override.
+      expect(() => pm.configure(providerNames: ['vllm']), returnsNormally);
+    });
+
     test('disposed ProcessManager does not notify after detectRunning',
         () async {
       final pm = ProcessManager();
@@ -23,13 +33,10 @@ void main() {
       var notifiedAfterDispose = false;
       pm.addListener(() => notifiedAfterDispose = true);
 
-      // Dispose before detectRunning completes — the _disposed guard
-      // should prevent notifyListeners() from being called.
       pm.dispose();
       notifiedAfterDispose = false;
 
       // detectRunning should complete without error even after dispose.
-      // The internal _disposed check prevents the post-detection notify.
       await pm.detectRunning();
       expect(notifiedAfterDispose, isFalse);
     });
@@ -50,8 +57,17 @@ void main() {
     test('dispose cleans up handles and timers without error', () {
       final pm = ProcessManager();
       pm.configure(providerNames: ['ollama', 'vllm', 'lmstudio']);
-      // Should not throw.
       pm.dispose();
+    });
+
+    test('stop after dispose does not crash', () async {
+      final pm = ProcessManager();
+      pm.configure(providerNames: ['ollama']);
+      pm.get('ollama')!.state = ProcessState.running;
+      pm.dispose();
+
+      // stop() calls notifyListeners — should be safe after dispose.
+      await expectLater(pm.stop('ollama'), completes);
     });
   });
 
@@ -61,19 +77,24 @@ void main() {
       var count = 0;
       svc.addListener(() => count++);
 
-      // checkForUpdate will fail fast (no network in tests) but
-      // should still trigger a status change to 'checking'.
       svc.checkForUpdate('0.1.0');
 
-      // The status should have changed at least once (to checking).
       expect(count, greaterThanOrEqualTo(1));
       expect(svc.status, UpdateStatus.checking);
       svc.dispose();
     });
 
+    test('notifyListeners is safe after dispose', () {
+      final svc = UpdateService();
+      svc.dispose();
+
+      // checkForUpdate calls _setStatus which calls notifyListeners.
+      // After dispose, this should not throw.
+      expect(() => svc.checkForUpdate('0.1.0'), returnsNormally);
+    });
+
     test('dispose does not throw', () {
       final svc = UpdateService();
-      // Should not throw.
       svc.dispose();
     });
 
@@ -95,6 +116,17 @@ void main() {
         expect(svc.updateInstructions(channel), isNotEmpty);
       }
       svc.dispose();
+    });
+
+    test('concurrent checkForUpdate calls do not crash after dispose',
+        () async {
+      final svc = UpdateService();
+      // Start an async operation, then immediately dispose.
+      final future = svc.checkForUpdate('0.1.0');
+      svc.dispose();
+
+      // The future should complete without throwing.
+      await expectLater(future, completes);
     });
   });
 }

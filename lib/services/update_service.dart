@@ -44,6 +44,13 @@ class UpdateService extends ChangeNotifier {
   String? _latestVersion;
   InstallChannel? _cachedChannel;
   UpdateStatus _status = UpdateStatus.idle;
+  bool _disposed = false;
+
+  /// Safe notification — prevents crashes if called after [dispose].
+  @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
+  }
 
   void _setStatus(UpdateStatus s) {
     if (_status != s) {
@@ -206,6 +213,7 @@ class UpdateService extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     _client.close();
     super.dispose();
   }

@@ -59,6 +59,12 @@ class ProcessManager extends ChangeNotifier {
   final _client = http.Client();
   bool _disposed = false;
 
+  /// Safe notification — prevents crashes if called after [dispose].
+  @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
+  }
+
   /// Configure which processes to manage based on the providers list.
   /// Always includes proxy. Adds any local providers found in the list.
   void configure({
@@ -173,7 +179,6 @@ class ProcessManager extends ChangeNotifier {
         p.state = ProcessState.stopped;
       }
     }
-    if (_disposed) return;
     notifyListeners();
   }
 

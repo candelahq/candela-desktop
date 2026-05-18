@@ -22,7 +22,7 @@ import '../../providers.dart';
 /// • **Team mode** (`config.remote` set) → ConnectRPC backend, gcloud token.
 /// • **Local mode** → `/_local/api/traces` on the sidecar.
 ///
-/// Uses the shared [DashboardNotifier] from [dashboardNotifierProvider] so
+/// Uses the shared [DashboardNotifier] from [dashboardProvider] so
 /// that all screens share a single polling timer and response cache.
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -80,7 +80,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final notifier = ref.watch(dashboardNotifierProvider);
+    final notifier = ref.watch(dashboardProvider);
     final state = notifier.state;
 
     // Update filtered summary when notifier data changes.

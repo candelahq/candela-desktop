@@ -102,6 +102,78 @@ final class ConfigProvider extends $FunctionalProvider<
 
 String _$configHash() => r'1dc24e74f7dee07e7658c47f6de79ed8fb4ac5e0';
 
+/// Shared [DashboardNotifier] — the single source of truth for telemetry data.
+///
+/// Both DashboardScreen and TodayScreen consume this provider instead of each
+/// maintaining their own [TelemetryService] and 30-second timer. This cuts
+/// BigQuery queries by 50% and enables TTL-based caching + visibility-aware
+/// polling.
+///
+/// The notifier is lazily configured on first read using the current config,
+/// then re-configured automatically when the config file changes.
+
+@ProviderFor(dashboardNotifier)
+final dashboardProvider = DashboardNotifierProvider._();
+
+/// Shared [DashboardNotifier] — the single source of truth for telemetry data.
+///
+/// Both DashboardScreen and TodayScreen consume this provider instead of each
+/// maintaining their own [TelemetryService] and 30-second timer. This cuts
+/// BigQuery queries by 50% and enables TTL-based caching + visibility-aware
+/// polling.
+///
+/// The notifier is lazily configured on first read using the current config,
+/// then re-configured automatically when the config file changes.
+
+final class DashboardNotifierProvider extends $FunctionalProvider<
+    DashboardNotifier,
+    DashboardNotifier,
+    DashboardNotifier> with $Provider<DashboardNotifier> {
+  /// Shared [DashboardNotifier] — the single source of truth for telemetry data.
+  ///
+  /// Both DashboardScreen and TodayScreen consume this provider instead of each
+  /// maintaining their own [TelemetryService] and 30-second timer. This cuts
+  /// BigQuery queries by 50% and enables TTL-based caching + visibility-aware
+  /// polling.
+  ///
+  /// The notifier is lazily configured on first read using the current config,
+  /// then re-configured automatically when the config file changes.
+  DashboardNotifierProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'dashboardProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$dashboardNotifierHash();
+
+  @$internal
+  @override
+  $ProviderElement<DashboardNotifier> $createElement(
+          $ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  DashboardNotifier create(Ref ref) {
+    return dashboardNotifier(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(DashboardNotifier value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<DashboardNotifier>(value),
+    );
+  }
+}
+
+String _$dashboardNotifierHash() => r'6f0c6122468e6eb4eea6cef29d799431153961ea';
+
 /// The singleton ProcessManager, auto-configured when config changes.
 
 @ProviderFor(processManager)

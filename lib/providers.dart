@@ -57,8 +57,8 @@ Stream<CandelaConfig> _configStream(ConfigService service) async* {
 ///
 /// The notifier is lazily configured on first read using the current config,
 /// then re-configured automatically when the config file changes.
-final dashboardNotifierProvider =
-    ChangeNotifierProvider<DashboardNotifier>((ref) {
+@Riverpod(keepAlive: true)
+DashboardNotifier dashboardNotifier(Ref ref) {
   final notifier = DashboardNotifier();
 
   // Configure and start polling when config becomes available.
@@ -76,8 +76,9 @@ final dashboardNotifierProvider =
     next.whenData(configureAndPoll);
   });
 
+  ref.onDispose(() => notifier.dispose());
   return notifier;
-});
+}
 
 // ── Process Manager ─────────────────────────────────────────────────────────
 

@@ -14,7 +14,7 @@ import '../../widgets/model_selector_dropdown.dart';
 /// Full-page "Today" view — shows daily budget, grants, remaining balance,
 /// and today's spend at a glance.
 ///
-/// Uses the shared [DashboardNotifier] from [dashboardNotifierProvider] so
+/// Uses the shared [DashboardNotifier] from [dashboardProvider] so
 /// that all screens share a single polling timer and response cache.
 /// Filters the cached spans to today's UTC window client-side.
 class TodayScreen extends ConsumerStatefulWidget {
@@ -92,7 +92,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final notifier = ref.watch(dashboardNotifierProvider);
+    final notifier = ref.watch(dashboardProvider);
     final state = notifier.state;
     final summary = _buildTodaySummary(notifier);
     final error = _errorMessage(state);

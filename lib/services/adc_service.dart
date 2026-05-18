@@ -79,7 +79,6 @@ class AdcService {
         email: email,
         accessToken: accessToken,
         expiresAt: expiresAt,
-        isValid: true,
       );
     } catch (_) {
       return null;

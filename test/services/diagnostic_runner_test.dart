@@ -76,14 +76,12 @@ TokenInfo _validToken() => TokenInfo(
       accessToken: 'fake-token-abc',
       email: 'user@example.com',
       expiresAt: DateTime.now().toUtc().add(const Duration(hours: 1)),
-      isValid: true,
     );
 
 TokenInfo _expiredToken() => TokenInfo(
       accessToken: 'old-token',
       email: 'user@example.com',
       expiresAt: DateTime.now().toUtc().subtract(const Duration(hours: 1)),
-      isValid: false,
     );
 
 // Helper: build a runner with all parts controllable.

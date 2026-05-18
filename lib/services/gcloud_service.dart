@@ -248,7 +248,6 @@ class GCloudService {
             email: email,
             accessToken: token,
             expiresAt: expiresAt,
-            isValid: expiresAt.isAfter(DateTime.now().toUtc()),
           );
         }
       } catch (_) {
@@ -263,7 +262,6 @@ class GCloudService {
     return TokenInfo(
       accessToken: token,
       expiresAt: expiresAt,
-      isValid: expiresAt.isAfter(DateTime.now().toUtc()),
     );
   }
 

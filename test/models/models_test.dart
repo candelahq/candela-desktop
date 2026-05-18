@@ -42,7 +42,6 @@ void main() {
     test('expiryDisplay shows Expired for past tokens', () {
       final token = TokenInfo(
         expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
-        isValid: false,
       );
       expect(token.expiryDisplay, 'Expired');
     });
@@ -50,7 +49,6 @@ void main() {
     test('expiryDisplay shows < 1 min for nearly-expired tokens', () {
       final token = TokenInfo(
         expiresAt: DateTime.now().add(const Duration(seconds: 30)),
-        isValid: true,
       );
       expect(token.expiryDisplay, '< 1 min');
     });
@@ -58,7 +56,6 @@ void main() {
     test('expiryDisplay shows minutes for mid-range tokens', () {
       final token = TokenInfo(
         expiresAt: DateTime.now().add(const Duration(minutes: 45)),
-        isValid: true,
       );
       // Might be 44 or 45 due to execution time.
       expect(token.expiryDisplay, matches(RegExp(r'^\d+ min$')));
@@ -67,7 +64,6 @@ void main() {
     test('expiryDisplay shows hours for long-lived tokens', () {
       final token = TokenInfo(
         expiresAt: DateTime.now().add(const Duration(hours: 2, minutes: 15)),
-        isValid: true,
       );
       expect(token.expiryDisplay, contains('2h'));
     });
@@ -84,7 +80,6 @@ void main() {
         email: 'test@example.com',
         tokenInfo: TokenInfo(
           expiresAt: DateTime.now().add(const Duration(hours: 1)),
-          isValid: true,
         ),
       );
       expect(state.isAuthenticated, isTrue);
@@ -193,7 +188,6 @@ void main() {
     test('expiryDisplay shows hours and minutes format', () {
       final token = TokenInfo(
         expiresAt: DateTime.now().add(const Duration(hours: 3, minutes: 42)),
-        isValid: true,
       );
       // Account for test execution time — minutes could be 41 or 42.
       expect(token.expiryDisplay, contains('3h'));

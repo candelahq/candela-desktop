@@ -75,14 +75,16 @@ class TokenInfo {
   final String? email;
   final String? accessToken;
   final DateTime expiresAt;
-  final bool isValid;
 
   const TokenInfo({
     this.email,
     this.accessToken,
     required this.expiresAt,
-    required this.isValid,
   });
+
+  /// Dynamic validity check — avoids stale state when the object is held
+  /// in memory past its expiry time.
+  bool get isValid => expiresAt.isAfter(DateTime.now().toUtc());
 
   Duration get timeRemaining => expiresAt.difference(DateTime.now());
 

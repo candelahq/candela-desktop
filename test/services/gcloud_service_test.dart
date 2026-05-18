@@ -143,5 +143,16 @@ void main() {
       final token = service.getTokenInfoForTest(fakeToken);
       expect(token!.email, isNull);
     });
+
+    // ── ADC lifetime fix: opaque token fallback now uses 60-min estimate ──
+
+    test('opaque token fallback uses ~60-minute TTL (not 15 min)', () {
+      final token = service.getTokenInfoForTest('ya29.opaque-access-token');
+      expect(token, isNotNull);
+      expect(token!.isValid, isTrue);
+      // Should be close to 60 minutes, not 15.
+      expect(token.timeRemaining.inMinutes, greaterThanOrEqualTo(58));
+      expect(token.timeRemaining.inMinutes, lessThanOrEqualTo(60));
+    });
   });
 }

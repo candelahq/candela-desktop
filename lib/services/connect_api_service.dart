@@ -100,12 +100,29 @@ class ConnectApiService {
   }
 
   /// Fetch the current user's personal usage (budget, grants, models).
+  @Deprecated('Use getDashboardData instead')
   Future<GetMyUsageResponse> getMyUsage({
     required DateTime start,
     required DateTime end,
   }) {
     final req = GetMyUsageRequest()..timeRange = _makeTimeRange(start, end);
     return _dashboard.getMyUsage(req, headers: _headers);
+  }
+
+  /// Fetch a consolidated dashboard snapshot: usage summary, model breakdown,
+  /// and (optionally) budget context — all in a single RPC round-trip.
+  ///
+  /// Replaces the concurrent fan-out of [getUsageSummary] +
+  /// [getModelBreakdown] + [getMyUsage].
+  Future<GetDashboardDataResponse> getDashboardData({
+    required DateTime start,
+    required DateTime end,
+    bool includeBudget = true,
+  }) {
+    final req = GetDashboardDataRequest()
+      ..timeRange = _makeTimeRange(start, end)
+      ..includeBudget = includeBudget;
+    return _dashboard.getDashboardData(req, headers: _headers);
   }
 
   // ── Domain conversions ───────────────────────────────────────────────────
@@ -165,8 +182,37 @@ class ConnectApiService {
     );
   }
 
+  /// Convert proto [GetDashboardDataResponse] → domain [BudgetInfo].
+  static BudgetInfo? budgetFromDashboard(GetDashboardDataResponse resp) {
+    if (!resp.hasBudget()) return null;
+    final b = resp.budget;
+    return BudgetInfo(
+      limitUsd: b.limitUsd,
+      spentUsd: b.spentUsd,
+      tokensUsed: b.tokensUsed.toInt(),
+      period: BudgetPeriodKind.daily,
+      periodEnd: b.hasPeriodEnd()
+          ? _fromTimestamp(b.periodEnd)
+          : DateTime.now().toUtc().add(const Duration(days: 1)),
+    );
+  }
+
   /// Convert proto [BudgetGrant] list → domain [GrantInfo] list.
   static List<GrantInfo> grantsFromProto(GetMyUsageResponse resp) {
+    return resp.activeGrants.map((g) {
+      return GrantInfo(
+        id: g.id,
+        amountUsd: g.amountUsd,
+        spentUsd: g.spentUsd,
+        reason: g.reason,
+        grantedBy: g.grantedBy,
+        expiresAt: g.hasExpiresAt() ? _fromTimestamp(g.expiresAt) : null,
+      );
+    }).toList();
+  }
+
+  /// Convert grants from [GetDashboardDataResponse] → domain [GrantInfo] list.
+  static List<GrantInfo> grantsFromDashboard(GetDashboardDataResponse resp) {
     return resp.activeGrants.map((g) {
       return GrantInfo(
         id: g.id,

@@ -10,7 +10,29 @@ import "dashboard_service.connect.spec.dart" as specs;
 /// DashboardService provides aggregated metrics and usage data.
 /// Exposed via ConnectRPC for the web UI dashboards.
 extension type DashboardServiceClient(connect.Transport _transport) {
-  /// GetUsageSummary returns aggregated token usage, cost, and request counts.
+  /// GetDashboardData returns a consolidated dashboard view including usage
+  /// summary, per-model breakdown, and (if authenticated) per-user budget
+  /// context. Replaces the concurrent fan-out of GetUsageSummary +
+  /// GetModelBreakdown + GetMyUsage with a single round-trip.
+  Future<candelav1dashboard_service.GetDashboardDataResponse> getDashboardData(
+    candelav1dashboard_service.GetDashboardDataRequest input, {
+    connect.Headers? headers,
+    connect.AbortSignal? signal,
+    Function(connect.Headers)? onHeader,
+    Function(connect.Headers)? onTrailer,
+  }) {
+    return connect.Client(_transport).unary(
+      specs.DashboardService.getDashboardData,
+      input,
+      signal: signal,
+      headers: headers,
+      onHeader: onHeader,
+      onTrailer: onTrailer,
+    );
+  }
+
+  /// Deprecated: use GetDashboardData instead.
+  @deprecated
   Future<candelav1dashboard_service.GetUsageSummaryResponse> getUsageSummary(
     candelav1dashboard_service.GetUsageSummaryRequest input, {
     connect.Headers? headers,
@@ -28,7 +50,8 @@ extension type DashboardServiceClient(connect.Transport _transport) {
     );
   }
 
-  /// GetModelBreakdown returns usage broken down by model.
+  /// Deprecated: use GetDashboardData instead.
+  @deprecated
   Future<candelav1dashboard_service.GetModelBreakdownResponse>
       getModelBreakdown(
     candelav1dashboard_service.GetModelBreakdownRequest input, {
@@ -66,8 +89,9 @@ extension type DashboardServiceClient(connect.Transport _transport) {
     );
   }
 
-  /// GetMyUsage returns the calling user's personal usage summary (BigQuery).
+  /// Deprecated: use GetDashboardData with include_budget=true instead.
   /// For real-time budget/grant progress, see UserService.GetMyBudget.
+  @deprecated
   Future<candelav1dashboard_service.GetMyUsageResponse> getMyUsage(
     candelav1dashboard_service.GetMyUsageRequest input, {
     connect.Headers? headers,

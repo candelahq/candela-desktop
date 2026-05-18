@@ -29,6 +29,33 @@ class MockConnectApi extends ConnectApiService {
   }) : super(baseUrl: 'http://test', authToken: null);
 
   @override
+  Future<GetDashboardDataResponse> getDashboardData({
+    required DateTime start,
+    required DateTime end,
+    bool includeBudget = true,
+  }) async {
+    // Propagate summary/model errors so auth tests still work.
+    if (throwOnSummary != null) throw throwOnSummary!;
+    if (throwOnModels != null) throw throwOnModels!;
+
+    final resp = GetDashboardDataResponse();
+    final models = modelResponse ?? GetModelBreakdownResponse();
+    resp.models.addAll(models.models);
+
+    // Carry budget/grant data from usageResponse if present.
+    // Note: throwOnUsage is NOT propagated here — budget parsing failures
+    // are non-fatal in the consolidated path (handled in _fetchDashboardData).
+    final usage = usageResponse;
+    if (usage != null) {
+      if (usage.hasBudget()) resp.budget = usage.budget;
+      resp.totalRemainingUsd = usage.totalRemainingUsd;
+      resp.activeGrants.addAll(usage.activeGrants);
+    }
+
+    return resp;
+  }
+
+  @override
   Future<GetUsageSummaryResponse> getUsageSummary({
     required DateTime start,
     required DateTime end,
@@ -178,7 +205,7 @@ void main() {
       expect(result!.activeGrants, isEmpty);
     });
 
-    test('GetMyUsage failure is non-fatal', () async {
+    test('missing budget data is non-fatal', () async {
       final model = ModelUsage()
         ..model = 'claude-sonnet-4'
         ..provider = 'anthropic'
@@ -188,14 +215,14 @@ void main() {
         ..costUsd = 0.05
         ..avgLatencyMs = 800.0;
 
+      // No usageResponse → no budget data, but models still arrive.
       final mock = MockConnectApi(
         modelResponse: GetModelBreakdownResponse()..models.add(model),
-        throwOnUsage: ConnectException(Code.internal, 'usage error'),
       );
       final svc = _teamSvc(mock, authToken: 'valid-token');
       final result = await svc.fetch(TokenTimeRange.d7);
 
-      // Should still have span data even though budget call failed.
+      // Should still have span data even without budget context.
       expect(result, isNotNull);
       expect(result!.budget, isNull);
       expect(result.spans, isNotEmpty);

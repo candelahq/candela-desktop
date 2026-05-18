@@ -21,6 +21,8 @@ import 'dashboard_service.pbjson.dart';
 export 'dashboard_service.pb.dart';
 
 abstract class DashboardServiceBase extends $pb.GeneratedService {
+  $async.Future<$8.GetDashboardDataResponse> getDashboardData(
+      $pb.ServerContext ctx, $8.GetDashboardDataRequest request);
   $async.Future<$8.GetUsageSummaryResponse> getUsageSummary(
       $pb.ServerContext ctx, $8.GetUsageSummaryRequest request);
   $async.Future<$8.GetModelBreakdownResponse> getModelBreakdown(
@@ -36,6 +38,8 @@ abstract class DashboardServiceBase extends $pb.GeneratedService {
 
   $pb.GeneratedMessage createRequest($core.String methodName) {
     switch (methodName) {
+      case 'GetDashboardData':
+        return $8.GetDashboardDataRequest();
       case 'GetUsageSummary':
         return $8.GetUsageSummaryRequest();
       case 'GetModelBreakdown':
@@ -56,6 +60,9 @@ abstract class DashboardServiceBase extends $pb.GeneratedService {
   $async.Future<$pb.GeneratedMessage> handleCall($pb.ServerContext ctx,
       $core.String methodName, $pb.GeneratedMessage request) {
     switch (methodName) {
+      case 'GetDashboardData':
+        return this
+            .getDashboardData(ctx, request as $8.GetDashboardDataRequest);
       case 'GetUsageSummary':
         return this.getUsageSummary(ctx, request as $8.GetUsageSummaryRequest);
       case 'GetModelBreakdown':

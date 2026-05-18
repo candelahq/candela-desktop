@@ -126,9 +126,15 @@ class GetUsageSummaryResponse extends $pb.GeneratedMessage {
     $core.double? totalCostUsd,
     $core.double? avgLatencyMs,
     $core.double? errorRate,
+    $fixnum.Int64? totalCacheReadTokens,
+    $fixnum.Int64? totalCacheCreationTokens,
     $core.Iterable<TimeSeriesPoint>? tracesOverTime,
     $core.Iterable<TimeSeriesPoint>? costOverTime,
     $core.Iterable<TimeSeriesPoint>? tokensOverTime,
+    $core.Iterable<TimeSeriesPoint>? cacheReadTokensOverTime,
+    $core.Iterable<TimeSeriesPoint>? cacheCreationTokensOverTime,
+    $core.Iterable<TimeSeriesPoint>? inputTokensOverTime,
+    $core.Iterable<TimeSeriesPoint>? outputTokensOverTime,
   }) {
     final $result = create();
     if (totalTraces != null) {
@@ -155,6 +161,12 @@ class GetUsageSummaryResponse extends $pb.GeneratedMessage {
     if (errorRate != null) {
       $result.errorRate = errorRate;
     }
+    if (totalCacheReadTokens != null) {
+      $result.totalCacheReadTokens = totalCacheReadTokens;
+    }
+    if (totalCacheCreationTokens != null) {
+      $result.totalCacheCreationTokens = totalCacheCreationTokens;
+    }
     if (tracesOverTime != null) {
       $result.tracesOverTime.addAll(tracesOverTime);
     }
@@ -163,6 +175,18 @@ class GetUsageSummaryResponse extends $pb.GeneratedMessage {
     }
     if (tokensOverTime != null) {
       $result.tokensOverTime.addAll(tokensOverTime);
+    }
+    if (cacheReadTokensOverTime != null) {
+      $result.cacheReadTokensOverTime.addAll(cacheReadTokensOverTime);
+    }
+    if (cacheCreationTokensOverTime != null) {
+      $result.cacheCreationTokensOverTime.addAll(cacheCreationTokensOverTime);
+    }
+    if (inputTokensOverTime != null) {
+      $result.inputTokensOverTime.addAll(inputTokensOverTime);
+    }
+    if (outputTokensOverTime != null) {
+      $result.outputTokensOverTime.addAll(outputTokensOverTime);
     }
     return $result;
   }
@@ -188,6 +212,8 @@ class GetUsageSummaryResponse extends $pb.GeneratedMessage {
     ..a<$core.double>(
         7, _omitFieldNames ? '' : 'avgLatencyMs', $pb.PbFieldType.OD)
     ..a<$core.double>(8, _omitFieldNames ? '' : 'errorRate', $pb.PbFieldType.OD)
+    ..aInt64(9, _omitFieldNames ? '' : 'totalCacheReadTokens')
+    ..aInt64(10, _omitFieldNames ? '' : 'totalCacheCreationTokens')
     ..pc<TimeSeriesPoint>(
         20, _omitFieldNames ? '' : 'tracesOverTime', $pb.PbFieldType.PM,
         subBuilder: TimeSeriesPoint.create)
@@ -196,6 +222,20 @@ class GetUsageSummaryResponse extends $pb.GeneratedMessage {
         subBuilder: TimeSeriesPoint.create)
     ..pc<TimeSeriesPoint>(
         22, _omitFieldNames ? '' : 'tokensOverTime', $pb.PbFieldType.PM,
+        subBuilder: TimeSeriesPoint.create)
+    ..pc<TimeSeriesPoint>(23, _omitFieldNames ? '' : 'cacheReadTokensOverTime',
+        $pb.PbFieldType.PM,
+        subBuilder: TimeSeriesPoint.create)
+    ..pc<TimeSeriesPoint>(
+        24,
+        _omitFieldNames ? '' : 'cacheCreationTokensOverTime',
+        $pb.PbFieldType.PM,
+        subBuilder: TimeSeriesPoint.create)
+    ..pc<TimeSeriesPoint>(
+        25, _omitFieldNames ? '' : 'inputTokensOverTime', $pb.PbFieldType.PM,
+        subBuilder: TimeSeriesPoint.create)
+    ..pc<TimeSeriesPoint>(
+        26, _omitFieldNames ? '' : 'outputTokensOverTime', $pb.PbFieldType.PM,
         subBuilder: TimeSeriesPoint.create)
     ..hasRequiredFields = false;
 
@@ -316,15 +356,53 @@ class GetUsageSummaryResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(8)
   void clearErrorRate() => $_clearField(8);
 
+  /// Cache metrics — these fields are subsets of total_input_tokens.
+  /// Cache hit rate = cache_read_tokens / input_tokens (excludes output tokens).
+  @$pb.TagNumber(9)
+  $fixnum.Int64 get totalCacheReadTokens => $_getI64(8);
+  @$pb.TagNumber(9)
+  set totalCacheReadTokens($fixnum.Int64 v) {
+    $_setInt64(8, v);
+  }
+
+  @$pb.TagNumber(9)
+  $core.bool hasTotalCacheReadTokens() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearTotalCacheReadTokens() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $fixnum.Int64 get totalCacheCreationTokens => $_getI64(9);
+  @$pb.TagNumber(10)
+  set totalCacheCreationTokens($fixnum.Int64 v) {
+    $_setInt64(9, v);
+  }
+
+  @$pb.TagNumber(10)
+  $core.bool hasTotalCacheCreationTokens() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearTotalCacheCreationTokens() => $_clearField(10);
+
   /// Time series for charts
   @$pb.TagNumber(20)
-  $pb.PbList<TimeSeriesPoint> get tracesOverTime => $_getList(8);
+  $pb.PbList<TimeSeriesPoint> get tracesOverTime => $_getList(10);
 
   @$pb.TagNumber(21)
-  $pb.PbList<TimeSeriesPoint> get costOverTime => $_getList(9);
+  $pb.PbList<TimeSeriesPoint> get costOverTime => $_getList(11);
 
   @$pb.TagNumber(22)
-  $pb.PbList<TimeSeriesPoint> get tokensOverTime => $_getList(10);
+  $pb.PbList<TimeSeriesPoint> get tokensOverTime => $_getList(12);
+
+  @$pb.TagNumber(23)
+  $pb.PbList<TimeSeriesPoint> get cacheReadTokensOverTime => $_getList(13);
+
+  @$pb.TagNumber(24)
+  $pb.PbList<TimeSeriesPoint> get cacheCreationTokensOverTime => $_getList(14);
+
+  @$pb.TagNumber(25)
+  $pb.PbList<TimeSeriesPoint> get inputTokensOverTime => $_getList(15);
+
+  @$pb.TagNumber(26)
+  $pb.PbList<TimeSeriesPoint> get outputTokensOverTime => $_getList(16);
 }
 
 class TimeSeriesPoint extends $pb.GeneratedMessage {
@@ -540,6 +618,8 @@ class ModelUsage extends $pb.GeneratedMessage {
     $fixnum.Int64? outputTokens,
     $core.double? costUsd,
     $core.double? avgLatencyMs,
+    $fixnum.Int64? cacheReadTokens,
+    $fixnum.Int64? cacheCreationTokens,
   }) {
     final $result = create();
     if (model != null) {
@@ -563,6 +643,12 @@ class ModelUsage extends $pb.GeneratedMessage {
     if (avgLatencyMs != null) {
       $result.avgLatencyMs = avgLatencyMs;
     }
+    if (cacheReadTokens != null) {
+      $result.cacheReadTokens = cacheReadTokens;
+    }
+    if (cacheCreationTokens != null) {
+      $result.cacheCreationTokens = cacheCreationTokens;
+    }
     return $result;
   }
   ModelUsage._() : super();
@@ -585,6 +671,8 @@ class ModelUsage extends $pb.GeneratedMessage {
     ..a<$core.double>(6, _omitFieldNames ? '' : 'costUsd', $pb.PbFieldType.OD)
     ..a<$core.double>(
         7, _omitFieldNames ? '' : 'avgLatencyMs', $pb.PbFieldType.OD)
+    ..aInt64(8, _omitFieldNames ? '' : 'cacheReadTokens')
+    ..aInt64(9, _omitFieldNames ? '' : 'cacheCreationTokens')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -687,6 +775,32 @@ class ModelUsage extends $pb.GeneratedMessage {
   $core.bool hasAvgLatencyMs() => $_has(6);
   @$pb.TagNumber(7)
   void clearAvgLatencyMs() => $_clearField(7);
+
+  /// Cache metrics per model — subset of input_tokens.
+  /// Cache hit rate = cache_read_tokens / input_tokens.
+  @$pb.TagNumber(8)
+  $fixnum.Int64 get cacheReadTokens => $_getI64(7);
+  @$pb.TagNumber(8)
+  set cacheReadTokens($fixnum.Int64 v) {
+    $_setInt64(7, v);
+  }
+
+  @$pb.TagNumber(8)
+  $core.bool hasCacheReadTokens() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearCacheReadTokens() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $fixnum.Int64 get cacheCreationTokens => $_getI64(8);
+  @$pb.TagNumber(9)
+  set cacheCreationTokens($fixnum.Int64 v) {
+    $_setInt64(8, v);
+  }
+
+  @$pb.TagNumber(9)
+  $core.bool hasCacheCreationTokens() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearCacheCreationTokens() => $_clearField(9);
 }
 
 class GetLatencyPercentilesRequest extends $pb.GeneratedMessage {
@@ -993,6 +1107,8 @@ class GetMyUsageResponse extends $pb.GeneratedMessage {
     $fixnum.Int64? totalOutputTokens,
     $core.double? totalCostUsd,
     $core.double? avgLatencyMs,
+    $fixnum.Int64? totalCacheReadTokens,
+    $fixnum.Int64? totalCacheCreationTokens,
     $core.Iterable<ModelUsage>? models,
     $7.UserBudget? budget,
     $core.double? totalRemainingUsd,
@@ -1013,6 +1129,12 @@ class GetMyUsageResponse extends $pb.GeneratedMessage {
     }
     if (avgLatencyMs != null) {
       $result.avgLatencyMs = avgLatencyMs;
+    }
+    if (totalCacheReadTokens != null) {
+      $result.totalCacheReadTokens = totalCacheReadTokens;
+    }
+    if (totalCacheCreationTokens != null) {
+      $result.totalCacheCreationTokens = totalCacheCreationTokens;
     }
     if (models != null) {
       $result.models.addAll(models);
@@ -1047,6 +1169,8 @@ class GetMyUsageResponse extends $pb.GeneratedMessage {
         4, _omitFieldNames ? '' : 'totalCostUsd', $pb.PbFieldType.OD)
     ..a<$core.double>(
         5, _omitFieldNames ? '' : 'avgLatencyMs', $pb.PbFieldType.OD)
+    ..aInt64(6, _omitFieldNames ? '' : 'totalCacheReadTokens')
+    ..aInt64(7, _omitFieldNames ? '' : 'totalCacheCreationTokens')
     ..pc<ModelUsage>(10, _omitFieldNames ? '' : 'models', $pb.PbFieldType.PM,
         subBuilder: ModelUsage.create)
     ..aOM<$7.UserBudget>(20, _omitFieldNames ? '' : 'budget',
@@ -1137,40 +1261,65 @@ class GetMyUsageResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   void clearAvgLatencyMs() => $_clearField(5);
 
+  /// Cache metrics — subset of total_input_tokens.
+  @$pb.TagNumber(6)
+  $fixnum.Int64 get totalCacheReadTokens => $_getI64(5);
+  @$pb.TagNumber(6)
+  set totalCacheReadTokens($fixnum.Int64 v) {
+    $_setInt64(5, v);
+  }
+
+  @$pb.TagNumber(6)
+  $core.bool hasTotalCacheReadTokens() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearTotalCacheReadTokens() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $fixnum.Int64 get totalCacheCreationTokens => $_getI64(6);
+  @$pb.TagNumber(7)
+  set totalCacheCreationTokens($fixnum.Int64 v) {
+    $_setInt64(6, v);
+  }
+
+  @$pb.TagNumber(7)
+  $core.bool hasTotalCacheCreationTokens() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearTotalCacheCreationTokens() => $_clearField(7);
+
   /// Per-model breakdown for this user
   @$pb.TagNumber(10)
-  $pb.PbList<ModelUsage> get models => $_getList(5);
+  $pb.PbList<ModelUsage> get models => $_getList(7);
 
   /// Budget context
   @$pb.TagNumber(20)
-  $7.UserBudget get budget => $_getN(6);
+  $7.UserBudget get budget => $_getN(8);
   @$pb.TagNumber(20)
   set budget($7.UserBudget v) {
     $_setField(20, v);
   }
 
   @$pb.TagNumber(20)
-  $core.bool hasBudget() => $_has(6);
+  $core.bool hasBudget() => $_has(8);
   @$pb.TagNumber(20)
   void clearBudget() => $_clearField(20);
   @$pb.TagNumber(20)
-  $7.UserBudget ensureBudget() => $_ensure(6);
+  $7.UserBudget ensureBudget() => $_ensure(8);
 
   @$pb.TagNumber(21)
-  $core.double get totalRemainingUsd => $_getN(7);
+  $core.double get totalRemainingUsd => $_getN(9);
   @$pb.TagNumber(21)
   set totalRemainingUsd($core.double v) {
-    $_setDouble(7, v);
+    $_setDouble(9, v);
   }
 
   @$pb.TagNumber(21)
-  $core.bool hasTotalRemainingUsd() => $_has(7);
+  $core.bool hasTotalRemainingUsd() => $_has(9);
   @$pb.TagNumber(21)
   void clearTotalRemainingUsd() => $_clearField(21);
 
   /// Active grants
   @$pb.TagNumber(22)
-  $pb.PbList<$7.BudgetGrant> get activeGrants => $_getList(8);
+  $pb.PbList<$7.BudgetGrant> get activeGrants => $_getList(10);
 }
 
 class GetTeamLeaderboardRequest extends $pb.GeneratedMessage {
@@ -1784,19 +1933,493 @@ class JobUsage extends $pb.GeneratedMessage {
   void clearTopModel() => $_clearField(6);
 }
 
+class GetDashboardDataRequest extends $pb.GeneratedMessage {
+  factory GetDashboardDataRequest({
+    $core.String? projectId,
+    $4.TimeRange? timeRange,
+    $core.String? environment,
+    $core.bool? includeBudget,
+  }) {
+    final $result = create();
+    if (projectId != null) {
+      $result.projectId = projectId;
+    }
+    if (timeRange != null) {
+      $result.timeRange = timeRange;
+    }
+    if (environment != null) {
+      $result.environment = environment;
+    }
+    if (includeBudget != null) {
+      $result.includeBudget = includeBudget;
+    }
+    return $result;
+  }
+  GetDashboardDataRequest._() : super();
+  factory GetDashboardDataRequest.fromBuffer($core.List<$core.int> i,
+          [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(i, r);
+  factory GetDashboardDataRequest.fromJson($core.String i,
+          [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetDashboardDataRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'candela.v1'),
+      createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'projectId')
+    ..aOM<$4.TimeRange>(2, _omitFieldNames ? '' : 'timeRange',
+        subBuilder: $4.TimeRange.create)
+    ..aOS(3, _omitFieldNames ? '' : 'environment')
+    ..aOB(4, _omitFieldNames ? '' : 'includeBudget')
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetDashboardDataRequest clone() =>
+      GetDashboardDataRequest()..mergeFromMessage(this);
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetDashboardDataRequest copyWith(
+          void Function(GetDashboardDataRequest) updates) =>
+      super.copyWith((message) => updates(message as GetDashboardDataRequest))
+          as GetDashboardDataRequest;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static GetDashboardDataRequest create() => GetDashboardDataRequest._();
+  GetDashboardDataRequest createEmptyInstance() => create();
+  static $pb.PbList<GetDashboardDataRequest> createRepeated() =>
+      $pb.PbList<GetDashboardDataRequest>();
+  @$core.pragma('dart2js:noInline')
+  static GetDashboardDataRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetDashboardDataRequest>(create);
+  static GetDashboardDataRequest? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.String get projectId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set projectId($core.String v) {
+    $_setString(0, v);
+  }
+
+  @$pb.TagNumber(1)
+  $core.bool hasProjectId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearProjectId() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $4.TimeRange get timeRange => $_getN(1);
+  @$pb.TagNumber(2)
+  set timeRange($4.TimeRange v) {
+    $_setField(2, v);
+  }
+
+  @$pb.TagNumber(2)
+  $core.bool hasTimeRange() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearTimeRange() => $_clearField(2);
+  @$pb.TagNumber(2)
+  $4.TimeRange ensureTimeRange() => $_ensure(1);
+
+  @$pb.TagNumber(3)
+  $core.String get environment => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set environment($core.String v) {
+    $_setString(2, v);
+  }
+
+  @$pb.TagNumber(3)
+  $core.bool hasEnvironment() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearEnvironment() => $_clearField(3);
+
+  /// If true, includes per-user budget and grant context (requires auth).
+  /// When false or unauthenticated, the budget/grant fields are omitted.
+  @$pb.TagNumber(4)
+  $core.bool get includeBudget => $_getBF(3);
+  @$pb.TagNumber(4)
+  set includeBudget($core.bool v) {
+    $_setBool(3, v);
+  }
+
+  @$pb.TagNumber(4)
+  $core.bool hasIncludeBudget() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearIncludeBudget() => $_clearField(4);
+}
+
+class GetDashboardDataResponse extends $pb.GeneratedMessage {
+  factory GetDashboardDataResponse({
+    $fixnum.Int64? totalTraces,
+    $fixnum.Int64? totalSpans,
+    $fixnum.Int64? totalLlmCalls,
+    $fixnum.Int64? totalInputTokens,
+    $fixnum.Int64? totalOutputTokens,
+    $core.double? totalCostUsd,
+    $core.double? avgLatencyMs,
+    $core.double? errorRate,
+    $fixnum.Int64? totalCacheReadTokens,
+    $fixnum.Int64? totalCacheCreationTokens,
+    $core.Iterable<TimeSeriesPoint>? tracesOverTime,
+    $core.Iterable<TimeSeriesPoint>? costOverTime,
+    $core.Iterable<TimeSeriesPoint>? tokensOverTime,
+    $core.Iterable<TimeSeriesPoint>? cacheReadTokensOverTime,
+    $core.Iterable<TimeSeriesPoint>? cacheCreationTokensOverTime,
+    $core.Iterable<TimeSeriesPoint>? inputTokensOverTime,
+    $core.Iterable<TimeSeriesPoint>? outputTokensOverTime,
+    $core.Iterable<ModelUsage>? models,
+    $7.UserBudget? budget,
+    $core.double? totalRemainingUsd,
+    $core.Iterable<$7.BudgetGrant>? activeGrants,
+  }) {
+    final $result = create();
+    if (totalTraces != null) {
+      $result.totalTraces = totalTraces;
+    }
+    if (totalSpans != null) {
+      $result.totalSpans = totalSpans;
+    }
+    if (totalLlmCalls != null) {
+      $result.totalLlmCalls = totalLlmCalls;
+    }
+    if (totalInputTokens != null) {
+      $result.totalInputTokens = totalInputTokens;
+    }
+    if (totalOutputTokens != null) {
+      $result.totalOutputTokens = totalOutputTokens;
+    }
+    if (totalCostUsd != null) {
+      $result.totalCostUsd = totalCostUsd;
+    }
+    if (avgLatencyMs != null) {
+      $result.avgLatencyMs = avgLatencyMs;
+    }
+    if (errorRate != null) {
+      $result.errorRate = errorRate;
+    }
+    if (totalCacheReadTokens != null) {
+      $result.totalCacheReadTokens = totalCacheReadTokens;
+    }
+    if (totalCacheCreationTokens != null) {
+      $result.totalCacheCreationTokens = totalCacheCreationTokens;
+    }
+    if (tracesOverTime != null) {
+      $result.tracesOverTime.addAll(tracesOverTime);
+    }
+    if (costOverTime != null) {
+      $result.costOverTime.addAll(costOverTime);
+    }
+    if (tokensOverTime != null) {
+      $result.tokensOverTime.addAll(tokensOverTime);
+    }
+    if (cacheReadTokensOverTime != null) {
+      $result.cacheReadTokensOverTime.addAll(cacheReadTokensOverTime);
+    }
+    if (cacheCreationTokensOverTime != null) {
+      $result.cacheCreationTokensOverTime.addAll(cacheCreationTokensOverTime);
+    }
+    if (inputTokensOverTime != null) {
+      $result.inputTokensOverTime.addAll(inputTokensOverTime);
+    }
+    if (outputTokensOverTime != null) {
+      $result.outputTokensOverTime.addAll(outputTokensOverTime);
+    }
+    if (models != null) {
+      $result.models.addAll(models);
+    }
+    if (budget != null) {
+      $result.budget = budget;
+    }
+    if (totalRemainingUsd != null) {
+      $result.totalRemainingUsd = totalRemainingUsd;
+    }
+    if (activeGrants != null) {
+      $result.activeGrants.addAll(activeGrants);
+    }
+    return $result;
+  }
+  GetDashboardDataResponse._() : super();
+  factory GetDashboardDataResponse.fromBuffer($core.List<$core.int> i,
+          [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(i, r);
+  factory GetDashboardDataResponse.fromJson($core.String i,
+          [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetDashboardDataResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'candela.v1'),
+      createEmptyInstance: create)
+    ..aInt64(1, _omitFieldNames ? '' : 'totalTraces')
+    ..aInt64(2, _omitFieldNames ? '' : 'totalSpans')
+    ..aInt64(3, _omitFieldNames ? '' : 'totalLlmCalls')
+    ..aInt64(4, _omitFieldNames ? '' : 'totalInputTokens')
+    ..aInt64(5, _omitFieldNames ? '' : 'totalOutputTokens')
+    ..a<$core.double>(
+        6, _omitFieldNames ? '' : 'totalCostUsd', $pb.PbFieldType.OD)
+    ..a<$core.double>(
+        7, _omitFieldNames ? '' : 'avgLatencyMs', $pb.PbFieldType.OD)
+    ..a<$core.double>(8, _omitFieldNames ? '' : 'errorRate', $pb.PbFieldType.OD)
+    ..aInt64(9, _omitFieldNames ? '' : 'totalCacheReadTokens')
+    ..aInt64(10, _omitFieldNames ? '' : 'totalCacheCreationTokens')
+    ..pc<TimeSeriesPoint>(
+        20, _omitFieldNames ? '' : 'tracesOverTime', $pb.PbFieldType.PM,
+        subBuilder: TimeSeriesPoint.create)
+    ..pc<TimeSeriesPoint>(
+        21, _omitFieldNames ? '' : 'costOverTime', $pb.PbFieldType.PM,
+        subBuilder: TimeSeriesPoint.create)
+    ..pc<TimeSeriesPoint>(
+        22, _omitFieldNames ? '' : 'tokensOverTime', $pb.PbFieldType.PM,
+        subBuilder: TimeSeriesPoint.create)
+    ..pc<TimeSeriesPoint>(23, _omitFieldNames ? '' : 'cacheReadTokensOverTime',
+        $pb.PbFieldType.PM,
+        subBuilder: TimeSeriesPoint.create)
+    ..pc<TimeSeriesPoint>(
+        24,
+        _omitFieldNames ? '' : 'cacheCreationTokensOverTime',
+        $pb.PbFieldType.PM,
+        subBuilder: TimeSeriesPoint.create)
+    ..pc<TimeSeriesPoint>(
+        25, _omitFieldNames ? '' : 'inputTokensOverTime', $pb.PbFieldType.PM,
+        subBuilder: TimeSeriesPoint.create)
+    ..pc<TimeSeriesPoint>(
+        26, _omitFieldNames ? '' : 'outputTokensOverTime', $pb.PbFieldType.PM,
+        subBuilder: TimeSeriesPoint.create)
+    ..pc<ModelUsage>(30, _omitFieldNames ? '' : 'models', $pb.PbFieldType.PM,
+        subBuilder: ModelUsage.create)
+    ..aOM<$7.UserBudget>(40, _omitFieldNames ? '' : 'budget',
+        subBuilder: $7.UserBudget.create)
+    ..a<$core.double>(
+        41, _omitFieldNames ? '' : 'totalRemainingUsd', $pb.PbFieldType.OD)
+    ..pc<$7.BudgetGrant>(
+        42, _omitFieldNames ? '' : 'activeGrants', $pb.PbFieldType.PM,
+        subBuilder: $7.BudgetGrant.create)
+    ..hasRequiredFields = false;
+
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetDashboardDataResponse clone() =>
+      GetDashboardDataResponse()..mergeFromMessage(this);
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
+  GetDashboardDataResponse copyWith(
+          void Function(GetDashboardDataResponse) updates) =>
+      super.copyWith((message) => updates(message as GetDashboardDataResponse))
+          as GetDashboardDataResponse;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static GetDashboardDataResponse create() => GetDashboardDataResponse._();
+  GetDashboardDataResponse createEmptyInstance() => create();
+  static $pb.PbList<GetDashboardDataResponse> createRepeated() =>
+      $pb.PbList<GetDashboardDataResponse>();
+  @$core.pragma('dart2js:noInline')
+  static GetDashboardDataResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetDashboardDataResponse>(create);
+  static GetDashboardDataResponse? _defaultInstance;
+
+  /// ── Aggregate summary ──
+  @$pb.TagNumber(1)
+  $fixnum.Int64 get totalTraces => $_getI64(0);
+  @$pb.TagNumber(1)
+  set totalTraces($fixnum.Int64 v) {
+    $_setInt64(0, v);
+  }
+
+  @$pb.TagNumber(1)
+  $core.bool hasTotalTraces() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearTotalTraces() => $_clearField(1);
+
+  @$pb.TagNumber(2)
+  $fixnum.Int64 get totalSpans => $_getI64(1);
+  @$pb.TagNumber(2)
+  set totalSpans($fixnum.Int64 v) {
+    $_setInt64(1, v);
+  }
+
+  @$pb.TagNumber(2)
+  $core.bool hasTotalSpans() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearTotalSpans() => $_clearField(2);
+
+  @$pb.TagNumber(3)
+  $fixnum.Int64 get totalLlmCalls => $_getI64(2);
+  @$pb.TagNumber(3)
+  set totalLlmCalls($fixnum.Int64 v) {
+    $_setInt64(2, v);
+  }
+
+  @$pb.TagNumber(3)
+  $core.bool hasTotalLlmCalls() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearTotalLlmCalls() => $_clearField(3);
+
+  @$pb.TagNumber(4)
+  $fixnum.Int64 get totalInputTokens => $_getI64(3);
+  @$pb.TagNumber(4)
+  set totalInputTokens($fixnum.Int64 v) {
+    $_setInt64(3, v);
+  }
+
+  @$pb.TagNumber(4)
+  $core.bool hasTotalInputTokens() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearTotalInputTokens() => $_clearField(4);
+
+  @$pb.TagNumber(5)
+  $fixnum.Int64 get totalOutputTokens => $_getI64(4);
+  @$pb.TagNumber(5)
+  set totalOutputTokens($fixnum.Int64 v) {
+    $_setInt64(4, v);
+  }
+
+  @$pb.TagNumber(5)
+  $core.bool hasTotalOutputTokens() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearTotalOutputTokens() => $_clearField(5);
+
+  @$pb.TagNumber(6)
+  $core.double get totalCostUsd => $_getN(5);
+  @$pb.TagNumber(6)
+  set totalCostUsd($core.double v) {
+    $_setDouble(5, v);
+  }
+
+  @$pb.TagNumber(6)
+  $core.bool hasTotalCostUsd() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearTotalCostUsd() => $_clearField(6);
+
+  @$pb.TagNumber(7)
+  $core.double get avgLatencyMs => $_getN(6);
+  @$pb.TagNumber(7)
+  set avgLatencyMs($core.double v) {
+    $_setDouble(6, v);
+  }
+
+  @$pb.TagNumber(7)
+  $core.bool hasAvgLatencyMs() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearAvgLatencyMs() => $_clearField(7);
+
+  @$pb.TagNumber(8)
+  $core.double get errorRate => $_getN(7);
+  @$pb.TagNumber(8)
+  set errorRate($core.double v) {
+    $_setDouble(7, v);
+  }
+
+  @$pb.TagNumber(8)
+  $core.bool hasErrorRate() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearErrorRate() => $_clearField(8);
+
+  /// Cache metrics — subsets of total_input_tokens.
+  @$pb.TagNumber(9)
+  $fixnum.Int64 get totalCacheReadTokens => $_getI64(8);
+  @$pb.TagNumber(9)
+  set totalCacheReadTokens($fixnum.Int64 v) {
+    $_setInt64(8, v);
+  }
+
+  @$pb.TagNumber(9)
+  $core.bool hasTotalCacheReadTokens() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearTotalCacheReadTokens() => $_clearField(9);
+
+  @$pb.TagNumber(10)
+  $fixnum.Int64 get totalCacheCreationTokens => $_getI64(9);
+  @$pb.TagNumber(10)
+  set totalCacheCreationTokens($fixnum.Int64 v) {
+    $_setInt64(9, v);
+  }
+
+  @$pb.TagNumber(10)
+  $core.bool hasTotalCacheCreationTokens() => $_has(9);
+  @$pb.TagNumber(10)
+  void clearTotalCacheCreationTokens() => $_clearField(10);
+
+  /// ── Time series for charts ──
+  @$pb.TagNumber(20)
+  $pb.PbList<TimeSeriesPoint> get tracesOverTime => $_getList(10);
+
+  @$pb.TagNumber(21)
+  $pb.PbList<TimeSeriesPoint> get costOverTime => $_getList(11);
+
+  @$pb.TagNumber(22)
+  $pb.PbList<TimeSeriesPoint> get tokensOverTime => $_getList(12);
+
+  @$pb.TagNumber(23)
+  $pb.PbList<TimeSeriesPoint> get cacheReadTokensOverTime => $_getList(13);
+
+  @$pb.TagNumber(24)
+  $pb.PbList<TimeSeriesPoint> get cacheCreationTokensOverTime => $_getList(14);
+
+  @$pb.TagNumber(25)
+  $pb.PbList<TimeSeriesPoint> get inputTokensOverTime => $_getList(15);
+
+  @$pb.TagNumber(26)
+  $pb.PbList<TimeSeriesPoint> get outputTokensOverTime => $_getList(16);
+
+  /// ── Per-model breakdown ──
+  @$pb.TagNumber(30)
+  $pb.PbList<ModelUsage> get models => $_getList(17);
+
+  /// ── Per-user budget context (populated when include_budget=true + auth) ──
+  @$pb.TagNumber(40)
+  $7.UserBudget get budget => $_getN(18);
+  @$pb.TagNumber(40)
+  set budget($7.UserBudget v) {
+    $_setField(40, v);
+  }
+
+  @$pb.TagNumber(40)
+  $core.bool hasBudget() => $_has(18);
+  @$pb.TagNumber(40)
+  void clearBudget() => $_clearField(40);
+  @$pb.TagNumber(40)
+  $7.UserBudget ensureBudget() => $_ensure(18);
+
+  @$pb.TagNumber(41)
+  $core.double get totalRemainingUsd => $_getN(19);
+  @$pb.TagNumber(41)
+  set totalRemainingUsd($core.double v) {
+    $_setDouble(19, v);
+  }
+
+  @$pb.TagNumber(41)
+  $core.bool hasTotalRemainingUsd() => $_has(19);
+  @$pb.TagNumber(41)
+  void clearTotalRemainingUsd() => $_clearField(41);
+
+  @$pb.TagNumber(42)
+  $pb.PbList<$7.BudgetGrant> get activeGrants => $_getList(20);
+}
+
 /// DashboardService provides aggregated metrics and usage data.
 /// Exposed via ConnectRPC for the web UI dashboards.
 class DashboardServiceApi {
   $pb.RpcClient _client;
   DashboardServiceApi(this._client);
 
-  /// GetUsageSummary returns aggregated token usage, cost, and request counts.
+  /// GetDashboardData returns a consolidated dashboard view including usage
+  /// summary, per-model breakdown, and (if authenticated) per-user budget
+  /// context. Replaces the concurrent fan-out of GetUsageSummary +
+  /// GetModelBreakdown + GetMyUsage with a single round-trip.
+  $async.Future<GetDashboardDataResponse> getDashboardData(
+          $pb.ClientContext? ctx, GetDashboardDataRequest request) =>
+      _client.invoke<GetDashboardDataResponse>(ctx, 'DashboardService',
+          'GetDashboardData', request, GetDashboardDataResponse());
+
+  /// Deprecated: use GetDashboardData instead.
+  @$core.Deprecated('This method is deprecated')
   $async.Future<GetUsageSummaryResponse> getUsageSummary(
           $pb.ClientContext? ctx, GetUsageSummaryRequest request) =>
       _client.invoke<GetUsageSummaryResponse>(ctx, 'DashboardService',
           'GetUsageSummary', request, GetUsageSummaryResponse());
 
-  /// GetModelBreakdown returns usage broken down by model.
+  /// Deprecated: use GetDashboardData instead.
+  @$core.Deprecated('This method is deprecated')
   $async.Future<GetModelBreakdownResponse> getModelBreakdown(
           $pb.ClientContext? ctx, GetModelBreakdownRequest request) =>
       _client.invoke<GetModelBreakdownResponse>(ctx, 'DashboardService',
@@ -1808,8 +2431,9 @@ class DashboardServiceApi {
       _client.invoke<GetLatencyPercentilesResponse>(ctx, 'DashboardService',
           'GetLatencyPercentiles', request, GetLatencyPercentilesResponse());
 
-  /// GetMyUsage returns the calling user's personal usage summary (BigQuery).
+  /// Deprecated: use GetDashboardData with include_budget=true instead.
   /// For real-time budget/grant progress, see UserService.GetMyBudget.
+  @$core.Deprecated('This method is deprecated')
   $async.Future<GetMyUsageResponse> getMyUsage(
           $pb.ClientContext? ctx, GetMyUsageRequest request) =>
       _client.invoke<GetMyUsageResponse>(

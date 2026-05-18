@@ -110,24 +110,7 @@ class GCloudService {
       final output = (result.stdout as String).trim();
       if (output.isEmpty) return null;
 
-      try {
-        final parsed = json.decode(output) as Map<String, dynamic>;
-        final token = parsed['token'] as String?;
-        if (token == null || token.isEmpty) return null;
-
-        DateTime? expiresAt;
-        final expiryMap = parsed['expiry'] as Map<String, dynamic>?;
-        if (expiryMap != null) {
-          final datetimeStr = expiryMap['datetime'] as String?;
-          if (datetimeStr != null) {
-            expiresAt = DateTime.tryParse('${datetimeStr}Z');
-          }
-        }
-
-        return _decodeJwt(token, knownExpiry: expiresAt);
-      } catch (_) {
-        return _decodeJwt(output);
-      }
+      return _parseGcloudTokenJson(output);
     } catch (_) {
       return null;
     }
@@ -161,46 +144,69 @@ class GCloudService {
 
   /// Get a regular gcloud access token (not ADC) for team backend auth.
   ///
-  /// Prefers direct OAuth2 refresh via ADC file. Falls back to gcloud
-  /// subprocess if needed.
+  /// Unlike [getTokenInfo], this deliberately does NOT use direct ADC refresh
+  /// because the gcloud active account may differ from the ADC identity.
+  /// Team backend auth must use the gcloud-authenticated identity to preserve
+  /// correct `hasMismatchedIdentities` semantics.
   Future<TokenInfo?> getAccessToken() async {
-    // Try direct refresh first.
-    final directToken = await _adcService.refreshAccessToken();
-    if (directToken != null) return directToken;
-
-    // Fallback: gcloud subprocess.
     try {
       final result = await _run([
         'auth',
         'print-access-token',
         '--format=json',
       ]);
-      if (result.exitCode != 0) return getTokenInfo();
+      if (result.exitCode != 0) return null;
 
       final output = (result.stdout as String).trim();
-      if (output.isEmpty) return getTokenInfo();
+      if (output.isEmpty) return null;
 
-      try {
-        final parsed = json.decode(output) as Map<String, dynamic>;
-        final token =
-            parsed['token'] as String? ?? (parsed['access_token'] as String?);
-        if (token == null || token.isEmpty) return getTokenInfo();
-
-        DateTime? expiresAt;
-        final expiryMap = parsed['expiry'] as Map<String, dynamic>?;
-        if (expiryMap != null) {
-          final datetimeStr = expiryMap['datetime'] as String?;
-          if (datetimeStr != null) {
-            expiresAt = DateTime.tryParse('${datetimeStr}Z');
-          }
-        }
-
-        return _decodeJwt(token, knownExpiry: expiresAt);
-      } catch (_) {
-        return _decodeJwt(output);
-      }
+      return _parseGcloudTokenJson(output);
     } catch (_) {
-      return getTokenInfo();
+      return null;
+    }
+  }
+
+  /// Parse gcloud's `--format=json` token output into a [TokenInfo].
+  ///
+  /// Shared by [getTokenInfo] and [getAccessToken] to avoid duplication.
+  /// Checks both `token` and `access_token` keys for robustness.
+  /// Falls back to plain-token JWT decoding on [FormatException].
+  TokenInfo? _parseGcloudTokenJson(String output) {
+    try {
+      final parsed = json.decode(output) as Map<String, dynamic>;
+      final token =
+          parsed['token'] as String? ?? (parsed['access_token'] as String?);
+      if (token == null || token.isEmpty) return null;
+
+      DateTime? expiresAt;
+      // gcloud --format=json returns expiry in several possible shapes:
+      //   1. {"expiry": {"datetime": "2026-05-18 02:06:07.038436"}} (newer)
+      //   2. {"token_expiry": "2026-05-18T02:06:07Z"} (older)
+      //   3. {"expires_in": 3599} (OAuth2-style)
+      final expiryMap = parsed['expiry'] as Map<String, dynamic>?;
+      if (expiryMap != null) {
+        final datetimeStr = expiryMap['datetime'] as String?;
+        if (datetimeStr != null) {
+          expiresAt = DateTime.tryParse('${datetimeStr}Z');
+        }
+      }
+      if (expiresAt == null) {
+        final tokenExpiry = parsed['token_expiry'] as String?;
+        if (tokenExpiry != null) {
+          expiresAt = DateTime.tryParse(tokenExpiry);
+        }
+      }
+      if (expiresAt == null) {
+        final expiresIn = parsed['expires_in'] as int?;
+        if (expiresIn != null) {
+          expiresAt = DateTime.now().toUtc().add(Duration(seconds: expiresIn));
+        }
+      }
+
+      return _decodeJwt(token, knownExpiry: expiresAt);
+    } on FormatException {
+      // Not JSON — treat the entire output as a plain token string.
+      return _decodeJwt(output);
     }
   }
 

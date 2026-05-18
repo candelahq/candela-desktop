@@ -201,8 +201,10 @@ class ConnectApiService {
   }
 
   /// Convert [GetDashboardDataResponse_BudgetContext] → domain [BudgetInfo].
+  /// [now] should be the stable timestamp captured at the start of the fetch
+  /// cycle, matching the pattern used throughout TelemetryService.
   static BudgetInfo? budgetFromDashboard(
-      GetDashboardDataResponse_BudgetContext ctx) {
+      GetDashboardDataResponse_BudgetContext ctx, DateTime now) {
     if (!ctx.hasBudget()) return null;
     final b = ctx.budget;
     return BudgetInfo(
@@ -212,7 +214,7 @@ class ConnectApiService {
       period: BudgetPeriodKind.daily,
       periodEnd: b.hasPeriodEnd()
           ? _fromTimestamp(b.periodEnd)
-          : DateTime.now().toUtc().add(const Duration(days: 1)),
+          : now.toUtc().add(const Duration(days: 1)),
     );
   }
 

@@ -59,12 +59,8 @@ $providerLines
 ''');
   }
 
-  /// Returns Riverpod overrides that use the isolated config path.
-  List<Override> get overrides => [
-        configServiceProvider.overrideWithValue(
-          ConfigService(configPath: configPath),
-        ),
-      ];
+  /// Returns the config service override for test isolation.
+  ConfigService get testConfigService => ConfigService(configPath: configPath);
 }
 
 // ── Package info mock ───────────────────────────────────────────────────────
@@ -84,7 +80,7 @@ void mockPackageInfo({
   );
 }
 
-/// Pumps the full CandelaApp with the given Riverpod overrides.
+/// Pumps the full CandelaApp with the given config helper for overrides.
 ///
 /// Uses bounded frame pumping instead of `pumpAndSettle` because the app has
 /// continuous frame schedulers (window_manager listeners, Timer.periodic
@@ -92,7 +88,7 @@ void mockPackageInfo({
 /// returning.
 Future<void> pumpApp(
   WidgetTester tester, {
-  List<Override> overrides = const [],
+  TestConfigHelper? configHelper,
   int pumpFrames = 50,
 }) async {
   // Configure test view to match app's expected window dimensions.
@@ -111,7 +107,12 @@ Future<void> pumpApp(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: overrides,
+      overrides: [
+        if (configHelper != null)
+          configServiceProvider.overrideWithValue(
+            configHelper.testConfigService,
+          ),
+      ],
       child: const CandelaApp(),
     ),
   );

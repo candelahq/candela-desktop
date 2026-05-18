@@ -110,24 +110,7 @@ class GCloudService {
       final output = (result.stdout as String).trim();
       if (output.isEmpty) return null;
 
-      try {
-        final parsed = json.decode(output) as Map<String, dynamic>;
-        final token = parsed['token'] as String?;
-        if (token == null || token.isEmpty) return null;
-
-        DateTime? expiresAt;
-        final expiryMap = parsed['expiry'] as Map<String, dynamic>?;
-        if (expiryMap != null) {
-          final datetimeStr = expiryMap['datetime'] as String?;
-          if (datetimeStr != null) {
-            expiresAt = DateTime.tryParse('${datetimeStr}Z');
-          }
-        }
-
-        return _decodeJwt(token, knownExpiry: expiresAt);
-      } catch (_) {
-        return _decodeJwt(output);
-      }
+      return _parseGcloudTokenJson(output);
     } catch (_) {
       return null;
     }
@@ -180,27 +163,37 @@ class GCloudService {
       final output = (result.stdout as String).trim();
       if (output.isEmpty) return getTokenInfo();
 
-      try {
-        final parsed = json.decode(output) as Map<String, dynamic>;
-        final token =
-            parsed['token'] as String? ?? (parsed['access_token'] as String?);
-        if (token == null || token.isEmpty) return getTokenInfo();
-
-        DateTime? expiresAt;
-        final expiryMap = parsed['expiry'] as Map<String, dynamic>?;
-        if (expiryMap != null) {
-          final datetimeStr = expiryMap['datetime'] as String?;
-          if (datetimeStr != null) {
-            expiresAt = DateTime.tryParse('${datetimeStr}Z');
-          }
-        }
-
-        return _decodeJwt(token, knownExpiry: expiresAt);
-      } catch (_) {
-        return _decodeJwt(output);
-      }
+      return _parseGcloudTokenJson(output) ?? await getTokenInfo();
     } catch (_) {
       return getTokenInfo();
+    }
+  }
+
+  /// Parse gcloud's `--format=json` token output into a [TokenInfo].
+  ///
+  /// Shared by [getTokenInfo] and [getAccessToken] to avoid duplication.
+  /// Checks both `token` and `access_token` keys for robustness.
+  /// Falls back to plain-token JWT decoding on [FormatException].
+  TokenInfo? _parseGcloudTokenJson(String output) {
+    try {
+      final parsed = json.decode(output) as Map<String, dynamic>;
+      final token =
+          parsed['token'] as String? ?? (parsed['access_token'] as String?);
+      if (token == null || token.isEmpty) return null;
+
+      DateTime? expiresAt;
+      final expiryMap = parsed['expiry'] as Map<String, dynamic>?;
+      if (expiryMap != null) {
+        final datetimeStr = expiryMap['datetime'] as String?;
+        if (datetimeStr != null) {
+          expiresAt = DateTime.tryParse('${datetimeStr}Z');
+        }
+      }
+
+      return _decodeJwt(token, knownExpiry: expiresAt);
+    } on FormatException {
+      // Not JSON — treat the entire output as a plain token string.
+      return _decodeJwt(output);
     }
   }
 

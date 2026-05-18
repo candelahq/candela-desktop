@@ -9,4 +9,5 @@ plugins:
   - remote: buf.build/connectrpc/dart:v1.0.0
     out: lib/gen
 inputs:
-  - module: buf.build/candelahq/protos:v0.4.0
+  - git_repo: https://github.com/candelahq/candela-protos.git
+    branch: feat/rpc-consolidation

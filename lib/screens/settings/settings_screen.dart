@@ -225,6 +225,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget _buildPerformanceSection() {
     final config = _config;
     final cachingMode = config?.vertexAI?.cachingMode ?? 'off';
+    final cacheTTL = config?.vertexAI?.cacheTTL ?? '5m';
+    final is1h = cacheTTL == '1h';
+    final cachingEnabled = cachingMode != 'off';
     return _SettingsSection(
       title: 'Performance',
       icon: Icons.speed_outlined,
@@ -251,6 +254,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
         ),
+        if (cachingEnabled) ...[
+          _SettingsRow(
+            label: 'Cache duration (TTL)',
+            subtitle: is1h
+                ? '1 hour — 2× write cost, ideal for long sessions'
+                : '5 minutes — standard cost (1.25× write)',
+            child: SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(value: '5m', label: Text('5 min')),
+                ButtonSegment(value: '1h', label: Text('1 hour')),
+              ],
+              selected: {cacheTTL},
+              onSelectionChanged: (selected) {
+                if (selected.isNotEmpty) _setCacheTTL(selected.first);
+              },
+              style: SegmentedButton.styleFrom(
+                backgroundColor: CandelaColors.bgTertiary,
+                foregroundColor: CandelaColors.textPrimary,
+                selectedBackgroundColor:
+                    is1h ? Colors.amber.shade700 : CandelaColors.accent,
+                selectedForegroundColor: Colors.white,
+                textStyle: const TextStyle(fontSize: 12),
+              ),
+            ),
+          ),
+          if (is1h) _CacheTTLWarningBanner(),
+        ],
       ],
     );
   }
@@ -258,6 +288,51 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _setCachingMode(String mode) async {
     await ref.read(configServiceProvider).setCachingMode(mode);
     await _loadAll();
+  }
+
+  Future<void> _setCacheTTL(String ttl) async {
+    if (ttl == '1h') {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: CandelaColors.bgSecondary,
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.amber, size: 24),
+              SizedBox(width: 8),
+              Text('Enable 1-hour cache?',
+                  style: TextStyle(color: Colors.white)),
+            ],
+          ),
+          content: const Text(
+            'The 1-hour cache TTL costs 2× for cache writes '
+            '(vs 1.25× for the default 5-minute TTL).\n\n'
+            'Cache reads remain at 0.1× — so this pays off quickly during '
+            'long coding sessions where the system prompt stays stable.\n\n'
+            'Are you sure?',
+            style: TextStyle(color: Colors.white70, height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.amber.shade700,
+              ),
+              child: const Text('Enable 1h cache'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
+    await ref.read(configServiceProvider).setCacheTTL(ttl);
+    // Lightweight reload — avoid full _loadAll() which shows a loading spinner.
+    final config = await ref.read(configServiceProvider).load();
+    if (mounted) setState(() => _config = config);
   }
 
   Widget _buildOptimizationSection() {
@@ -547,6 +622,72 @@ class _PortEditorState extends State<_PortEditor> {
             borderRadius: BorderRadius.circular(8),
             borderSide: const BorderSide(color: CandelaColors.accent),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Pulsing amber warning banner shown when 1-hour cache TTL is active.
+class _CacheTTLWarningBanner extends StatefulWidget {
+  @override
+  State<_CacheTTLWarningBanner> createState() => _CacheTTLWarningBannerState();
+}
+
+class _CacheTTLWarningBannerState extends State<_CacheTTLWarningBanner>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _opacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+    _opacity = Tween<double>(begin: 0.7, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _opacity,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.amber.shade900.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Colors.amber.shade700.withValues(alpha: 0.5),
+          ),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.amber, size: 18),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                '⚡ 1-hour TTL active — cache writes cost 2× '
+                '(reads stay at 0.1×). Great for long sessions!',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.amber,
+                  fontWeight: FontWeight.w500,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

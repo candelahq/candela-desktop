@@ -88,17 +88,19 @@ void main() {
 
   group('DashboardNotifier', () {
     test('initial state is loading', () {
-      final notifier = DashboardNotifier(
-        telemetry: TelemetryService(port: 9999),
-      );
+      final notifier = DashboardNotifier();
       expect(notifier.state.loading, isTrue);
       notifier.dispose();
     });
 
-    test('notifies on state change', () {
-      final notifier = DashboardNotifier(
-        telemetry: TelemetryService(port: 9999),
-      );
+    test('isConfigured false before configure', () {
+      final notifier = DashboardNotifier();
+      expect(notifier.isConfigured, isFalse);
+      notifier.dispose();
+    });
+
+    test('notifies on state change via setRange', () {
+      final notifier = DashboardNotifier();
       int notifyCount = 0;
       notifier.addListener(() => notifyCount++);
 
@@ -110,19 +112,35 @@ void main() {
     });
 
     test('dispose cancels timer', () {
-      final notifier = DashboardNotifier(
-        telemetry: TelemetryService(port: 9999),
-      );
+      final notifier = DashboardNotifier();
       notifier.startPolling(interval: const Duration(seconds: 1));
       notifier.dispose();
     });
 
     test('refreshToken returns null without gcloud service', () async {
-      final notifier = DashboardNotifier(
-        telemetry: TelemetryService(port: 9999),
-      );
+      final notifier = DashboardNotifier();
       final token = await notifier.refreshToken();
       expect(token, isNull);
+      notifier.dispose();
+    });
+
+    test('cache TTL defaults to 50 seconds', () {
+      final notifier = DashboardNotifier();
+      expect(notifier.cacheTtl, const Duration(seconds: 50));
+      notifier.dispose();
+    });
+
+    test('custom cache TTL is respected', () {
+      final notifier = DashboardNotifier(
+        cacheTtl: const Duration(seconds: 60),
+      );
+      expect(notifier.cacheTtl, const Duration(seconds: 60));
+      notifier.dispose();
+    });
+
+    test('buildFilteredSummary returns null when not configured', () {
+      final notifier = DashboardNotifier();
+      expect(notifier.buildFilteredSummary(null), isNull);
       notifier.dispose();
     });
   });

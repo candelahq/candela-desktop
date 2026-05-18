@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/candela_config.dart';
 import '../services/brew_service.dart';
 import '../services/config_service.dart';
+import '../services/dashboard_notifier.dart';
 import '../services/process_manager.dart';
 import '../services/tray_service.dart';
 
@@ -40,6 +41,39 @@ Stream<CandelaConfig> _configStream(ConfigService service) async* {
     yield await service.load();
   }
 }
+
+// ── Dashboard ───────────────────────────────────────────────────────────────
+
+/// Shared [DashboardNotifier] — the single source of truth for telemetry data.
+///
+/// Both DashboardScreen and TodayScreen consume this provider instead of each
+/// maintaining their own [TelemetryService] and 30-second timer. This cuts
+/// BigQuery queries by 50% and enables TTL-based caching + visibility-aware
+/// polling.
+///
+/// The notifier is lazily configured on first read using the current config,
+/// then re-configured automatically when the config file changes.
+final dashboardNotifierProvider =
+    ChangeNotifierProvider<DashboardNotifier>((ref) {
+  final notifier = DashboardNotifier();
+
+  // Configure and start polling when config becomes available.
+  void configureAndPoll(CandelaConfig config) async {
+    await notifier.configure(config);
+    await notifier.fetch();
+    notifier.startPolling();
+  }
+
+  // Use current value if already loaded.
+  ref.read(configProvider).whenData(configureAndPoll);
+
+  // Re-configure when config changes (e.g. user edits config.yaml).
+  ref.listen<AsyncValue<CandelaConfig>>(configProvider, (prev, next) {
+    next.whenData(configureAndPoll);
+  });
+
+  return notifier;
+});
 
 // ── Process Manager ─────────────────────────────────────────────────────────
 

@@ -1,11 +1,9 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../models/budget_info.dart';
-import '../../models/candela_config.dart';
 import '../../models/span_stats.dart';
-import '../../services/gcloud_service.dart';
+import '../../services/dashboard_notifier.dart';
 import '../../services/telemetry_service.dart';
 import '../../theme/colors.dart';
 import '../../providers.dart';
@@ -15,6 +13,10 @@ import '../../widgets/model_selector_dropdown.dart';
 
 /// Full-page "Today" view — shows daily budget, grants, remaining balance,
 /// and today's spend at a glance.
+///
+/// Uses the shared [DashboardNotifier] from [dashboardNotifierProvider] so
+/// that all screens share a single polling timer and response cache.
+/// Filters the cached spans to today's UTC window client-side.
 class TodayScreen extends ConsumerStatefulWidget {
   const TodayScreen({super.key});
 
@@ -23,136 +25,93 @@ class TodayScreen extends ConsumerStatefulWidget {
 }
 
 class _TodayScreenState extends ConsumerState<TodayScreen> {
-  TelemetryResult? _result;
-  bool _loading = true;
-  String? _error;
-  bool _initialized = false;
-  Timer? _autoRefresh;
-  TelemetryService? _svc;
-  bool _isTeamMode = false;
   String? _selectedModel;
-  UsageSummary? _filteredSummary;
-  DateTime _fetchedAt = DateTime.now();
 
   void _setSelectedModel(String? model) {
     setState(() => _selectedModel = model);
-    _recalculateSummary();
   }
 
-  void _recalculateSummary() {
-    if (_result == null || _svc == null) {
-      setState(() => _filteredSummary = null);
-      return;
-    }
-    if (_selectedModel == null) {
-      setState(() => _filteredSummary = _result!.summary);
-      return;
-    }
-    final filteredSpans =
-        _result!.spans.where((s) => s.model == _selectedModel).toList();
-    final newSummary =
-        _svc!.buildSummary(filteredSpans, TokenTimeRange.todayUtc, _fetchedAt);
-    setState(() => _filteredSummary = newSummary);
-  }
+  /// Build a today-scoped summary by filtering the shared notifier's spans
+  /// to today's UTC window.
+  UsageSummary? _buildTodaySummary(DashboardNotifier notifier) {
+    final result = notifier.state.result;
+    if (result == null || !result.hasData) return null;
 
-  @override
-  void initState() {
-    super.initState();
-    _initService();
-  }
+    // Filter spans to today's UTC window.
+    final todayRange = TokenTimeRange.todayUtc;
+    final cutoff = todayRange.startFrom(DateTime.now());
+    var spans = result.spans.where((s) => s.timestamp.isAfter(cutoff)).toList();
 
-  Future<void> _initService() async {
-    if (_initialized) return;
-    _initialized = true;
-
-    final config = await ref.read(configServiceProvider).load();
-    final isTeam = config.mode == CandelaMode.team &&
-        config.remote != null &&
-        config.remote!.isNotEmpty;
-
-    TelemetryService svc;
-    if (isTeam) {
-      final gcloud = GCloudService();
-      final audience = config.audience ?? config.remote ?? '';
-
-      final tokenInfo = audience.isNotEmpty
-          ? await gcloud.getIdToken(audience)
-          : await gcloud.getTokenInfo();
-
-      svc = TelemetryService(
-        port: config.port,
-        remoteUrl: config.remote,
-        authToken: tokenInfo?.accessToken,
-      );
-    } else {
-      svc = TelemetryService(port: config.port);
+    // Apply model filter if active.
+    if (_selectedModel != null) {
+      spans = spans.where((s) => s.model == _selectedModel).toList();
     }
 
-    if (!mounted) return;
-    setState(() {
-      _svc = svc;
-      _isTeamMode = isTeam;
-    });
-
-    await _fetch();
-    if (!mounted) return;
-    _autoRefresh = Timer.periodic(const Duration(seconds: 30), (_) => _fetch());
+    if (spans.isEmpty) return null;
+    return notifier.buildFilteredSummary(_selectedModel) != null
+        ? _buildSummaryFromSpans(spans)
+        : null;
   }
 
-  bool _isFetching = false;
-
-  Future<void> _fetch() async {
-    if (!mounted || _svc == null || _isFetching) return;
-    _isFetching = true;
-    setState(() => _loading = true);
-    try {
-      final result = await _svc!.fetch(TokenTimeRange.todayUtc);
-
-      if (!mounted) return;
-      setState(() {
-        _result = result;
-        _fetchedAt = DateTime.now();
-        _loading = false;
-        _error = result == null
-            ? 'Could not reach the Candela proxy.'
-            : result.error == TelemetryErrorKind.authExpired
-                ? 'Session expired — run: gcloud auth application-default login'
-                : result.error != null
-                    ? 'Backend unreachable.'
-                    : null;
-      });
-
-      _recalculateSummary();
-    } finally {
-      _isFetching = false;
+  /// Simple local aggregation for today's filtered spans.
+  UsageSummary _buildSummaryFromSpans(List<SpanRecord> spans) {
+    int totalIn = 0, totalOut = 0;
+    double totalCost = 0, totalMs = 0;
+    for (final s in spans) {
+      totalIn += s.inputTokens;
+      totalOut += s.outputTokens;
+      totalCost += s.costUsd;
+      totalMs += s.durationMs;
     }
+    return UsageSummary(
+      totalCalls: spans.length,
+      totalInputTokens: totalIn,
+      totalOutputTokens: totalOut,
+      totalCostUsd: totalCost,
+      avgLatencyMs: spans.isEmpty ? 0.0 : totalMs / spans.length,
+      costOverTime: const [],
+      tokensOverTime: const [],
+      callsOverTime: const [],
+    );
   }
 
-  @override
-  void dispose() {
-    _autoRefresh?.cancel();
-    _svc?.dispose();
-    super.dispose();
+  String? _errorMessage(DashboardState state) {
+    final result = state.result;
+    if (result == null && !state.loading) {
+      return state.isTeamMode
+          ? 'Could not reach the team backend.'
+          : 'Could not reach the Candela proxy.';
+    }
+    if (result == null) return state.errorMessage;
+    if (result.error == TelemetryErrorKind.authExpired) {
+      return 'Session expired — run: gcloud auth application-default login';
+    }
+    if (result.error != null) return 'Backend unreachable.';
+    return null;
   }
 
   @override
   Widget build(BuildContext context) {
+    final notifier = ref.watch(dashboardNotifierProvider);
+    final state = notifier.state;
+    final summary = _buildTodaySummary(notifier);
+    final error = _errorMessage(state);
     final uniqueModels =
-        _result?.models.map((m) => m.model).toSet().toList() ?? [];
+        state.result?.models.map((m) => m.model).toSet().toList() ?? [];
 
     return Scaffold(
       backgroundColor: CandelaColors.bgPrimary,
       body: Column(
         children: [
-          _buildHeader(uniqueModels),
+          _buildHeader(uniqueModels, state, notifier),
           Expanded(
-            child: _loading && _result == null
+            child: state.loading && state.result == null
                 ? const Center(
                     child:
                         CircularProgressIndicator(color: CandelaColors.accent))
                 : SingleChildScrollView(
                     padding: const EdgeInsets.all(24),
-                    child: _buildBody(_filteredSummary),
+                    child: _buildBody(summary, state, error),
                   ),
           ),
         ],
@@ -160,7 +119,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     );
   }
 
-  Widget _buildHeader(List<String> uniqueModels) {
+  Widget _buildHeader(List<String> uniqueModels, DashboardState state,
+      DashboardNotifier notifier) {
     final dateStr = DateFormat.yMMMMEEEEd().format(DateTime.now());
 
     return Container(
@@ -192,7 +152,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             ],
           ),
           const SizedBox(width: 12),
-          _ModeBadge(isTeam: _isTeamMode),
+          _ModeBadge(isTeam: state.isTeamMode),
           const Spacer(),
           if (uniqueModels.isNotEmpty) ...[
             ModelSelectorDropdown(
@@ -202,31 +162,33 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             ),
             const SizedBox(width: 10),
           ],
-          _RefreshButton(onRefresh: _fetch, loading: _loading),
+          _RefreshButton(
+              onRefresh: () => notifier.fetch(), loading: state.loading),
         ],
       ),
     );
   }
 
-  Widget _buildBody(UsageSummary? summary) {
-    if (_error != null && _result == null) {
+  Widget _buildBody(
+      UsageSummary? summary, DashboardState state, String? error) {
+    if (error != null && state.result == null) {
       return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        _ErrorCard(message: _error!),
+        _ErrorCard(message: error),
         const SizedBox(height: 16),
         const LocalServicesCard(),
       ]);
     }
 
-    final budget = _result?.budget;
-    final grants = _result?.activeGrants ?? [];
-    final remaining = _result?.totalRemainingUsd;
-    final models = _result?.models ?? [];
+    final budget = state.result?.budget;
+    final grants = state.result?.activeGrants ?? [];
+    final remaining = state.result?.totalRemainingUsd;
+    final models = state.result?.models ?? [];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (_error != null) ...[
-          _ErrorCard(message: _error!),
+        if (error != null) ...[
+          _ErrorCard(message: error),
           const SizedBox(height: 16),
         ],
         // ── Hero: Total Remaining ──
@@ -249,13 +211,13 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           _TopModelsCard(models: models),
         ],
         // ── Local Services ──
-        if (!_isTeamMode) ...[
+        if (!state.isTeamMode) ...[
           const LocalServicesCard(),
           const SizedBox(height: 16),
         ],
         // ── Empty state ──
-        if (summary == null && budget == null && _error == null)
-          _EmptyState(isTeamMode: _isTeamMode),
+        if (summary == null && budget == null && error == null)
+          _EmptyState(isTeamMode: state.isTeamMode),
       ],
     );
   }

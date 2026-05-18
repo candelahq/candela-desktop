@@ -24,7 +24,6 @@ void main() {
         project: 'my-project',
         tokenInfo: TokenInfo(
           expiresAt: DateTime.now().add(const Duration(hours: 1)),
-          isValid: true,
         ),
         gcloudInstalled: true,
       );
@@ -47,7 +46,6 @@ void main() {
         gcloudInstalled: true,
         tokenInfo: TokenInfo(
           expiresAt: DateTime.now().add(const Duration(hours: 1)),
-          isValid: true,
         ),
       );
 
@@ -61,7 +59,6 @@ void main() {
         gcloudInstalled: true,
         tokenInfo: TokenInfo(
           expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
-          isValid: false,
         ),
       );
 
@@ -86,7 +83,6 @@ void main() {
         adcInfo: const AdcInfo(path: '/test', type: 'authorized_user'),
         tokenInfo: TokenInfo(
           expiresAt: DateTime.now().add(const Duration(hours: 1)),
-          isValid: true,
         ),
       );
 
@@ -100,7 +96,6 @@ void main() {
         gcloudInstalled: true,
         tokenInfo: TokenInfo(
           expiresAt: DateTime.now().add(const Duration(hours: 1)),
-          isValid: true,
         ),
       );
 
@@ -115,7 +110,6 @@ void main() {
         gcloudInstalled: true,
         tokenInfo: TokenInfo(
           expiresAt: DateTime.now().add(const Duration(hours: 1)),
-          isValid: true,
         ),
       );
 

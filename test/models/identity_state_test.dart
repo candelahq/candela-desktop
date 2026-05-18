@@ -16,7 +16,6 @@ void main() {
         dashboardTokenInfo: TokenInfo(
           email: 'user@corp.com',
           expiresAt: _farFuture,
-          isValid: true,
         ),
       );
       expect(state.hasMismatchedIdentities, isFalse);
@@ -27,7 +26,6 @@ void main() {
         tokenInfo: TokenInfo(
           email: 'user@corp.com',
           expiresAt: _farFuture,
-          isValid: true,
         ),
       );
       expect(state.hasMismatchedIdentities, isFalse);
@@ -38,12 +36,10 @@ void main() {
         tokenInfo: TokenInfo(
           email: 'user@corp.com',
           expiresAt: _farFuture,
-          isValid: true,
         ),
         dashboardTokenInfo: TokenInfo(
           email: 'user@corp.com',
           expiresAt: _farFuture,
-          isValid: true,
         ),
       );
       expect(state.hasMismatchedIdentities, isFalse);
@@ -54,12 +50,10 @@ void main() {
         tokenInfo: TokenInfo(
           email: 'User@Corp.com',
           expiresAt: _farFuture,
-          isValid: true,
         ),
         dashboardTokenInfo: TokenInfo(
           email: 'user@corp.com',
           expiresAt: _farFuture,
-          isValid: true,
         ),
       );
       expect(state.hasMismatchedIdentities, isFalse);
@@ -70,12 +64,10 @@ void main() {
         tokenInfo: TokenInfo(
           email: 'adc-user@corp.com',
           expiresAt: _farFuture,
-          isValid: true,
         ),
         dashboardTokenInfo: TokenInfo(
           email: 'gcloud-user@corp.com',
           expiresAt: _farFuture,
-          isValid: true,
         ),
       );
       expect(state.hasMismatchedIdentities, isTrue);
@@ -91,7 +83,6 @@ void main() {
         dashboardTokenInfo: TokenInfo(
           email: 'human@corp.com',
           expiresAt: _farFuture,
-          isValid: true,
         ),
       );
       expect(state.hasMismatchedIdentities, isTrue);
@@ -102,7 +93,6 @@ void main() {
         tokenInfo: TokenInfo(
           email: 'same@corp.com',
           expiresAt: _farFuture,
-          isValid: true,
         ),
         adcInfo: const AdcInfo(
           path: '/path',
@@ -112,7 +102,6 @@ void main() {
         dashboardTokenInfo: TokenInfo(
           email: 'same@corp.com',
           expiresAt: _farFuture,
-          isValid: true,
         ),
       );
       // tokenInfo.email matches dashboard, so no mismatch.
@@ -136,7 +125,6 @@ void main() {
         email: 'user@corp.com',
         tokenInfo: TokenInfo(
           expiresAt: _farPast,
-          isValid: false,
         ),
       );
       expect(state.isAuthenticated, isFalse);
@@ -147,7 +135,6 @@ void main() {
         email: 'user@corp.com',
         tokenInfo: TokenInfo(
           expiresAt: _farFuture,
-          isValid: true,
         ),
       );
       expect(state.isAuthenticated, isTrue);
@@ -156,12 +143,12 @@ void main() {
 
   group('TokenInfo', () {
     test('expiryDisplay shows Expired for past dates', () {
-      final token = TokenInfo(expiresAt: _farPast, isValid: false);
+      final token = TokenInfo(expiresAt: _farPast);
       expect(token.expiryDisplay, 'Expired');
     });
 
     test('expiryDisplay shows hours for far future', () {
-      final token = TokenInfo(expiresAt: _farFuture, isValid: true);
+      final token = TokenInfo(expiresAt: _farFuture);
       expect(token.expiryDisplay, contains('h'));
     });
   });

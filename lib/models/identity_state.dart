@@ -41,15 +41,30 @@ class AdcInfo {
   final String? clientEmail;
   final String? quotaProject;
 
+  /// OAuth2 credentials for direct token refresh (no gcloud needed).
+  final String? clientId;
+  final String? clientSecret;
+  final String? refreshToken;
+
   const AdcInfo({
     required this.path,
     required this.type,
     this.clientEmail,
     this.quotaProject,
+    this.clientId,
+    this.clientSecret,
+    this.refreshToken,
   });
 
   bool get isServiceAccount => type == 'service_account';
   bool get isUserCredentials => type == 'authorized_user';
+
+  /// Whether this credential has the fields needed for direct token refresh.
+  bool get canDirectRefresh =>
+      isUserCredentials &&
+      clientId != null &&
+      clientSecret != null &&
+      refreshToken != null;
 
   String get displayType =>
       isServiceAccount ? 'Service Account' : 'Application Default Credentials';
@@ -60,14 +75,16 @@ class TokenInfo {
   final String? email;
   final String? accessToken;
   final DateTime expiresAt;
-  final bool isValid;
 
   const TokenInfo({
     this.email,
     this.accessToken,
     required this.expiresAt,
-    required this.isValid,
   });
+
+  /// Dynamic validity check — avoids stale state when the object is held
+  /// in memory past its expiry time.
+  bool get isValid => expiresAt.isAfter(DateTime.now().toUtc());
 
   Duration get timeRemaining => expiresAt.difference(DateTime.now());
 

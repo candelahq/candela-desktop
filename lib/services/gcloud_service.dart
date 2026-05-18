@@ -2,10 +2,19 @@ import 'dart:convert';
 import 'dart:io';
 
 import '../models/identity_state.dart';
+import 'adc_service.dart';
 
-/// Interacts with the gcloud CLI to introspect auth and project state.
+/// Interacts with the gcloud CLI for operations that still require it,
+/// and uses [AdcService] for direct token refresh when possible.
+///
+/// Token operations (getTokenInfo, getAccessToken) now prefer direct OAuth2
+/// refresh via the ADC file, eliminating gcloud subprocess overhead for the
+/// hot path. gcloud is only used as a fallback or for operations that have
+/// no direct API equivalent (account listing, API checks).
 class GCloudService {
   static const _timeout = Duration(seconds: 10);
+
+  final AdcService _adcService = AdcService();
 
   /// Augmented PATH that includes common gcloud install locations.
   /// macOS GUI apps don't inherit shell PATH, so we search explicitly.
@@ -77,21 +86,48 @@ class GCloudService {
     }
   }
 
-  /// Get an ADC access token and decode its JWT expiry.
+  /// Get an ADC access token and its real expiry.
+  ///
+  /// Prefers direct OAuth2 token refresh via the ADC file (fast, no gcloud
+  /// subprocess). Falls back to `gcloud auth application-default
+  /// print-access-token --format=json` if the ADC file doesn't have
+  /// refresh credentials.
   Future<TokenInfo?> getTokenInfo() async {
+    // Try direct refresh first (no gcloud subprocess needed).
+    final directToken = await _adcService.refreshAccessToken();
+    if (directToken != null) return directToken;
+
+    // Fallback: gcloud subprocess.
     try {
       final result = await _run([
         'auth',
         'application-default',
         'print-access-token',
+        '--format=json',
       ]);
       if (result.exitCode != 0) return null;
 
-      final token = (result.stdout as String).trim();
-      if (token.isEmpty) return null;
+      final output = (result.stdout as String).trim();
+      if (output.isEmpty) return null;
 
-      // Attempt JWT decode (works for user credentials, not always for SA).
-      return _decodeJwt(token);
+      try {
+        final parsed = json.decode(output) as Map<String, dynamic>;
+        final token = parsed['token'] as String?;
+        if (token == null || token.isEmpty) return null;
+
+        DateTime? expiresAt;
+        final expiryMap = parsed['expiry'] as Map<String, dynamic>?;
+        if (expiryMap != null) {
+          final datetimeStr = expiryMap['datetime'] as String?;
+          if (datetimeStr != null) {
+            expiresAt = DateTime.tryParse('${datetimeStr}Z');
+          }
+        }
+
+        return _decodeJwt(token, knownExpiry: expiresAt);
+      } catch (_) {
+        return _decodeJwt(output);
+      }
     } catch (_) {
       return null;
     }
@@ -125,21 +161,44 @@ class GCloudService {
 
   /// Get a regular gcloud access token (not ADC) for team backend auth.
   ///
-  /// Uses `gcloud auth print-access-token` which produces an OAuth2 token
-  /// that the backend validates via Google's userinfo endpoint. This is
-  /// different from ADC tokens which may lack the required scopes.
+  /// Prefers direct OAuth2 refresh via ADC file. Falls back to gcloud
+  /// subprocess if needed.
   Future<TokenInfo?> getAccessToken() async {
+    // Try direct refresh first.
+    final directToken = await _adcService.refreshAccessToken();
+    if (directToken != null) return directToken;
+
+    // Fallback: gcloud subprocess.
     try {
       final result = await _run([
         'auth',
         'print-access-token',
+        '--format=json',
       ]);
       if (result.exitCode != 0) return getTokenInfo();
 
-      final token = (result.stdout as String).trim();
-      if (token.isEmpty) return getTokenInfo();
+      final output = (result.stdout as String).trim();
+      if (output.isEmpty) return getTokenInfo();
 
-      return _decodeJwt(token);
+      try {
+        final parsed = json.decode(output) as Map<String, dynamic>;
+        final token =
+            parsed['token'] as String? ?? (parsed['access_token'] as String?);
+        if (token == null || token.isEmpty) return getTokenInfo();
+
+        DateTime? expiresAt;
+        final expiryMap = parsed['expiry'] as Map<String, dynamic>?;
+        if (expiryMap != null) {
+          final datetimeStr = expiryMap['datetime'] as String?;
+          if (datetimeStr != null) {
+            expiresAt = DateTime.tryParse('${datetimeStr}Z');
+          }
+        }
+
+        return _decodeJwt(token, knownExpiry: expiresAt);
+      } catch (_) {
+        return _decodeJwt(output);
+      }
     } catch (_) {
       return getTokenInfo();
     }
@@ -163,7 +222,12 @@ class GCloudService {
     }
   }
 
-  TokenInfo _decodeJwt(String token) {
+  /// Decode a token, optionally using a [knownExpiry] from gcloud JSON output.
+  ///
+  /// When [knownExpiry] is provided (from `--format=json`), it is used as the
+  /// authoritative expiry — avoiding the bogus 15-minute fallback that
+  /// previously applied to opaque `ya29.*` tokens.
+  TokenInfo _decodeJwt(String token, {DateTime? knownExpiry}) {
     final parts = token.split('.');
     if (parts.length >= 2) {
       try {
@@ -184,20 +248,20 @@ class GCloudService {
             email: email,
             accessToken: token,
             expiresAt: expiresAt,
-            isValid: expiresAt.isAfter(DateTime.now().toUtc()),
           );
         }
       } catch (_) {
-        // Token is not a JWT (e.g., opaque token). Still valid.
+        // Token is not a JWT (e.g., opaque token). Fall through.
       }
     }
-    // Non-JWT token (opaque) — assume valid since gcloud returned it, but
-    // use a conservative 15-minute TTL. We can't know the real expiry, so
-    // a short TTL forces re-acquisition before it's likely to have expired.
+    // Non-JWT token (opaque `ya29.*`). Use the real expiry from gcloud
+    // --format=json if available; otherwise fall back to 60-minute estimate
+    // (Google OAuth2 access tokens have a 3600-second lifetime).
+    final expiresAt =
+        knownExpiry ?? DateTime.now().toUtc().add(const Duration(minutes: 60));
     return TokenInfo(
       accessToken: token,
-      expiresAt: DateTime.now().add(const Duration(minutes: 15)),
-      isValid: true,
+      expiresAt: expiresAt,
     );
   }
 

@@ -1,0 +1,3 @@
+# Mark generated code so GitHub excludes it from diffs and stats.
+*.g.dart linguist-generated=true
+lib/gen/** linguist-generated=true

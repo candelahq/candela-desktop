@@ -28,7 +28,7 @@ void main() {
 
   group('Settings screen', () {
     testWidgets('renders all settings sections', (tester) async {
-      await pumpApp(tester, overrides: config.overrides);
+      await pumpApp(tester, configHelper: config);
 
       // Navigate to Settings.
       await tester.tap(find.text('Settings'));
@@ -46,7 +46,7 @@ void main() {
     });
 
     testWidgets('displays current proxy port', (tester) async {
-      await pumpApp(tester, overrides: config.overrides);
+      await pumpApp(tester, configHelper: config);
 
       await tester.tap(find.text('Settings'));
       await settleWithTimeout(tester);
@@ -56,7 +56,7 @@ void main() {
     });
 
     testWidgets('displays version in About section', (tester) async {
-      await pumpApp(tester, overrides: config.overrides);
+      await pumpApp(tester, configHelper: config);
 
       await tester.tap(find.text('Settings'));
       await settleWithTimeout(tester);
@@ -65,7 +65,7 @@ void main() {
     });
 
     testWidgets('theme toggle buttons are present', (tester) async {
-      await pumpApp(tester, overrides: config.overrides);
+      await pumpApp(tester, configHelper: config);
 
       await tester.tap(find.text('Settings'));
       await settleWithTimeout(tester);
@@ -78,7 +78,7 @@ void main() {
     });
 
     testWidgets('shows solo mode as current mode', (tester) async {
-      await pumpApp(tester, overrides: config.overrides);
+      await pumpApp(tester, configHelper: config);
 
       await tester.tap(find.text('Settings'));
       await settleWithTimeout(tester);
@@ -92,7 +92,7 @@ void main() {
     });
 
     testWidgets('launch at login switch is present', (tester) async {
-      await pumpApp(tester, overrides: config.overrides);
+      await pumpApp(tester, configHelper: config);
 
       await tester.tap(find.text('Settings'));
       await settleWithTimeout(tester);

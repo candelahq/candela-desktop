@@ -53,10 +53,16 @@ class VertexAIConfig {
   /// 'system-only' = cache only the system prompt.
   final String cachingMode;
 
+  /// Cache entry TTL: '5m' (default, 1.25x write cost) or '1h' (2x write cost).
+  /// The 1-hour TTL is ideal for long coding sessions where system prompts
+  /// persist across many requests.
+  final String cacheTTL;
+
   const VertexAIConfig({
     this.project,
     this.region,
     this.cachingMode = 'off',
+    this.cacheTTL = '5m',
   });
 
   String get effectiveRegion => region ?? 'us-central1';

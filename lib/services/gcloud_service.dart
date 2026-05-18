@@ -77,21 +77,47 @@ class GCloudService {
     }
   }
 
-  /// Get an ADC access token and decode its JWT expiry.
+  /// Get an ADC access token and its real expiry.
+  ///
+  /// Uses `--format=json` to retrieve the actual token expiry from gcloud
+  /// rather than relying on JWT decoding (ADC tokens are typically opaque
+  /// `ya29.*` tokens, not JWTs, so JWT decode falls through to a fallback).
   Future<TokenInfo?> getTokenInfo() async {
     try {
       final result = await _run([
         'auth',
         'application-default',
         'print-access-token',
+        '--format=json',
       ]);
       if (result.exitCode != 0) return null;
 
-      final token = (result.stdout as String).trim();
-      if (token.isEmpty) return null;
+      final output = (result.stdout as String).trim();
+      if (output.isEmpty) return null;
 
-      // Attempt JWT decode (works for user credentials, not always for SA).
-      return _decodeJwt(token);
+      // --format=json returns a JSON object with `token` and `expiry` fields.
+      try {
+        final parsed = json.decode(output) as Map<String, dynamic>;
+        final token = parsed['token'] as String?;
+        if (token == null || token.isEmpty) return null;
+
+        // Extract the real expiry from gcloud's JSON response.
+        DateTime? expiresAt;
+        final expiryMap = parsed['expiry'] as Map<String, dynamic>?;
+        if (expiryMap != null) {
+          final datetimeStr = expiryMap['datetime'] as String?;
+          if (datetimeStr != null) {
+            // gcloud returns UTC datetime like "2026-05-18 02:06:07.038436".
+            expiresAt = DateTime.tryParse('${datetimeStr}Z');
+          }
+        }
+
+        return _decodeJwt(token, knownExpiry: expiresAt);
+      } catch (_) {
+        // If JSON parsing fails, the output might be a plain token string
+        // (older gcloud versions). Fall back to plain-token path.
+        return _decodeJwt(output);
+      }
     } catch (_) {
       return null;
     }
@@ -125,21 +151,41 @@ class GCloudService {
 
   /// Get a regular gcloud access token (not ADC) for team backend auth.
   ///
-  /// Uses `gcloud auth print-access-token` which produces an OAuth2 token
-  /// that the backend validates via Google's userinfo endpoint. This is
-  /// different from ADC tokens which may lack the required scopes.
+  /// Uses `gcloud auth print-access-token --format=json` to get the real
+  /// token expiry. Falls back to [getTokenInfo] on failure.
   Future<TokenInfo?> getAccessToken() async {
     try {
       final result = await _run([
         'auth',
         'print-access-token',
+        '--format=json',
       ]);
       if (result.exitCode != 0) return getTokenInfo();
 
-      final token = (result.stdout as String).trim();
-      if (token.isEmpty) return getTokenInfo();
+      final output = (result.stdout as String).trim();
+      if (output.isEmpty) return getTokenInfo();
 
-      return _decodeJwt(token);
+      // --format=json returns a JSON object with `token` and `expiry` fields.
+      try {
+        final parsed = json.decode(output) as Map<String, dynamic>;
+        final token =
+            parsed['token'] as String? ?? (parsed['access_token'] as String?);
+        if (token == null || token.isEmpty) return getTokenInfo();
+
+        DateTime? expiresAt;
+        final expiryMap = parsed['expiry'] as Map<String, dynamic>?;
+        if (expiryMap != null) {
+          final datetimeStr = expiryMap['datetime'] as String?;
+          if (datetimeStr != null) {
+            expiresAt = DateTime.tryParse('${datetimeStr}Z');
+          }
+        }
+
+        return _decodeJwt(token, knownExpiry: expiresAt);
+      } catch (_) {
+        // Plain token fallback for older gcloud.
+        return _decodeJwt(output);
+      }
     } catch (_) {
       return getTokenInfo();
     }
@@ -163,7 +209,12 @@ class GCloudService {
     }
   }
 
-  TokenInfo _decodeJwt(String token) {
+  /// Decode a token, optionally using a [knownExpiry] from gcloud JSON output.
+  ///
+  /// When [knownExpiry] is provided (from `--format=json`), it is used as the
+  /// authoritative expiry — avoiding the bogus 15-minute fallback that
+  /// previously applied to opaque `ya29.*` tokens.
+  TokenInfo _decodeJwt(String token, {DateTime? knownExpiry}) {
     final parts = token.split('.');
     if (parts.length >= 2) {
       try {
@@ -188,16 +239,18 @@ class GCloudService {
           );
         }
       } catch (_) {
-        // Token is not a JWT (e.g., opaque token). Still valid.
+        // Token is not a JWT (e.g., opaque token). Fall through.
       }
     }
-    // Non-JWT token (opaque) — assume valid since gcloud returned it, but
-    // use a conservative 15-minute TTL. We can't know the real expiry, so
-    // a short TTL forces re-acquisition before it's likely to have expired.
+    // Non-JWT token (opaque `ya29.*`). Use the real expiry from gcloud
+    // --format=json if available; otherwise fall back to 60-minute estimate
+    // (Google OAuth2 access tokens have a 3600-second lifetime).
+    final expiresAt =
+        knownExpiry ?? DateTime.now().toUtc().add(const Duration(minutes: 60));
     return TokenInfo(
       accessToken: token,
-      expiresAt: DateTime.now().add(const Duration(minutes: 15)),
-      isValid: true,
+      expiresAt: expiresAt,
+      isValid: expiresAt.isAfter(DateTime.now().toUtc()),
     );
   }
 

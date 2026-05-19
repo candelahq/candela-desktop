@@ -31,5 +31,7 @@
 	<!-- Sparkle auto-update configuration -->
 	<key>SUFeedURL</key>
 	<string>https://github.com/candelahq/candela-desktop/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>S3theYxREo00EIvbBCODxsMoM/glcpGTkemkq6/tJTQ=</string>
 </dict>
 </plist>

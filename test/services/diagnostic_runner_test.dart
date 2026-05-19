@@ -204,31 +204,33 @@ void main() {
 
   // ── runAll() path coverage ──────────────────────────────────────────────────
 
-  group('DiagnosticRunner runAll — gcloud not installed (early exit)', () {
+  group('DiagnosticRunner runAll — gcloud not installed (continues)', () {
     late DiagnosticRunner runner;
     setUp(() => runner = _runner(gcloudInstalled: false));
     tearDown(() => runner.dispose());
 
-    test('returns failed summary immediately', () async {
+    test('gcloud missing is a warning, not a failure', () async {
       final summary = await runner.runAll();
-      expect(summary.failed, greaterThanOrEqualTo(1));
-      expect(summary.passed, 0);
+      expect(summary.warned, greaterThanOrEqualTo(1));
     });
 
-    test('emits fail entry for gcloud CLI', () async {
+    test('emits warn entry for gcloud CLI', () async {
       await runner.runAll();
-      // Check history (same source as stream) since broadcast events
-      // may be missed if listener registation races the synchronous emit.
       expect(
         runner.history.any((e) =>
-            e.status == DiagnosticStatus.fail && e.message.contains('gcloud')),
+            e.status == DiagnosticStatus.warn && e.message.contains('gcloud')),
         isTrue,
       );
     });
 
-    test('history is populated after runAll', () async {
+    test('continues to check subsequent steps after gcloud warn', () async {
       await runner.runAll();
-      expect(runner.history, isNotEmpty);
+      // Verify that the runner continues to subsequent steps (like config)
+      // instead of early-exiting on gcloud warning.
+      expect(
+        runner.history.any((e) => e.message.contains('Config loaded')),
+        isTrue,
+      );
     });
 
     test('isRunning is false after runAll completes', () async {

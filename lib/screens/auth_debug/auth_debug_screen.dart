@@ -195,6 +195,14 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
           icon: 'O'));
       testFutures.add(_providerTest.testOpenAI());
     }
+    if (providerNames.contains('aws') || providerNames.contains('bedrock')) {
+      loadingStatuses.add(const ProviderStatus(
+          name: 'aws',
+          displayName: 'AWS (Bedrock)',
+          state: ProviderState.loading,
+          icon: 'A'));
+      testFutures.add(_providerTest.testAws());
+    }
 
     // NOTE: Runtime backends (ollama, vllm, lmstudio) are NOT listed here —
     // they're managed in the "Runtime Processes" section via ProcessManager.

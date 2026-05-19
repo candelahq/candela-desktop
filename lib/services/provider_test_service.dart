@@ -238,14 +238,14 @@ class ProviderTestService {
             latency: sw.elapsed,
             icon: 'A');
       } else {
-        final err = (result.stderr as String).trim();
+        final err = result.stderr.toString().trim();
         return ProviderStatus(
             name: 'aws',
             displayName: 'AWS (Bedrock)',
             state: ProviderState.error,
             statusMessage: 'Connection failed',
-            errorDetail:
-                err.isNotEmpty ? err : 'aws sts get-caller-identity failed',
+            errorDetail: sanitizeError(
+                err.isNotEmpty ? err : 'aws sts get-caller-identity failed'),
             fixCommand: 'aws configure sso',
             icon: 'A');
       }

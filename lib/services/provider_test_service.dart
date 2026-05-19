@@ -224,6 +224,32 @@ class ProviderTestService {
     }
   }
 
+  Future<ProviderStatus> testAws() async {
+    final hasEnv = Platform.environment['AWS_ACCESS_KEY_ID'] != null &&
+        Platform.environment['AWS_ACCESS_KEY_ID']!.isNotEmpty;
+    final home =
+        Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'];
+    final hasFile = home != null && File('$home/.aws/credentials').existsSync();
+
+    if (!hasEnv && !hasFile) {
+      return const ProviderStatus(
+          name: 'aws',
+          displayName: 'AWS (Bedrock)',
+          state: ProviderState.notConfigured,
+          statusMessage: 'Not configured',
+          errorDetail: 'No ~/.aws/credentials or AWS_ACCESS_KEY_ID found',
+          fixCommand: 'aws configure sso',
+          icon: 'A');
+    }
+
+    return const ProviderStatus(
+        name: 'aws',
+        displayName: 'AWS (Bedrock)',
+        state: ProviderState.connected,
+        statusMessage: 'Credentials found',
+        icon: 'A');
+  }
+
   Future<ProviderStatus> testOllama(
       {String host = 'http://localhost:11434'}) async {
     try {

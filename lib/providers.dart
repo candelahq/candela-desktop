@@ -61,6 +61,17 @@ Stream<CandelaConfig> _configStream(ConfigService service) async* {
 DashboardNotifier dashboardNotifier(Ref ref) {
   final notifier = DashboardNotifier();
 
+  // Bridge ChangeNotifier → Riverpod: when the notifier calls
+  // notifyListeners() (e.g. after fetch sets loading: false), tell Riverpod
+  // to signal all ref.watch(dashboardProvider) consumers to rebuild.
+  // Without this, the plain @riverpod function provider only signals
+  // watchers when the *instance* changes — not when its internal state does.
+  void onNotify() {
+    ref.notifyListeners();
+  }
+
+  notifier.addListener(onNotify);
+
   // Configure and start polling when config becomes available.
   void configureAndPoll(CandelaConfig config) async {
     await notifier.configure(config);
@@ -76,7 +87,10 @@ DashboardNotifier dashboardNotifier(Ref ref) {
     next.whenData(configureAndPoll);
   });
 
-  ref.onDispose(() => notifier.dispose());
+  ref.onDispose(() {
+    notifier.removeListener(onNotify);
+    notifier.dispose();
+  });
   return notifier;
 }
 

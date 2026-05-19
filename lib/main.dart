@@ -67,9 +67,29 @@ void main() async {
       title: 'Candela',
     );
 
+    // Track whether the window has been shown — the safety fallback below
+    // must not race with the normal path.
+    var windowShown = false;
+
     windowManager.waitUntilReadyToShow(windowOptions, () async {
-      await windowManager.show();
-      await windowManager.focus();
+      if (!windowShown) {
+        windowShown = true;
+        await windowManager.show();
+        await windowManager.focus();
+      }
+    });
+
+    // Safety fallback: if waitUntilReadyToShow never fires its callback
+    // (observed in some adhoc-signed release builds on macOS), force the
+    // window visible after 3 seconds so the user doesn't stare at a
+    // spinner forever.
+    Future.delayed(const Duration(seconds: 3), () async {
+      if (!windowShown) {
+        windowShown = true;
+        debugPrint('[Candela] waitUntilReadyToShow timed out — forcing show');
+        await windowManager.show();
+        await windowManager.focus();
+      }
     });
 
     // Riverpod manages all service lifecycle (config, process manager, tray).

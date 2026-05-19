@@ -65,7 +65,7 @@ class DiagnosticRunner {
     history.replaceRange(0, history.length, []);
     int passed = 0, failed = 0, warned = 0;
 
-    // 1. gcloud CLI
+    // 1. gcloud CLI (optional — candela auth login handles auth natively)
     _emit('Checking gcloud CLI...', DiagnosticStatus.running);
     if (_disposed) {
       return const DiagnosticSummary(passed: 0, failed: 0, warned: 0);
@@ -74,11 +74,11 @@ class DiagnosticRunner {
       _emit('gcloud CLI installed', DiagnosticStatus.pass);
       passed++;
     } else {
-      _emit('gcloud CLI not found', DiagnosticStatus.fail,
+      _emit(
+          'gcloud CLI not found (optional — candela auth login handles auth natively)',
+          DiagnosticStatus.warn,
           fixUrl: 'https://cloud.google.com/sdk/docs/install');
-      failed++;
-      _emitSummary(passed, failed, warned);
-      return DiagnosticSummary(passed: passed, failed: failed, warned: warned);
+      warned++;
     }
 
     // 2. Config file

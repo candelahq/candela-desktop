@@ -225,29 +225,57 @@ class ProviderTestService {
   }
 
   Future<ProviderStatus> testAws() async {
-    final hasEnv = Platform.environment['AWS_ACCESS_KEY_ID'] != null &&
-        Platform.environment['AWS_ACCESS_KEY_ID']!.isNotEmpty;
-    final home =
-        Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'];
-    final hasFile = home != null && File('$home/.aws/credentials').existsSync();
+    final sw = Stopwatch()..start();
+    try {
+      final result = await Process.run('aws', ['sts', 'get-caller-identity']);
+      sw.stop();
+      if (result.exitCode == 0) {
+        return ProviderStatus(
+            name: 'aws',
+            displayName: 'AWS (Bedrock)',
+            state: ProviderState.connected,
+            statusMessage: 'Connected',
+            latency: sw.elapsed,
+            icon: 'A');
+      } else {
+        final err = (result.stderr as String).trim();
+        return ProviderStatus(
+            name: 'aws',
+            displayName: 'AWS (Bedrock)',
+            state: ProviderState.error,
+            statusMessage: 'Connection failed',
+            errorDetail:
+                err.isNotEmpty ? err : 'aws sts get-caller-identity failed',
+            fixCommand: 'aws configure sso',
+            icon: 'A');
+      }
+    } catch (_) {
+      // AWS CLI not installed, fall back to checking credential files
+      final hasEnv = Platform.environment['AWS_ACCESS_KEY_ID'] != null &&
+          Platform.environment['AWS_ACCESS_KEY_ID']!.isNotEmpty;
+      final home =
+          Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'];
+      final hasFile =
+          home != null && File('$home/.aws/credentials').existsSync();
 
-    if (!hasEnv && !hasFile) {
+      if (!hasEnv && !hasFile) {
+        return const ProviderStatus(
+            name: 'aws',
+            displayName: 'AWS (Bedrock)',
+            state: ProviderState.notConfigured,
+            statusMessage: 'Not configured',
+            errorDetail: 'No ~/.aws/credentials or AWS_ACCESS_KEY_ID found',
+            fixCommand: 'aws configure sso',
+            icon: 'A');
+      }
+
       return const ProviderStatus(
           name: 'aws',
           displayName: 'AWS (Bedrock)',
-          state: ProviderState.notConfigured,
-          statusMessage: 'Not configured',
-          errorDetail: 'No ~/.aws/credentials or AWS_ACCESS_KEY_ID found',
-          fixCommand: 'aws configure sso',
+          state: ProviderState.connected,
+          statusMessage: 'Credentials found (unverified)',
           icon: 'A');
     }
-
-    return const ProviderStatus(
-        name: 'aws',
-        displayName: 'AWS (Bedrock)',
-        state: ProviderState.connected,
-        statusMessage: 'Credentials found',
-        icon: 'A');
   }
 
   Future<ProviderStatus> testOllama(

@@ -21,20 +21,20 @@ class BrewResult {
 /// the UI needs to remain responsive during long-running installs.
 class BrewService {
   String _brewPath = 'brew';
-  bool _pathResolved = false;
+  Future<void>? _resolveFuture;
 
-  Future<void> _resolveBrewPath() async {
-    if (_pathResolved) return;
-    try {
-      if ((await Process.run('which', ['brew'])).exitCode == 0) {
-        _brewPath = 'brew';
-      } else if (File('/opt/homebrew/bin/brew').existsSync()) {
-        _brewPath = '/opt/homebrew/bin/brew';
-      } else if (File('/usr/local/bin/brew').existsSync()) {
-        _brewPath = '/usr/local/bin/brew';
-      }
-    } catch (_) {}
-    _pathResolved = true;
+  Future<void> _resolveBrewPath() {
+    return _resolveFuture ??= () async {
+      try {
+        if ((await Process.run('which', ['brew'])).exitCode == 0) {
+          _brewPath = 'brew';
+        } else if (File('/opt/homebrew/bin/brew').existsSync()) {
+          _brewPath = '/opt/homebrew/bin/brew';
+        } else if (File('/usr/local/bin/brew').existsSync()) {
+          _brewPath = '/usr/local/bin/brew';
+        }
+      } catch (_) {}
+    }();
   }
 
   /// Check if Homebrew is installed.

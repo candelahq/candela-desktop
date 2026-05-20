@@ -235,6 +235,32 @@ class TelemetryService {
         );
       }
 
+      // If server doesn't support GetDashboardData yet, fall back to legacy.
+      if (e.code == Code.unimplemented) {
+        debugPrint(
+            '[TelemetryService] GetDashboardData not available, falling back');
+        try {
+          return await _fetchRemoteLegacy(api, start, now);
+        } on ConnectException catch (e2) {
+          if (e2.code == Code.unauthenticated) {
+            return (
+              <SpanRecord>[],
+              TelemetryErrorKind.authExpired,
+              null,
+              <GrantInfo>[],
+              null
+            );
+          }
+          return (
+            <SpanRecord>[],
+            TelemetryErrorKind.unreachable,
+            null,
+            <GrantInfo>[],
+            null
+          );
+        }
+      }
+
       return (
         <SpanRecord>[],
         TelemetryErrorKind.unreachable,
@@ -380,8 +406,6 @@ class TelemetryService {
       );
     }
   }
-
-  /// Consolidated path: single GetDashboardData RPC.
 
   // ── Aggregation ─────────────────────────────────────────────────────────────
 

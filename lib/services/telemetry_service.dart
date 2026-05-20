@@ -313,8 +313,6 @@ class TelemetryService {
     try {
       // Fire RPCs concurrently. GetMyUsage is non-fatal.
       // ignore: deprecated_member_use_from_same_package
-      final summaryFuture = api.getUsageSummary(start: start, end: now);
-      // ignore: deprecated_member_use_from_same_package
       final modelsFuture = api.getModelBreakdown(start: start, end: now);
       // ignore: deprecated_member_use_from_same_package
       final usageFuture = api
@@ -326,13 +324,12 @@ class TelemetryService {
       });
 
       final results = await Future.wait([
-        summaryFuture,
         modelsFuture,
         usageFuture,
       ]);
 
-      final modelsResp = results[1] as GetModelBreakdownResponse;
-      final usageResp = results[2] as GetMyUsageResponse?;
+      final modelsResp = results[0] as GetModelBreakdownResponse;
+      final usageResp = results[1] as GetMyUsageResponse?;
 
       // Parse budget/grant data from GetMyUsage (non-fatal if missing/error).
       BudgetInfo? budget;

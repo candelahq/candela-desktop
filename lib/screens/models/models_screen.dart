@@ -252,8 +252,20 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
           color: CandelaColors.bgSecondary,
           child: Row(children: [
             _colHeader('Model', _ModelSortCol.name, flex: 3),
-            _colHeader('In \$/M', _ModelSortCol.name), // static, no sort
-            _colHeader('Out \$/M', _ModelSortCol.name), // static, no sort
+            const Expanded(
+                child: Text('In \$/M',
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: CandelaColors.textMuted,
+                        letterSpacing: 0.4))),
+            const Expanded(
+                child: Text('Out \$/M',
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: CandelaColors.textMuted,
+                        letterSpacing: 0.4))),
             _colHeader('Calls', _ModelSortCol.calls),
             _colHeader('Tokens', _ModelSortCol.tokens),
             _colHeader('Cost', _ModelSortCol.cost),

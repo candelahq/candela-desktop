@@ -222,6 +222,7 @@ class ConfigService {
         project: vtx['project'] as String?,
         region: vtx['region'] as String?,
         cachingMode: cachingMode,
+        cacheTTL: (vtx['cache_ttl'] as String?) ?? '5m',
       );
     }
 
@@ -603,11 +604,16 @@ class ConfigService {
 
     // Hot-apply to the running proxy (best-effort).
     final config = await load();
-    await _applyCachingToProxy(mode, config.port);
+    await _applyCachingToProxy(mode, config.port,
+        cacheTTL: config.vertexAI?.cacheTTL);
   }
 
-  /// Send caching mode to the running proxy for immediate effect.
-  Future<void> _applyCachingToProxy(String mode, int port) async {
+  /// Send caching mode and TTL to the running proxy for immediate effect.
+  Future<void> _applyCachingToProxy(
+    String mode,
+    int port, {
+    String? cacheTTL,
+  }) async {
     try {
       final client = HttpClient()
         ..connectionTimeout = const Duration(seconds: 2);
@@ -615,13 +621,46 @@ class ConfigService {
         Uri.parse('http://127.0.0.1:$port/_local/api/config/caching'),
       );
       request.headers.contentType = ContentType.json;
-      request.write(jsonEncode({'anthropic': mode}));
+      final body = <String, dynamic>{'anthropic': mode};
+      if (cacheTTL != null) body['cache_ttl'] = cacheTTL;
+      request.write(jsonEncode(body));
       final response = await request.close();
       await response.drain<void>();
       client.close();
     } catch (_) {
       // Proxy may not be running — that's fine, config is persisted.
     }
+  }
+
+  /// Set cache TTL under `vertex_ai.cache_ttl`.
+  ///
+  /// Valid values: '5m' (default, 1.25x write cost) or '1h' (2x write cost).
+  /// Also calls the running proxy's runtime API for immediate effect.
+  Future<void> setCacheTTL(String ttl) async {
+    final resolvedPath = _resolveConfigPath();
+    final file = File(resolvedPath);
+
+    if (await file.exists()) {
+      final content = await file.readAsString();
+      final parsed = loadYaml(content);
+      final editor = YamlEditor(content);
+      if (parsed is YamlMap && parsed['vertex_ai'] is YamlMap) {
+        editor.update(['vertex_ai', 'cache_ttl'], ttl);
+      } else {
+        editor.update(['vertex_ai'], {'cache_ttl': ttl});
+      }
+      await _writeRaw(file, editor.toString());
+    } else {
+      await _writeYaml(file, {
+        'config_version': 1,
+        'vertex_ai': {'cache_ttl': ttl},
+      });
+    }
+
+    // Hot-apply to the running proxy (best-effort).
+    final config = await load();
+    final mode = config.vertexAI?.cachingMode ?? 'off';
+    await _applyCachingToProxy(mode, config.port, cacheTTL: ttl);
   }
 
   /// Set optimizations settings.

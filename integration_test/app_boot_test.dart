@@ -27,7 +27,7 @@ void main() {
 
   group('App boot', () {
     testWidgets('launches to main shell without crashing', (tester) async {
-      await pumpApp(tester, overrides: config.overrides);
+      await pumpApp(tester, configHelper: config);
 
       // The sidebar should be visible — this means we got past onboarding
       // and the full AppShell rendered.
@@ -40,7 +40,7 @@ void main() {
     });
 
     testWidgets('shows sidebar brand and nav items after boot', (tester) async {
-      await pumpApp(tester, overrides: config.overrides);
+      await pumpApp(tester, configHelper: config);
 
       // Sidebar nav items should all be present.
       // "Today" appears twice (sidebar + screen heading), others once.

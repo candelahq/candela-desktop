@@ -1,10 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/candela_config.dart';
 import '../../models/span_stats.dart';
 import '../../services/budget_notification_service.dart';
-import '../../services/gcloud_service.dart';
+import '../../services/dashboard_notifier.dart';
 import '../../services/telemetry_service.dart';
 import '../../theme/colors.dart';
 import '../../widgets/area_chart.dart';
@@ -22,6 +21,9 @@ import '../../providers.dart';
 ///
 /// • **Team mode** (`config.remote` set) → ConnectRPC backend, gcloud token.
 /// • **Local mode** → `/_local/api/traces` on the sidecar.
+///
+/// Uses the shared [DashboardNotifier] from [dashboardProvider] so
+/// that all screens share a single polling timer and response cache.
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
@@ -30,202 +32,92 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  TokenTimeRange _range = TokenTimeRange.d7;
-  TelemetryResult? _result;
-  UsageSummary? _filteredSummary;
-  DateTime _fetchedAt = DateTime.now();
-  bool _loading = true;
-  String? _error;
-  bool _isTeamMode = false;
   String? _selectedModel;
-  // C6: track whether init has already run to prevent re-entrant timer creation.
-  bool _initialized = false;
-  Timer? _autoRefresh;
-  TelemetryService? _svc;
+
   // Static so the notification service (and its de-duplication state) survives
   // widget tree rebuilds and navigation away from/back to the dashboard.
   static final BudgetNotificationService _notifSvc =
       BudgetNotificationService();
-
-  // Team-mode token refresh state.
-  GCloudService? _gcloud;
-  String? _remoteUrl;
-  int? _proxyPort;
-  DateTime? _tokenExpiresAt;
-  static const _tokenRefreshBuffer = Duration(minutes: 5);
+  static bool _notifInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    _initService();
+    _initNotifications();
   }
 
-  Future<void> _initService() async {
-    // C6: guard against re-entrant calls if widget is rebuilt before async completes.
-    if (_initialized) return;
-    _initialized = true;
-
-    final config = await ref.read(configServiceProvider).load();
-    final isTeam = config.mode == CandelaMode.team &&
-        config.remote != null &&
-        config.remote!.isNotEmpty;
-
-    TelemetryService svc;
-    if (isTeam) {
-      // Fetch a gcloud ID token for team backend auth.
-      // Cloud Run requires an audience-scoped identity token, not an access token.
-      final gcloud = GCloudService();
-      final audience = config.audience ?? config.remote ?? '';
-      final tokenInfo = audience.isNotEmpty
-          ? await gcloud.getIdToken(audience)
-          : await gcloud.getTokenInfo();
-      svc = TelemetryService(
-        port: config.port,
-        remoteUrl: config.remote,
-        authToken: tokenInfo?.accessToken,
-      );
-      // Store refresh state so _refreshTokenIfNeeded() can update the token.
-      _gcloud = gcloud;
-      _remoteUrl = config.remote;
-      _proxyPort = config.port;
-      _tokenExpiresAt = tokenInfo?.expiresAt;
-    } else {
-      svc = TelemetryService(port: config.port);
-    }
-
-    if (!mounted) return;
-    setState(() {
-      _svc = svc;
-      _isTeamMode = isTeam;
-    });
-
-    // Init notifications before first fetch so no threshold crossing is missed.
-    await _notifSvc.init();
-    await _fetch();
-    _autoRefresh = Timer.periodic(const Duration(seconds: 30), (_) => _fetch());
-  }
-
-  /// Re-fetches the auth token and rebuilds the TelemetryService when the
-  /// token is within [_tokenRefreshBuffer] of expiry. No-op in local mode.
-  Future<void> _refreshTokenIfNeeded() async {
-    if (_gcloud == null || _remoteUrl == null) return; // local mode
-    final expiresAt = _tokenExpiresAt;
-    if (expiresAt != null &&
-        expiresAt.difference(DateTime.now().toUtc()) > _tokenRefreshBuffer) {
-      return; // still plenty of time left
-    }
-    // Token is expired or close to expiry — fetch a fresh one.
-    final audience = _remoteUrl!;
-    final tokenInfo = await _gcloud!.getIdToken(audience);
-    if (!mounted) return;
-    final oldSvc = _svc;
-    _svc = TelemetryService(
-      port: _proxyPort ?? 8181,
-      remoteUrl: _remoteUrl,
-      authToken: tokenInfo?.accessToken,
-    );
-    _tokenExpiresAt = tokenInfo?.expiresAt;
-    oldSvc?.dispose();
-  }
-
-  Future<void> _fetch() async {
-    if (!mounted || _svc == null) return;
-    await _refreshTokenIfNeeded();
-    if (!mounted || _svc == null) return;
-    setState(() => _loading = true);
-    final result = await _svc!.fetch(_range);
-    if (!mounted) return;
-    setState(() {
-      _result = result;
-      _fetchedAt = DateTime.now();
-      _loading = false;
-      _error = _errorMessage(result);
-    });
-    _recalculateSummary();
-    // Fire threshold notifications when budget data is available.
-    if (result?.budget != null) {
-      unawaited(_notifSvc.evaluate(result!.budget!));
+  Future<void> _initNotifications() async {
+    if (!_notifInitialized) {
+      await _notifSvc.init();
+      _notifInitialized = true;
     }
   }
 
-  String? _errorMessage(TelemetryResult? result) {
-    if (result == null) {
-      return _isTeamMode
+  void _setSelectedModel(String? model) {
+    setState(() => _selectedModel = model);
+  }
+
+  String? _errorMessage(DashboardState state) {
+    final result = state.result;
+    if (result == null && !state.loading) {
+      return state.isTeamMode
           ? 'Could not reach the team backend. Check your network and auth.'
           : 'Could not reach the Candela proxy. Is it running?';
     }
+    if (result == null) return state.errorMessage;
     // TelemetryResult.empty() means connected but no calls yet — not an error.
     if (!result.hasData && result.error == null) return null;
     if (result.error == TelemetryErrorKind.authExpired) {
       return 'Session expired \u2014 run: gcloud auth application-default login';
     }
     if (result.error == TelemetryErrorKind.unreachable) {
-      return _isTeamMode
+      return state.isTeamMode
           ? 'Team backend unreachable. Check your network.'
           : 'Candela proxy unreachable. Is it running?';
     }
     return null;
   }
 
-  void _setRange(TokenTimeRange r) {
-    setState(() => _range = r);
-    _fetch();
-  }
-
-  void _setSelectedModel(String? model) {
-    setState(() => _selectedModel = model);
-    _recalculateSummary();
-  }
-
-  void _recalculateSummary() {
-    if (_result == null || _svc == null) {
-      setState(() => _filteredSummary = null);
-      return;
-    }
-    if (_selectedModel == null) {
-      setState(() => _filteredSummary = _result!.summary);
-      return;
-    }
-    final filteredSpans =
-        _result!.spans.where((s) => s.model == _selectedModel).toList();
-    final newSummary = _svc!.buildSummary(filteredSpans, _range, _fetchedAt);
-    setState(() => _filteredSummary = newSummary);
-  }
-
-  @override
-  void dispose() {
-    _autoRefresh?.cancel();
-    _svc?.dispose();
-    // Do NOT cancel notifications on dispose: the user may navigate away and
-    // back — clearing alerts here would wipe banners they haven't dismissed.
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
+    final notifier = ref.watch(dashboardProvider);
+    final state = notifier.state;
+
+    // Update filtered summary when notifier data changes.
+    final summary = _selectedModel == null
+        ? state.summary
+        : notifier.buildFilteredSummary(_selectedModel);
+
     final uniqueModels =
-        _result?.models.map((m) => m.model).toSet().toList() ?? [];
+        state.result?.models.map((m) => m.model).toSet().toList() ?? [];
+
+    final error = _errorMessage(state);
+
+    // Fire threshold notifications when budget data is available.
+    if (state.result?.budget != null) {
+      unawaited(_notifSvc.evaluate(state.result!.budget!));
+    }
 
     return Scaffold(
       backgroundColor: CandelaColors.bgPrimary,
       body: Column(
         children: [
           _Header(
-            range: _range,
-            onRangeChanged: _setRange,
-            onRefresh: _fetch,
-            loading: _loading,
-            isTeamMode: _isTeamMode,
+            range: state.range,
+            onRangeChanged: (r) => notifier.setRange(r),
+            onRefresh: () => notifier.fetch(),
+            loading: state.loading,
+            isTeamMode: state.isTeamMode,
             models: uniqueModels,
             selectedModel: _selectedModel,
             onModelChanged: _setSelectedModel,
           ),
           Expanded(
             child: _Body(
-              result: _result,
-              filteredSummary: _filteredSummary,
-              loading: _loading,
-              error: _error,
+              result: state.result,
+              filteredSummary: summary,
+              loading: state.loading,
+              error: error,
             ),
           ),
         ],

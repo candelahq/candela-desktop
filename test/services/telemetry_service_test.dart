@@ -119,6 +119,7 @@ class MockConnectApi extends ConnectApiService {
   }
 
   @override
+  // ignore: deprecated_member_use_from_same_package
   Future<GetUsageSummaryResponse> getUsageSummary({
     required DateTime start,
     required DateTime end,
@@ -128,6 +129,7 @@ class MockConnectApi extends ConnectApiService {
   }
 
   @override
+  // ignore: deprecated_member_use_from_same_package
   Future<GetModelBreakdownResponse> getModelBreakdown({
     required DateTime start,
     required DateTime end,
@@ -137,6 +139,7 @@ class MockConnectApi extends ConnectApiService {
   }
 
   @override
+  // ignore: deprecated_member_use_from_same_package
   Future<GetMyUsageResponse> getMyUsage({
     required DateTime start,
     required DateTime end,
@@ -800,6 +803,26 @@ void main() {
       expect(result!.activeGrants, hasLength(1));
       expect(result.activeGrants.first.expiresAt, isNull);
       expect(result.activeGrants.first.reason, 'Trial');
+    });
+
+    test('budgetFromDashboard uses passed now for fallback periodEnd', () {
+      // BudgetContext with no periodEnd set — should use the passed `now`.
+      final stableNow = DateTime.utc(2026, 6, 15, 12, 0, 0);
+      final bc = GetDashboardDataResponse_BudgetContext()
+        ..budget = (UserBudget()
+          ..limitUsd = 20.0
+          ..spentUsd = 5.0
+          ..tokensUsed = Int64(50000));
+      // No periodEnd set on budget.
+      final resp = GetDashboardDataResponse()..budgetContext = bc;
+
+      final info =
+          ConnectApiService.budgetFromDashboard(resp, referenceNow: stableNow);
+
+      expect(info, isNotNull);
+      // Fallback periodEnd should be exactly stableNow + 1 day, not DateTime.now().
+      final expected = stableNow.toUtc().add(const Duration(days: 1));
+      expect(info!.periodEnd, expected);
     });
   });
 

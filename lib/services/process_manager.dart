@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
-import 'package:safe_change_notifier/safe_change_notifier.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 /// State of a managed process.
@@ -52,11 +52,18 @@ class ManagedProcess {
 }
 
 /// Manages local processes: configured runtime backend + Candela Proxy.
-class ProcessManager extends SafeChangeNotifier {
+class ProcessManager extends ChangeNotifier {
   final Map<String, ManagedProcess> _processes = {};
   final Map<String, Process> _handles = {};
   final Map<String, Timer> _healthTimers = {};
   final _client = http.Client();
+  bool _disposed = false;
+
+  /// Safe notification — prevents crashes if called after [dispose].
+  @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
+  }
 
   /// Configure which processes to manage based on the providers list.
   /// Always includes proxy. Adds any local providers found in the list.
@@ -172,7 +179,6 @@ class ProcessManager extends SafeChangeNotifier {
         p.state = ProcessState.stopped;
       }
     }
-    if (isDisposed) return;
     notifyListeners();
   }
 
@@ -427,6 +433,7 @@ class ProcessManager extends SafeChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     for (final t in _healthTimers.values) {
       t.cancel();
     }

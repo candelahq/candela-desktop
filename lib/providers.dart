@@ -1,29 +1,34 @@
 import 'dart:async';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../models/candela_config.dart';
 import '../services/brew_service.dart';
 import '../services/config_service.dart';
+import '../services/dashboard_notifier.dart';
 import '../services/process_manager.dart';
 import '../services/tray_service.dart';
+
+part 'providers.g.dart';
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
 /// The singleton ConfigService instance.
-final configServiceProvider = Provider<ConfigService>((ref) {
+@Riverpod(keepAlive: true)
+ConfigService configService(Ref ref) {
   return ConfigService();
-});
+}
 
 /// Reactive config that auto-reloads when the config file changes on disk.
 ///
 /// Emits the initial config, then re-emits whenever the file is modified.
 /// Debouncing is handled inside [ConfigService.watchForChanges].
-final configProvider = StreamProvider<CandelaConfig>((ref) {
+@Riverpod(keepAlive: true)
+Stream<CandelaConfig> config(Ref ref) {
   final service = ref.watch(configServiceProvider);
 
   return _configStream(service);
-});
+}
 
 Stream<CandelaConfig> _configStream(ConfigService service) async* {
   // Run legacy migration before first load.
@@ -41,10 +46,59 @@ Stream<CandelaConfig> _configStream(ConfigService service) async* {
   }
 }
 
+// ── Dashboard ───────────────────────────────────────────────────────────────
+
+/// Shared [DashboardNotifier] — the single source of truth for telemetry data.
+///
+/// Both DashboardScreen and TodayScreen consume this provider instead of each
+/// maintaining their own [TelemetryService] and 30-second timer. This cuts
+/// BigQuery queries by 50% and enables TTL-based caching + visibility-aware
+/// polling.
+///
+/// The notifier is lazily configured on first read using the current config,
+/// then re-configured automatically when the config file changes.
+@Riverpod(keepAlive: true)
+DashboardNotifier dashboardNotifier(Ref ref) {
+  final notifier = DashboardNotifier();
+
+  // Bridge ChangeNotifier → Riverpod: when the notifier calls
+  // notifyListeners() (e.g. after fetch sets loading: false), tell Riverpod
+  // to signal all ref.watch(dashboardProvider) consumers to rebuild.
+  // Without this, the plain @riverpod function provider only signals
+  // watchers when the *instance* changes — not when its internal state does.
+  void onNotify() {
+    ref.notifyListeners();
+  }
+
+  notifier.addListener(onNotify);
+
+  // Configure and start polling when config becomes available.
+  void configureAndPoll(CandelaConfig config) async {
+    await notifier.configure(config);
+    await notifier.fetch();
+    notifier.startPolling();
+  }
+
+  // Use current value if already loaded.
+  ref.read(configProvider).whenData(configureAndPoll);
+
+  // Re-configure when config changes (e.g. user edits config.yaml).
+  ref.listen<AsyncValue<CandelaConfig>>(configProvider, (prev, next) {
+    next.whenData(configureAndPoll);
+  });
+
+  ref.onDispose(() {
+    notifier.removeListener(onNotify);
+    notifier.dispose();
+  });
+  return notifier;
+}
+
 // ── Process Manager ─────────────────────────────────────────────────────────
 
 /// The singleton ProcessManager, auto-configured when config changes.
-final processManagerProvider = Provider<ProcessManager>((ref) {
+@Riverpod(keepAlive: true)
+ProcessManager processManager(Ref ref) {
   final pm = ProcessManager();
 
   void configure(CandelaConfig config) {
@@ -68,21 +122,23 @@ final processManagerProvider = Provider<ProcessManager>((ref) {
 
   ref.onDispose(() => pm.dispose());
   return pm;
-});
+}
 
 // ── Brew ─────────────────────────────────────────────────────────────────────
 
 /// Homebrew CLI wrapper for install/upgrade operations.
-final brewServiceProvider = Provider<BrewService>((ref) {
+@Riverpod(keepAlive: true)
+BrewService brewService(Ref ref) {
   return BrewService();
-});
+}
 
 // ── Tray ────────────────────────────────────────────────────────────────────
 
 /// System tray service, wired to the process manager.
-final trayServiceProvider = Provider<TrayService>((ref) {
+@Riverpod(keepAlive: true)
+TrayService trayService(Ref ref) {
   final pm = ref.watch(processManagerProvider);
   final tray = TrayService(processManager: pm);
   ref.onDispose(() => tray.dispose());
   return tray;
-});
+}

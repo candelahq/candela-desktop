@@ -69,6 +69,14 @@ class _IdentityCardState extends State<IdentityCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const Text(
+                    'Primary Team Identity (GCP)',
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: CandelaColors.accent),
+                  ),
+                  const SizedBox(height: 2),
                   Text(
                     identity.email ?? 'Not authenticated',
                     style: const TextStyle(
@@ -149,7 +157,7 @@ class _IdentityCardState extends State<IdentityCard> {
                 if (_adcProcess == null)
                   Tooltip(
                     message:
-                        'gcloud auth application-default login\nRefresh or switch ADC credentials',
+                        'candela auth login\nRefresh or switch ADC credentials',
                     child: SizedBox(
                       width: 130,
                       child: OutlinedButton.icon(
@@ -198,9 +206,18 @@ class _IdentityCardState extends State<IdentityCard> {
     if (!mounted) return;
     setState(() {});
     try {
-      _adcProcess = await Process.start(
-          'gcloud', ['auth', 'application-default', 'login'],
-          environment: GCloudService().augmentedEnv);
+      // Try `candela auth login` first (native OAuth, no gcloud needed).
+      // Fall back to `gcloud auth application-default login` if candela
+      // CLI is not installed.
+      try {
+        _adcProcess = await Process.start('candela', ['auth', 'login'],
+            environment: GCloudService().augmentedEnv);
+      } catch (_) {
+        // candela CLI not found — fall back to gcloud.
+        _adcProcess = await Process.start(
+            'gcloud', ['auth', 'application-default', 'login'],
+            environment: GCloudService().augmentedEnv);
+      }
       if (mounted) setState(() {}); // show cancel button
 
       final exitCode = await _adcProcess!.exitCode;
@@ -223,7 +240,7 @@ class _IdentityCardState extends State<IdentityCard> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Failed to run gcloud: $e'),
+              content: Text('Failed to start login: $e'),
               backgroundColor: CandelaColors.error),
         );
       }

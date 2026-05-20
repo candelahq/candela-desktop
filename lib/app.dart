@@ -118,7 +118,8 @@ class AppShell extends ConsumerStatefulWidget {
   ConsumerState<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends ConsumerState<AppShell> with WindowListener {
+class _AppShellState extends ConsumerState<AppShell>
+    with WindowListener, WidgetsBindingObserver {
   int _selectedIndex = 0;
   bool _hasShownTrayTooltip = false;
   final _updateService = UpdateService();
@@ -129,6 +130,7 @@ class _AppShellState extends ConsumerState<AppShell> with WindowListener {
     super.initState();
     windowManager.addListener(this);
     windowManager.setPreventClose(true);
+    WidgetsBinding.instance.addObserver(this);
 
     _initServices();
   }
@@ -157,8 +159,16 @@ class _AppShellState extends ConsumerState<AppShell> with WindowListener {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     windowManager.removeListener(this);
     super.dispose();
+  }
+
+  /// Forward app lifecycle changes to the shared DashboardNotifier so it can
+  /// pause polling when backgrounded and resume with an immediate fetch.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    ref.read(dashboardProvider).onAppLifecycleChanged(state);
   }
 
   /// Close button → minimize to tray instead of quitting.

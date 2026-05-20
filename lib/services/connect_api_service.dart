@@ -81,22 +81,26 @@ class ConnectApiService {
   }
 
   /// Fetch usage summary for the given time range.
+  @Deprecated('Use getDashboardData instead')
   Future<GetUsageSummaryResponse> getUsageSummary({
     required DateTime start,
     required DateTime end,
   }) {
     final req = GetUsageSummaryRequest()
       ..timeRange = _makeTimeRange(start, end);
+    // ignore: deprecated_member_use
     return _dashboard.getUsageSummary(req, headers: _headers);
   }
 
   /// Fetch model-level breakdown for the given time range.
+  @Deprecated('Use getDashboardData instead')
   Future<GetModelBreakdownResponse> getModelBreakdown({
     required DateTime start,
     required DateTime end,
   }) {
     final req = GetModelBreakdownRequest()
       ..timeRange = _makeTimeRange(start, end);
+    // ignore: deprecated_member_use
     return _dashboard.getModelBreakdown(req, headers: _headers);
   }
 
@@ -107,6 +111,7 @@ class ConnectApiService {
     required DateTime end,
   }) {
     final req = GetMyUsageRequest()..timeRange = _makeTimeRange(start, end);
+    // ignore: deprecated_member_use
     return _dashboard.getMyUsage(req, headers: _headers);
   }
 
@@ -169,6 +174,7 @@ class ConnectApiService {
   }
 
   /// Convert proto [GetMyUsageResponse] → domain [BudgetInfo].
+  @Deprecated('Use budgetFromDashboard instead')
   static BudgetInfo? budgetFromProto(
     GetMyUsageResponse resp, {
     DateTime? referenceNow,
@@ -209,6 +215,7 @@ class ConnectApiService {
   }
 
   /// Convert proto [BudgetGrant] list → domain [GrantInfo] list.
+  @Deprecated('Use grantsFromDashboard instead')
   static List<GrantInfo> grantsFromProto(GetMyUsageResponse resp) {
     return resp.activeGrants.map(_grantFromBudgetGrant).toList();
   }

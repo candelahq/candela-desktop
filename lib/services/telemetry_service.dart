@@ -365,6 +365,7 @@ class TelemetryService {
           null
         );
       }
+
       return (
         <SpanRecord>[],
         TelemetryErrorKind.unreachable,
@@ -382,6 +383,8 @@ class TelemetryService {
       );
     }
   }
+
+  /// Consolidated path: single GetDashboardData RPC.
 
   // ── Aggregation ─────────────────────────────────────────────────────────────
 

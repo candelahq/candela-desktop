@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../theme/colors.dart';
 import '../../models/identity_state.dart';
-import '../../services/gcloud_service.dart';
+import '../../services/candela_auth_service.dart';
 
 class IdentityCard extends StatefulWidget {
   final IdentityState identity;
@@ -86,52 +86,6 @@ class _IdentityCardState extends State<IdentityCard> {
                   const SizedBox(height: 4),
                   Text(statusText,
                       style: TextStyle(fontSize: 12, color: statusColor)),
-                  // Show dashboard auth identity (gcloud auth) if available.
-                  if (identity.dashboardTokenInfo != null) ...[
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(Icons.dashboard,
-                            size: 12, color: CandelaColors.textMuted),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Dashboard auth: ${identity.dashboardTokenInfo!.email ?? 'unknown'}',
-                          style: const TextStyle(
-                              fontSize: 11, color: CandelaColors.textSecondary),
-                        ),
-                      ],
-                    ),
-                  ],
-                  // Warn if ADC and gcloud auth are different accounts.
-                  if (identity.hasMismatchedIdentities) ...[
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: CandelaColors.warning.withAlpha(20),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                            color: CandelaColors.warning.withAlpha(80)),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.warning_amber,
-                              size: 13, color: CandelaColors.warning),
-                          SizedBox(width: 6),
-                          Flexible(
-                            child: Text(
-                              'ADC and gcloud auth are different accounts — '
-                              'dashboard data may not match your expectations',
-                              style: TextStyle(
-                                  fontSize: 11, color: CandelaColors.warning),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),
@@ -198,17 +152,22 @@ class _IdentityCardState extends State<IdentityCard> {
     if (!mounted) return;
     setState(() {});
     try {
-      // Try `candela auth login` first (native OAuth, no gcloud needed).
-      // Fall back to `gcloud auth application-default login` if candela
-      // CLI is not installed.
+      // Use `candela auth login` (native OAuth, no gcloud needed).
       try {
         _adcProcess = await Process.start('candela', ['auth', 'login'],
-            environment: GCloudService().augmentedEnv);
-      } catch (_) {
-        // candela CLI not found — fall back to gcloud.
-        _adcProcess = await Process.start(
-            'gcloud', ['auth', 'application-default', 'login'],
-            environment: GCloudService().augmentedEnv);
+            environment: CandelaAuthService().augmentedEnv);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text(
+                    'Candela CLI not found — install via: brew install candelahq/tap/candela'),
+                backgroundColor: CandelaColors.warning),
+          );
+        }
+        _adcProcess = null;
+        if (mounted) setState(() {});
+        return;
       }
       if (mounted) setState(() {}); // show cancel button
 

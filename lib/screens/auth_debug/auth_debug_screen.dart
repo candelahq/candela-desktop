@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/colors.dart';
-import '../../services/gcloud_service.dart';
+import '../../services/candela_auth_service.dart';
 import '../../services/adc_service.dart';
 import '../../services/provider_test_service.dart';
 import '../../services/diagnostic_runner.dart';
@@ -29,7 +29,7 @@ class AuthDebugScreen extends ConsumerStatefulWidget {
 }
 
 class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
-  final _gcloud = GCloudService();
+  final _candelaAuth = CandelaAuthService();
   final _adc = AdcService();
   late final ConfigService _configService;
   final _providerTest = ProviderTestService();
@@ -59,7 +59,7 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
     _configService = ref.read(configServiceProvider);
     _diagnostics = DiagnosticRunner(
       config: _configService,
-      gcloud: _gcloud,
+      candelaAuth: _candelaAuth,
       adc: _adc,
       providers: _providerTest,
     );
@@ -71,35 +71,26 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
     if (mounted) setState(() => _loading = true);
 
     try {
-      // Parallelize independent gcloud subprocess calls (~800ms savings).
-      final installed = await _gcloud.isInstalled();
+      // Direct ADC + OAuth2 refresh — no gcloud subprocess needed.
       final results = await Future.wait([
-        installed ? _gcloud.getActiveAccount() : Future<String?>.value(null),
-        installed ? _gcloud.getProject() : Future<String?>.value(null),
-        _adc.readAdcFile(),
-        installed ? _gcloud.getTokenInfo() : Future<TokenInfo?>.value(null),
+        _candelaAuth.getStatus(),
         _configService.load(),
-        // Also fetch the regular gcloud auth token (used by team mode dashboard).
-        installed ? _gcloud.getAccessToken() : Future<TokenInfo?>.value(null),
       ]);
       if (gen != _loadGeneration) return; // stale — abort
 
-      final account = results[0] as String?;
-      final project = results[1] as String?;
-      final adcInfo = results[2] as AdcInfo?;
-      final tokenInfo = results[3] as TokenInfo?;
-      final config = results[4] as CandelaConfig;
-      final dashboardToken = results[5] as TokenInfo?;
+      final authStatus = results[0] as AuthStatus;
+      final config = results[1] as CandelaConfig;
+
+      // Project resolution: config takes priority, then ADC quota_project.
+      final project = config.vertexAI?.project ?? authStatus.project;
 
       if (!mounted) return;
       setState(() {
         _identity = IdentityState(
-          email: account,
+          email: authStatus.email,
           project: project,
-          adcInfo: adcInfo,
-          tokenInfo: tokenInfo,
-          gcloudInstalled: installed,
-          dashboardTokenInfo: dashboardToken,
+          adcInfo: authStatus.adcInfo,
+          tokenInfo: authStatus.tokenInfo,
         );
         _config = config;
         _loading = false;
@@ -119,7 +110,7 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
       if (!mounted || gen != _loadGeneration) return;
 
       // Run provider tests.
-      _runProviderTests(config, project, tokenInfo).catchError((e) {
+      _runProviderTests(config, project, authStatus.tokenInfo).catchError((e) {
         debugPrint('Provider tests failed: $e');
       });
 

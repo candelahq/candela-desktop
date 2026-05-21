@@ -170,7 +170,6 @@ void main() {
       const identity = IdentityState(
         email: 'test@example.com',
         project: 'my-project',
-        gcloudInstalled: true,
       );
 
       await tester.pumpWidget(_wrap(
@@ -185,7 +184,6 @@ void main() {
       const identity = IdentityState(
         email: null,
         project: null,
-        gcloudInstalled: false,
       );
 
       await tester.pumpWidget(_wrap(
@@ -199,7 +197,6 @@ void main() {
       const identity = IdentityState(
         email: 'user@test.com',
         project: 'proj',
-        gcloudInstalled: true,
         tokenInfo: null,
       );
 
@@ -214,7 +211,6 @@ void main() {
       const identity = IdentityState(
         email: 'alice@example.com',
         project: null,
-        gcloudInstalled: true,
       );
 
       await tester.pumpWidget(_wrap(
@@ -231,7 +227,6 @@ void main() {
       const identity = IdentityState(
         email: 'test@example.com',
         project: 'my-project',
-        gcloudInstalled: true,
       );
 
       await tester.runAsync(() async {

@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../models/budget_info.dart';
 import '../models/candela_config.dart';
 import '../models/span_stats.dart';
-import '../services/gcloud_service.dart';
+import '../services/candela_auth_service.dart';
 import '../services/telemetry_service.dart';
 
 // ── Immutable state snapshot ─────────────────────────────────────────────────
@@ -67,7 +67,7 @@ class DashboardState {
 ///    immediate fetch when the app returns to the foreground.
 class DashboardNotifier extends ChangeNotifier {
   TelemetryService? _telemetry;
-  final GCloudService? _gcloud;
+  final CandelaAuthService? _candelaAuth;
   Timer? _refreshTimer;
   bool _disposed = false;
 
@@ -102,10 +102,10 @@ class DashboardNotifier extends ChangeNotifier {
 
   DashboardNotifier({
     TelemetryService? telemetry,
-    GCloudService? gcloud,
+    CandelaAuthService? candelaAuth,
     this.cacheTtl = const Duration(seconds: 50),
   })  : _telemetry = telemetry,
-        _gcloud = gcloud;
+        _candelaAuth = candelaAuth;
 
   // ── Configuration ─────────────────────────────────────────────────────────
 
@@ -119,11 +119,9 @@ class DashboardNotifier extends ChangeNotifier {
         config.remote!.isNotEmpty;
 
     if (isTeam) {
-      final gcloud = _gcloud ?? GCloudService();
-      final audience = config.audience ?? config.remote ?? '';
-      final tokenInfo = audience.isNotEmpty
-          ? await gcloud.getIdToken(audience)
-          : await gcloud.getTokenInfo();
+      final auth = _candelaAuth ?? CandelaAuthService();
+      // Use direct OAuth2 refresh for team-mode token — no gcloud subprocess.
+      final tokenInfo = await auth.getTokenInfo();
       _telemetry?.dispose();
       _telemetry = TelemetryService(
         port: config.port,
@@ -225,14 +223,14 @@ class DashboardNotifier extends ChangeNotifier {
   /// Re-fetches the auth token and rebuilds the TelemetryService when the
   /// token is within [_tokenRefreshBuffer] of expiry. No-op in local mode.
   Future<void> _refreshTokenIfNeeded() async {
-    if (_gcloud == null || _remoteUrl == null) return;
+    if (_candelaAuth == null || _remoteUrl == null) return;
     final expiresAt = _tokenExpiresAt;
     if (expiresAt != null &&
         expiresAt.difference(DateTime.now().toUtc()) > _tokenRefreshBuffer) {
       return;
     }
-    final audience = _remoteUrl!;
-    final tokenInfo = await _gcloud.getIdToken(audience);
+    // Direct OAuth2 refresh — no gcloud subprocess.
+    final tokenInfo = await _candelaAuth.getTokenInfo();
     final oldSvc = _telemetry;
     _telemetry = TelemetryService(
       port: _proxyPort,
@@ -245,8 +243,8 @@ class DashboardNotifier extends ChangeNotifier {
 
   /// Refresh the auth token (team mode only). Returns the new token or null.
   Future<String?> refreshToken() async {
-    if (_gcloud == null) return null;
-    final info = await _gcloud.getTokenInfo();
+    if (_candelaAuth == null) return null;
+    final info = await _candelaAuth.getTokenInfo();
     return info?.accessToken;
   }
 

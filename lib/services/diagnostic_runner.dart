@@ -3,14 +3,18 @@ import '../models/diagnostic_entry.dart';
 import '../models/provider_status.dart';
 import '../models/candela_config.dart';
 import 'config_service.dart';
-import 'gcloud_service.dart';
+import 'candela_auth_service.dart';
 import 'adc_service.dart';
 import 'provider_test_service.dart';
 
 /// Orchestrates all diagnostic checks sequentially, streaming results.
+///
+/// No `gcloud` subprocess is spawned. All auth checks use [AdcService] for
+/// direct file reading and OAuth2 token refresh, and [CandelaAuthService]
+/// for CLI detection (advisory only — not a gate).
 class DiagnosticRunner {
   final ConfigService _config;
-  final GCloudService _gcloud;
+  final CandelaAuthService _candelaAuth;
   final AdcService _adc;
   final ProviderTestService _providers;
 
@@ -27,11 +31,11 @@ class DiagnosticRunner {
 
   DiagnosticRunner({
     required ConfigService config,
-    GCloudService? gcloud,
+    CandelaAuthService? candelaAuth,
     AdcService? adc,
     ProviderTestService? providers,
   })  : _config = config,
-        _gcloud = gcloud ?? GCloudService(),
+        _candelaAuth = candelaAuth ?? CandelaAuthService(),
         _adc = adc ?? AdcService(),
         _providers = providers ?? ProviderTestService();
 
@@ -65,20 +69,20 @@ class DiagnosticRunner {
     history.replaceRange(0, history.length, []);
     int passed = 0, failed = 0, warned = 0;
 
-    // 1. gcloud CLI
-    _emit('Checking gcloud CLI...', DiagnosticStatus.running);
+    // 1. Candela CLI (advisory — NOT a gate)
+    _emit('Checking Candela CLI...', DiagnosticStatus.running);
     if (_disposed) {
       return const DiagnosticSummary(passed: 0, failed: 0, warned: 0);
     }
-    if (await _gcloud.isInstalled()) {
-      _emit('gcloud CLI installed', DiagnosticStatus.pass);
+    if (await _candelaAuth.isCandelaInstalled()) {
+      _emit('Candela CLI installed', DiagnosticStatus.pass);
       passed++;
     } else {
-      _emit('gcloud CLI not found', DiagnosticStatus.fail,
-          fixUrl: 'https://cloud.google.com/sdk/docs/install');
-      failed++;
-      _emitSummary(passed, failed, warned);
-      return DiagnosticSummary(passed: passed, failed: failed, warned: warned);
+      _emit(
+          'Candela CLI not found — install via: brew install candelahq/tap/candela',
+          DiagnosticStatus.warn);
+      warned++;
+      // NOT a gate — diagnostics continue regardless.
     }
 
     // 2. Config file
@@ -115,7 +119,7 @@ class DiagnosticRunner {
     final adc = await _adc.readAdcFile();
     if (adc == null) {
       _emit('No ADC found', DiagnosticStatus.fail,
-          fixCommand: 'gcloud auth application-default login');
+          fixCommand: 'candela auth login');
       failed++;
     } else {
       _emit(
@@ -124,41 +128,41 @@ class DiagnosticRunner {
       passed++;
     }
 
-    // 4. Token
+    // 4. Token (direct OAuth2 refresh — no subprocess)
     if (_disposed) {
       return DiagnosticSummary(passed: passed, failed: failed, warned: warned);
     }
     _emit('Validating access token...', DiagnosticStatus.running);
-    final token = await _gcloud.getTokenInfo();
+    final token = await _adc.refreshAccessToken(adcInfo: adc);
     String? accessTokenStr;
     if (token == null) {
       _emit('Could not acquire token', DiagnosticStatus.fail,
-          fixCommand: 'gcloud auth application-default login');
+          fixCommand: 'candela auth login');
       failed++;
     } else if (!token.isValid) {
       _emit('Token expired', DiagnosticStatus.fail,
-          fixCommand: 'gcloud auth application-default login');
+          fixCommand: 'candela auth login');
       failed++;
     } else {
       _emit('Token valid (expires in ${token.expiryDisplay})',
           DiagnosticStatus.pass);
       passed++;
-      // Reuse raw token from TokenInfo — no extra gcloud call needed.
       accessTokenStr = token.accessToken;
     }
 
-    // 5. GCP Project
+    // 5. GCP Project (from config or ADC quota_project — no subprocess)
     if (_disposed) {
       return DiagnosticSummary(passed: passed, failed: failed, warned: warned);
     }
     _emit('Checking GCP project...', DiagnosticStatus.running);
-    final project = config.vertexAI?.project ?? await _gcloud.getProject();
+    final project = config.vertexAI?.project ?? adc?.quotaProject;
     if (project != null && project.isNotEmpty) {
       _emit('Project: $project', DiagnosticStatus.pass);
       passed++;
     } else {
       _emit('No GCP project configured', DiagnosticStatus.warn,
-          fixCommand: 'gcloud config set project YOUR-PROJECT');
+          detail:
+              'Set vertex_ai.project in ~/.candela/config.yaml or quota_project_id in ADC');
       warned++;
     }
 

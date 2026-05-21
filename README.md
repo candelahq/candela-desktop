@@ -114,7 +114,7 @@ buf generate   # requires buf + BUF_TOKEN
 ### Testing
 
 ```bash
-flutter test                     # unit + widget tests (~788 tests)
+flutter test                     # unit + widget tests (~855 tests)
 flutter test integration_test/   # E2E integration tests (requires macOS runner)
 flutter analyze                  # static analysis + lint
 ```
@@ -127,8 +127,8 @@ The integration test suite covers: app boot, dashboard empty state, onboarding f
 
 - **State management**: [Riverpod 3.x](https://riverpod.dev) with code-gen (`@riverpod`)
 - **RPC**: ConnectRPC via generated Dart stubs from BSR
-- **Key provider**: `DashboardNotifier` — shared polling provider that drives all screens; eliminates redundant per-screen fetches
-- **Auth**: Native OAuth2 (`GcloudService`) reads ADC file and refreshes directly against `oauth2.googleapis.com`
+- **Key provider**: `DashboardController` — class-based Riverpod Notifier with reactive polling, immutable state snapshots (`copyWith`), and disposal guards; drives all screens and eliminates redundant per-screen fetches
+- **Auth**: Native ADC (`CandelaAuthService`) reads the ADC credentials file and refreshes tokens directly against `oauth2.googleapis.com` — no gcloud CLI dependency
 
 ---
 

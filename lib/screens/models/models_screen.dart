@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../data/model_pricing.dart';
 import '../../models/span_stats.dart';
 import '../../services/telemetry_service.dart';
 import '../../theme/colors.dart';
@@ -51,7 +52,17 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
       final result = await _svc!.fetch(_range);
       if (!mounted) return;
       setState(() {
-        _models = result?.models ?? [];
+        // Enrich with static pricing data
+        _models = (result?.models ?? []).map((m) {
+          final pricing = lookupPricing(m.model);
+          if (pricing != null) {
+            return m.withPricing(
+              inputPerMillion: pricing.inputPerMillion,
+              outputPerMillion: pricing.outputPerMillion,
+            );
+          }
+          return m;
+        }).toList();
         _sortModels();
         _maxCost = _models.isEmpty
             ? 0
@@ -241,6 +252,20 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
           color: CandelaColors.bgSecondary,
           child: Row(children: [
             _colHeader('Model', _ModelSortCol.name, flex: 3),
+            const Expanded(
+                child: Text('In \$/M',
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: CandelaColors.textMuted,
+                        letterSpacing: 0.4))),
+            const Expanded(
+                child: Text('Out \$/M',
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: CandelaColors.textMuted,
+                        letterSpacing: 0.4))),
             _colHeader('Calls', _ModelSortCol.calls),
             _colHeader('Tokens', _ModelSortCol.tokens),
             _colHeader('Cost', _ModelSortCol.cost),
@@ -340,6 +365,20 @@ class _ModelRowState extends State<_ModelRow> {
                             style: const TextStyle(
                                 fontSize: 10, color: CandelaColors.textMuted)),
                       ])),
+              Expanded(
+                  child: Text(
+                      m.inputPricePerMillion != null
+                          ? '\$${m.inputPricePerMillion!.toStringAsFixed(2)}'
+                          : '—',
+                      style: _mono.copyWith(
+                          color: CandelaColors.textSecondary, fontSize: 11))),
+              Expanded(
+                  child: Text(
+                      m.outputPricePerMillion != null
+                          ? '\$${m.outputPricePerMillion!.toStringAsFixed(2)}'
+                          : '—',
+                      style: _mono.copyWith(
+                          color: CandelaColors.textSecondary, fontSize: 11))),
               Expanded(child: Text('${m.callCount}', style: _mono)),
               Expanded(child: Text(_fmtTokens(m.totalTokens), style: _mono)),
               Expanded(
@@ -407,6 +446,62 @@ class _ModelDetail extends StatelessWidget {
                   '${model.avgLatencyMs.toStringAsFixed(0)}ms',
                   Icons.timer,
                   CandelaColors.warning),
+              if (model.inputPricePerMillion != null) ...[
+                const SizedBox(height: 24),
+                const Text('List Pricing',
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: CandelaColors.textPrimary)),
+                const SizedBox(height: 12),
+                _metricBar('Input / 1M tokens',
+                    '\$${model.inputPricePerMillion!.toStringAsFixed(2)}'),
+                const SizedBox(height: 8),
+                _metricBar('Output / 1M tokens',
+                    '\$${model.outputPricePerMillion!.toStringAsFixed(2)}'),
+              ],
+              if (model.cacheReadTokens > 0) ...[
+                const SizedBox(height: 24),
+                Builder(builder: (_) {
+                  final eff = cacheEfficiencyLabel(
+                      model.cacheReadTokens, model.inputTokens);
+                  if (eff == null) return const SizedBox.shrink();
+                  final badgeColor = switch (eff.tier) {
+                    CacheEfficiencyTier.excellent => const Color(0xFF4ADE80),
+                    CacheEfficiencyTier.good => CandelaColors.accent,
+                    CacheEfficiencyTier.low => CandelaColors.warning,
+                  };
+                  return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Cache Efficiency',
+                            style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: CandelaColors.textPrimary)),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                              color: badgeColor.withAlpha(25),
+                              borderRadius: BorderRadius.circular(8),
+                              border:
+                                  Border.all(color: badgeColor.withAlpha(80))),
+                          child: Text(
+                              '${eff.label}  ${(eff.rate * 100).toStringAsFixed(1)}%',
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  fontFamily: 'monospace',
+                                  color: badgeColor)),
+                        ),
+                        const SizedBox(height: 8),
+                        _metricBar(
+                            'Cache Read', _fmtTokens(model.cacheReadTokens)),
+                      ]);
+                }),
+              ],
               const SizedBox(height: 24),
               const Text('Efficiency',
                   style: TextStyle(

@@ -77,7 +77,7 @@ class DashboardState {
 /// [ChangeNotifier] or manual listener management required.
 class DashboardController {
   TelemetryService? _telemetry;
-  CandelaAuthService? _candelaAuth;
+  final CandelaAuthService? _candelaAuth;
   Timer? _refreshTimer;
 
   /// Callback invoked whenever [state] changes. Set by the provider to

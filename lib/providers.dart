@@ -1,13 +1,17 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../models/candela_config.dart';
+import '../models/span_stats.dart';
 import '../services/brew_service.dart';
 import '../services/config_service.dart';
-import '../services/dashboard_notifier.dart';
+import '../services/dashboard_notifier.dart' as dashboard_notifier;
+import '../services/dashboard_notifier.dart' show DashboardState;
 import '../services/process_manager.dart';
 import '../services/tray_service.dart';
+import '../gen/candela/types/user.pbenum.dart' as user_types;
 
 part 'providers.g.dart';
 
@@ -48,7 +52,7 @@ Stream<CandelaConfig> _configStream(ConfigService service) async* {
 
 // ── Dashboard ───────────────────────────────────────────────────────────────
 
-/// Shared [DashboardNotifier] — the single source of truth for telemetry data.
+/// Shared dashboard state — the single source of truth for telemetry data.
 ///
 /// Both DashboardScreen and TodayScreen consume this provider instead of each
 /// maintaining their own [TelemetryService] and 30-second timer. This cuts
@@ -57,41 +61,61 @@ Stream<CandelaConfig> _configStream(ConfigService service) async* {
 ///
 /// The notifier is lazily configured on first read using the current config,
 /// then re-configured automatically when the config file changes.
+///
+/// Usage:
+///   final state = ref.watch(dashboardProvider);  // DashboardState
+///   ref.read(dashboardProvider.notifier).fetch(); // methods
 @Riverpod(keepAlive: true)
-DashboardNotifier dashboardNotifier(Ref ref) {
-  final notifier = DashboardNotifier();
+class DashboardNotifier extends _$DashboardNotifier {
+  late final dashboard_notifier.DashboardController _inner;
 
-  // Bridge ChangeNotifier → Riverpod: when the notifier calls
-  // notifyListeners() (e.g. after fetch sets loading: false), tell Riverpod
-  // to signal all ref.watch(dashboardProvider) consumers to rebuild.
-  // Without this, the plain @riverpod function provider only signals
-  // watchers when the *instance* changes — not when its internal state does.
-  void onNotify() {
-    ref.notifyListeners();
+  @override
+  DashboardState build() {
+    _inner = dashboard_notifier.DashboardController();
+
+    // Bridge: when the inner notifier updates its state, push the new
+    // snapshot into the Riverpod graph so all ref.watch() consumers rebuild.
+    _inner.onStateChanged = (newState) {
+      state = newState;
+    };
+
+    // Configure and start polling when config becomes available.
+    void configureAndPoll(CandelaConfig config) async {
+      await _inner.configure(config);
+      await _inner.fetch();
+      _inner.startPolling();
+    }
+
+    // Use current value if already loaded.
+    ref.read(configProvider).whenData(configureAndPoll);
+
+    // Re-configure when config changes (e.g. user edits config.yaml).
+    ref.listen<AsyncValue<CandelaConfig>>(configProvider, (prev, next) {
+      next.whenData(configureAndPoll);
+    });
+
+    ref.onDispose(() => _inner.dispose());
+
+    return _inner.state;
   }
 
-  notifier.addListener(onNotify);
+  // ── Delegated public API ────────────────────────────────────────────────
 
-  // Configure and start polling when config becomes available.
-  void configureAndPoll(CandelaConfig config) async {
-    await notifier.configure(config);
-    await notifier.fetch();
-    notifier.startPolling();
-  }
+  bool get isConfigured => _inner.isConfigured;
+  Duration get cacheTtl => _inner.cacheTtl;
 
-  // Use current value if already loaded.
-  ref.read(configProvider).whenData(configureAndPoll);
-
-  // Re-configure when config changes (e.g. user edits config.yaml).
-  ref.listen<AsyncValue<CandelaConfig>>(configProvider, (prev, next) {
-    next.whenData(configureAndPoll);
-  });
-
-  ref.onDispose(() {
-    notifier.removeListener(onNotify);
-    notifier.dispose();
-  });
-  return notifier;
+  Future<void> configure(CandelaConfig config) => _inner.configure(config);
+  Future<void> fetch() => _inner.fetch();
+  Future<void> setRange(TokenTimeRange range) => _inner.setRange(range);
+  Future<void> setUserScope(user_types.UserScope scope) =>
+      _inner.setUserScope(scope);
+  void startPolling({Duration interval = const Duration(seconds: 60)}) =>
+      _inner.startPolling(interval: interval);
+  void onAppLifecycleChanged(AppLifecycleState lifecycleState) =>
+      _inner.onAppLifecycleChanged(lifecycleState);
+  Future<String?> refreshToken() => _inner.refreshToken();
+  UsageSummary? buildFilteredSummary(String? selectedModel) =>
+      _inner.buildFilteredSummary(selectedModel);
 }
 
 // ── Process Manager ─────────────────────────────────────────────────────────

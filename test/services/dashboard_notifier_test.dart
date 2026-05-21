@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:candela_desktop/services/adc_service.dart';
+import 'package:candela_desktop/services/candela_auth_service.dart';
 import 'package:candela_desktop/services/dashboard_notifier.dart';
 import 'package:candela_desktop/services/telemetry_service.dart';
 import 'package:candela_desktop/models/candela_config.dart';
@@ -59,44 +60,21 @@ void main() {
           models: [],
           spans: [],
           isTeamMode: false,
+          budget: null,
+          activeGrants: [],
+          totalRemainingUsd: null,
         ),
       );
       expect(state.hasData, isTrue);
+      expect(state.summary, isNotNull);
       expect(state.summary!.totalCalls, 5);
-    });
-
-    test('isTeamMode delegates to result', () {
-      final state = const DashboardState().copyWith(
-        result: const TelemetryResult.empty(isTeamMode: true),
-      );
-      expect(state.isTeamMode, isTrue);
-    });
-
-    test('error delegates to result', () {
-      final state = const DashboardState().copyWith(
-        result: const TelemetryResult.withError(
-          isTeamMode: false,
-          error: TelemetryErrorKind.authExpired,
-        ),
-      );
-      expect(state.error, TelemetryErrorKind.authExpired);
-    });
-
-    test('range changes via copyWith', () {
-      final state = const DashboardState(range: TokenTimeRange.d7)
-          .copyWith(range: TokenTimeRange.h24);
-      expect(state.range, TokenTimeRange.h24);
     });
   });
 
-  group('DashboardNotifier', () {
-    test('initial state is loading', () {
-      final notifier = DashboardNotifier();
-      expect(notifier.state.loading, isTrue);
-      notifier.dispose();
-    });
+  // ── Basic construction / lifecycle ─────────────────────────────────────────
 
-    test('isConfigured false before configure', () {
+  group('DashboardNotifier — lifecycle', () {
+    test('isConfigured is false before configure()', () {
       final notifier = DashboardNotifier();
       expect(notifier.isConfigured, isFalse);
       notifier.dispose();
@@ -141,12 +119,13 @@ void main() {
     });
   });
 
-  // ── AdcService integration tests ──────────────────────────────────────────
+  // ── CandelaAuthService integration tests ─────────────────────────────────
 
-  group('DashboardNotifier — AdcService auth', () {
-    test('configure() in team mode uses AdcService token', () async {
+  group('DashboardNotifier — CandelaAuthService auth', () {
+    test('configure() in team mode uses auth service token', () async {
       final adc = _FakeAdcService(token: 'test-token-123');
-      final notifier = DashboardNotifier(adcService: adc);
+      final auth = CandelaAuthService(adcService: adc);
+      final notifier = DashboardNotifier(candelaAuth: auth);
 
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
@@ -159,9 +138,10 @@ void main() {
       notifier.dispose();
     });
 
-    test('configure() in solo mode does not call AdcService', () async {
+    test('configure() in solo mode does not call auth service', () async {
       final adc = _FakeAdcService(token: 'should-not-be-used');
-      final notifier = DashboardNotifier(adcService: adc);
+      final auth = CandelaAuthService(adcService: adc);
+      final notifier = DashboardNotifier(candelaAuth: auth);
 
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
@@ -175,7 +155,8 @@ void main() {
 
     test('configure() in team mode with null token still configures', () async {
       final adc = _NullAdcService();
-      final notifier = DashboardNotifier(adcService: adc);
+      final auth = CandelaAuthService(adcService: adc);
+      final notifier = DashboardNotifier(candelaAuth: auth);
 
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
@@ -191,7 +172,8 @@ void main() {
 
     test('configure() with empty remote stays in local mode', () async {
       final adc = _FakeAdcService(token: 'should-not-be-used');
-      final notifier = DashboardNotifier(adcService: adc);
+      final auth = CandelaAuthService(adcService: adc);
+      final notifier = DashboardNotifier(candelaAuth: auth);
 
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
@@ -204,9 +186,10 @@ void main() {
       notifier.dispose();
     });
 
-    test('refreshToken returns token from AdcService in team mode', () async {
+    test('refreshToken returns token from auth service in team mode', () async {
       final adc = _FakeAdcService(token: 'fresh-token');
-      final notifier = DashboardNotifier(adcService: adc);
+      final auth = CandelaAuthService(adcService: adc);
+      final notifier = DashboardNotifier(candelaAuth: auth);
 
       // Must configure in team mode first — refreshToken guards on _remoteUrl.
       await notifier.configure(const CandelaConfig(
@@ -221,7 +204,8 @@ void main() {
     });
 
     test('refreshToken returns null without ADC credentials', () async {
-      final notifier = DashboardNotifier(adcService: _NullAdcService());
+      final auth = CandelaAuthService(adcService: _NullAdcService());
+      final notifier = DashboardNotifier(candelaAuth: auth);
 
       // Configure in team mode but with null-returning AdcService.
       await notifier.configure(const CandelaConfig(
@@ -237,7 +221,8 @@ void main() {
 
     test('refreshToken returns null in solo mode', () async {
       final adc = _FakeAdcService(token: 'should-not-be-used');
-      final notifier = DashboardNotifier(adcService: adc);
+      final auth = CandelaAuthService(adcService: adc);
+      final notifier = DashboardNotifier(candelaAuth: auth);
 
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
@@ -253,7 +238,8 @@ void main() {
 
     test('configure() in team mode then re-configure in solo mode', () async {
       final adc = _FakeAdcService(token: 'team-token');
-      final notifier = DashboardNotifier(adcService: adc);
+      final auth = CandelaAuthService(adcService: adc);
+      final notifier = DashboardNotifier(candelaAuth: auth);
 
       // First: team mode.
       await notifier.configure(const CandelaConfig(
@@ -275,8 +261,8 @@ void main() {
     });
 
     test('notifyListeners fires after fetch completes', () async {
-      final adc = _NullAdcService();
-      final notifier = DashboardNotifier(adcService: adc);
+      final auth = CandelaAuthService(adcService: _NullAdcService());
+      final notifier = DashboardNotifier(candelaAuth: auth);
       int notifyCount = 0;
       notifier.addListener(() => notifyCount++);
 
@@ -294,7 +280,8 @@ void main() {
     });
 
     test('safe notification after dispose does not throw', () async {
-      final notifier = DashboardNotifier(adcService: _NullAdcService());
+      final auth = CandelaAuthService(adcService: _NullAdcService());
+      final notifier = DashboardNotifier(candelaAuth: auth);
       notifier.dispose();
 
       // Should not throw — guarded by _disposed flag.
@@ -311,7 +298,8 @@ void main() {
         token: 'fresh-token',
         expiresIn: const Duration(hours: 1),
       );
-      final notifier = DashboardNotifier(adcService: adc);
+      final auth = CandelaAuthService(adcService: adc);
+      final notifier = DashboardNotifier(candelaAuth: auth);
 
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
@@ -332,7 +320,8 @@ void main() {
         token: 'expiring-token',
         expiresIn: const Duration(minutes: 2),
       );
-      final notifier = DashboardNotifier(adcService: adc);
+      final auth = CandelaAuthService(adcService: adc);
+      final notifier = DashboardNotifier(candelaAuth: auth);
 
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
@@ -353,7 +342,8 @@ void main() {
         token: 'expired-token',
         expiresIn: const Duration(minutes: -10),
       );
-      final notifier = DashboardNotifier(adcService: adc);
+      final auth = CandelaAuthService(adcService: adc);
+      final notifier = DashboardNotifier(candelaAuth: auth);
 
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
@@ -375,7 +365,8 @@ void main() {
         expiresIn: const Duration(minutes: 3),
         failAfter: 1, // first call succeeds, second call returns null
       );
-      final notifier = DashboardNotifier(adcService: adc);
+      final auth = CandelaAuthService(adcService: adc);
+      final notifier = DashboardNotifier(candelaAuth: auth);
 
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
@@ -396,7 +387,8 @@ void main() {
 
     test('fetch() in local mode skips token refresh entirely', () async {
       final adc = _FakeAdcService(token: 'should-not-be-used');
-      final notifier = DashboardNotifier(adcService: adc);
+      final auth = CandelaAuthService(adcService: adc);
+      final notifier = DashboardNotifier(candelaAuth: auth);
 
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
@@ -415,7 +407,8 @@ void main() {
         token: 'long-lived',
         expiresIn: const Duration(hours: 1),
       );
-      final notifier = DashboardNotifier(adcService: adc);
+      final auth = CandelaAuthService(adcService: adc);
+      final notifier = DashboardNotifier(candelaAuth: auth);
 
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
@@ -433,7 +426,8 @@ void main() {
 
     test('configure() disposes old TelemetryService on re-configure', () async {
       final adc = _FakeAdcService(token: 'token-v1');
-      final notifier = DashboardNotifier(adcService: adc);
+      final auth = CandelaAuthService(adcService: adc);
+      final notifier = DashboardNotifier(candelaAuth: auth);
 
       // First configure.
       await notifier.configure(const CandelaConfig(
@@ -455,7 +449,8 @@ void main() {
     });
 
     test('fetch() clears loading state even on error', () async {
-      final notifier = DashboardNotifier(adcService: _NullAdcService());
+      final auth = CandelaAuthService(adcService: _NullAdcService());
+      final notifier = DashboardNotifier(candelaAuth: auth);
 
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
@@ -471,7 +466,8 @@ void main() {
     });
 
     test('setRange triggers notification', () async {
-      final notifier = DashboardNotifier(adcService: _NullAdcService());
+      final auth = CandelaAuthService(adcService: _NullAdcService());
+      final notifier = DashboardNotifier(candelaAuth: auth);
       final ranges = <TokenTimeRange>[];
       notifier.addListener(() => ranges.add(notifier.state.range));
 

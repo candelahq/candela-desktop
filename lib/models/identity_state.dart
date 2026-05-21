@@ -1,37 +1,22 @@
 /// Information about the user's GCP identity and token.
+///
+/// All identity data is now sourced from the ADC file and direct OAuth2
+/// token refresh — no `gcloud` subprocess dependency.
 class IdentityState {
   final String? email;
   final String? project;
   final AdcInfo? adcInfo;
   final TokenInfo? tokenInfo;
-  final bool gcloudInstalled;
-
-  /// The token that the dashboard actually uses in team mode.
-  /// This may differ from [tokenInfo] (ADC) — for example, `gcloud auth`
-  /// and `gcloud auth application-default` can be logged in as different
-  /// accounts.
-  final TokenInfo? dashboardTokenInfo;
 
   const IdentityState({
     this.email,
     this.project,
     this.adcInfo,
     this.tokenInfo,
-    this.gcloudInstalled = false,
-    this.dashboardTokenInfo,
   });
 
   bool get isAuthenticated =>
       email != null && tokenInfo != null && tokenInfo!.isValid;
-
-  /// True when the ADC identity and the dashboard (gcloud auth) identity
-  /// are different accounts — a common source of "no data" confusion.
-  bool get hasMismatchedIdentities {
-    final adcEmail = tokenInfo?.email ?? adcInfo?.clientEmail;
-    final dashEmail = dashboardTokenInfo?.email;
-    if (adcEmail == null || dashEmail == null) return false;
-    return adcEmail.toLowerCase() != dashEmail.toLowerCase();
-  }
 }
 
 /// Decoded Application Default Credentials file info.

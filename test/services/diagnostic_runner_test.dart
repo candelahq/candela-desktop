@@ -6,9 +6,9 @@ import 'package:candela_desktop/models/candela_config.dart';
 import 'package:candela_desktop/models/diagnostic_entry.dart';
 import 'package:candela_desktop/models/identity_state.dart';
 import 'package:candela_desktop/services/adc_service.dart';
+import 'package:candela_desktop/services/candela_auth_service.dart';
 import 'package:candela_desktop/services/config_service.dart';
 import 'package:candela_desktop/services/diagnostic_runner.dart';
-import 'package:candela_desktop/services/gcloud_service.dart';
 import 'package:candela_desktop/services/provider_test_service.dart';
 
 // ── Fake helpers ──────────────────────────────────────────────────────────────
@@ -22,35 +22,27 @@ class FakeConfigService extends ConfigService {
   Future<CandelaConfig> load() async => _config;
 }
 
-/// Subclass GCloudService to override the methods that hit the real CLI.
-class FakeGCloudService extends GCloudService {
+/// Subclass CandelaAuthService to override CLI detection (advisory only).
+class FakeCandelaAuthService extends CandelaAuthService {
   final bool installed;
-  final TokenInfo? token;
-  final String? project;
 
-  FakeGCloudService({
-    this.installed = true,
-    this.token,
-    this.project,
-  });
+  FakeCandelaAuthService({this.installed = true});
 
   @override
-  Future<bool> isInstalled() async => installed;
-
-  @override
-  Future<TokenInfo?> getTokenInfo() async => token;
-
-  @override
-  Future<String?> getProject() async => project;
+  Future<bool> isCandelaInstalled() async => installed;
 }
 
-/// Subclass AdcService to return a synthetic ADC file result.
+/// Subclass AdcService to return a synthetic ADC file result and token.
 class FakeAdcService extends AdcService {
   final AdcInfo? adc;
-  FakeAdcService(this.adc);
+  final TokenInfo? token;
+  FakeAdcService({this.adc, this.token});
 
   @override
   Future<AdcInfo?> readAdcFile() async => adc;
+
+  @override
+  Future<TokenInfo?> refreshAccessToken({AdcInfo? adcInfo}) async => token;
 }
 
 // ── Builders ──────────────────────────────────────────────────────────────────
@@ -65,11 +57,11 @@ CandelaConfig _soloConfig({List<ConfigIssue> issues = const []}) {
   );
 }
 
-AdcInfo _fakeAdc() => const AdcInfo(
+AdcInfo _fakeAdc({String? quotaProject}) => AdcInfo(
       path: '/tmp/adc.json',
       type: 'authorized_user',
       clientEmail: null,
-      quotaProject: null,
+      quotaProject: quotaProject,
     );
 
 TokenInfo _validToken() => TokenInfo(
@@ -87,9 +79,8 @@ TokenInfo _expiredToken() => TokenInfo(
 // Helper: build a runner with all parts controllable.
 DiagnosticRunner _runner({
   CandelaConfig? config,
-  bool gcloudInstalled = true,
+  bool candelaInstalled = true,
   TokenInfo? token,
-  String? project,
   AdcInfo? adc,
   http.Client? httpClient,
 }) {
@@ -98,12 +89,8 @@ DiagnosticRunner _runner({
 
   return DiagnosticRunner(
     config: FakeConfigService(config ?? _soloConfig()),
-    gcloud: FakeGCloudService(
-      installed: gcloudInstalled,
-      token: token,
-      project: project,
-    ),
-    adc: FakeAdcService(adc),
+    candelaAuth: FakeCandelaAuthService(installed: candelaInstalled),
+    adc: FakeAdcService(adc: adc, token: token),
     providers: ProviderTestService(client: proxyAndMockClient),
   );
 }
@@ -117,7 +104,7 @@ void main() {
     setUp(() {
       runner = DiagnosticRunner(
         config: ConfigService(),
-        gcloud: GCloudService(),
+        candelaAuth: CandelaAuthService(),
         adc: AdcService(),
         providers: ProviderTestService(),
       );
@@ -152,11 +139,11 @@ void main() {
     test('constructs with all fields', () {
       final entry = DiagnosticEntry(
         status: DiagnosticStatus.pass,
-        message: 'gcloud installed',
+        message: 'Candela CLI installed',
         timestamp: DateTime(2026, 5, 2, 14, 30),
       );
       expect(entry.status, DiagnosticStatus.pass);
-      expect(entry.message, 'gcloud installed');
+      expect(entry.message, 'Candela CLI installed');
       expect(entry.timestamp.hour, 14);
     });
 
@@ -204,29 +191,27 @@ void main() {
 
   // ── runAll() path coverage ──────────────────────────────────────────────────
 
-  group('DiagnosticRunner runAll — gcloud not installed (continues)', () {
+  group('DiagnosticRunner runAll — candela CLI not installed (advisory)', () {
     late DiagnosticRunner runner;
-    setUp(() => runner = _runner(gcloudInstalled: false));
+    setUp(() => runner = _runner(candelaInstalled: false, adc: null));
     tearDown(() => runner.dispose());
 
-    test('gcloud missing is a warning, not a failure', () async {
-      final summary = await runner.runAll();
-      expect(summary.warned, greaterThanOrEqualTo(1));
-    });
-
-    test('emits warn entry for gcloud CLI', () async {
+    test('emits warning (not failure) for missing CLI', () async {
       await runner.runAll();
       expect(
         runner.history.any((e) =>
-            e.status == DiagnosticStatus.warn && e.message.contains('gcloud')),
+            e.status == DiagnosticStatus.warn &&
+            e.message.contains('Candela CLI not found')),
         isTrue,
       );
     });
 
-    test('continues to check subsequent steps after gcloud warn', () async {
-      await runner.runAll();
+    test('diagnostics continue past missing CLI', () async {
+      final summary = await runner.runAll();
+      // Should have more than just the CLI check — config + ADC checks run.
+      expect(summary.total, greaterThan(1));
       // Verify that the runner continues to subsequent steps (like config)
-      // instead of early-exiting on gcloud warning.
+      // instead of early-exiting on CLI warning.
       expect(
         runner.history.any((e) => e.message.contains('Config loaded')),
         isTrue,
@@ -239,10 +224,10 @@ void main() {
     });
   });
 
-  group('DiagnosticRunner runAll — gcloud ok, no ADC', () {
+  group('DiagnosticRunner runAll — no ADC', () {
     late DiagnosticRunner runner;
     setUp(() => runner = _runner(
-          gcloudInstalled: true,
+          candelaInstalled: true,
           token: null,
           adc: null,
         ));
@@ -269,10 +254,10 @@ void main() {
     });
   });
 
-  group('DiagnosticRunner runAll — gcloud ok, expired token', () {
+  group('DiagnosticRunner runAll — expired token', () {
     late DiagnosticRunner runner;
     setUp(() => runner = _runner(
-          gcloudInstalled: true,
+          candelaInstalled: true,
           token: _expiredToken(),
           adc: _fakeAdc(),
         ));
@@ -288,13 +273,12 @@ void main() {
     });
   });
 
-  group('DiagnosticRunner runAll — gcloud ok, valid token, proxy up', () {
+  group('DiagnosticRunner runAll — valid token, proxy up', () {
     late DiagnosticRunner runner;
     setUp(() => runner = _runner(
-          gcloudInstalled: true,
+          candelaInstalled: true,
           token: _validToken(),
-          adc: _fakeAdc(),
-          project: 'my-gcp-project',
+          adc: _fakeAdc(quotaProject: 'my-gcp-project'),
           httpClient: http_testing.MockClient((req) async {
             if (req.url.path == '/v1/models') {
               return http.Response(
@@ -320,12 +304,13 @@ void main() {
       expect(runner.history.length, firstCount);
     });
 
-    test('emits gcloud pass entry', () async {
+    test('emits Candela CLI pass entry', () async {
       await runner.runAll();
       expect(
         runner.history.any(
           (e) =>
-              e.status == DiagnosticStatus.pass && e.message.contains('gcloud'),
+              e.status == DiagnosticStatus.pass &&
+              e.message.contains('Candela CLI installed'),
         ),
         isTrue,
       );
@@ -364,10 +349,9 @@ void main() {
   group('DiagnosticRunner runAll — no project configured', () {
     late DiagnosticRunner runner;
     setUp(() => runner = _runner(
-          gcloudInstalled: true,
+          candelaInstalled: true,
           token: _validToken(),
-          adc: _fakeAdc(),
-          project: null, // no project
+          adc: _fakeAdc(), // no quotaProject
         ));
     tearDown(() => runner.dispose());
 
@@ -384,7 +368,7 @@ void main() {
   group('DiagnosticRunner runAll — concurrent call returns same future', () {
     test('second runAll while running returns same result', () async {
       final runner = _runner(
-        gcloudInstalled: true,
+        candelaInstalled: true,
         token: _validToken(),
         adc: _fakeAdc(),
       );
@@ -400,7 +384,7 @@ void main() {
   group('DiagnosticRunner runAll — config with errors', () {
     test('emits fail entries for config errors', () async {
       final runner = _runner(
-        gcloudInstalled: true,
+        candelaInstalled: true,
         token: _validToken(),
         adc: _fakeAdc(),
         config: const CandelaConfig(

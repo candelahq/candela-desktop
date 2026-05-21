@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/candela_config.dart';
 import '../../models/span_stats.dart';
-import '../../services/gcloud_service.dart';
+import '../../services/candela_auth_service.dart';
 import '../../services/telemetry_service.dart';
 import '../../theme/colors.dart';
 import '../../providers.dart';
@@ -65,15 +65,21 @@ class _TracesScreenState extends ConsumerState<TracesScreen> {
 
     if (isTeam) {
       _isTeamMode = true;
-      final gcloud = GCloudService();
-      final audience = config.audience ?? config.remote ?? '';
-      final tokenInfo = audience.isNotEmpty
-          ? await gcloud.getIdToken(audience)
-          : await gcloud.getTokenInfo();
+      final auth = CandelaAuthService();
+      // Use audience-specific ID token for IAP/Cloud Run backends;
+      // fall back to standard access token otherwise.
+      String? authToken;
+      final audience = config.audience;
+      if (audience != null && audience.isNotEmpty) {
+        authToken = await auth.getIdToken(audience: audience);
+      } else {
+        final tokenInfo = await auth.getTokenInfo();
+        authToken = tokenInfo?.accessToken;
+      }
       _svc = TelemetryService(
         port: config.port,
         remoteUrl: config.remote,
-        authToken: tokenInfo?.accessToken,
+        authToken: authToken,
       );
     } else {
       _svc = TelemetryService(port: config.port);

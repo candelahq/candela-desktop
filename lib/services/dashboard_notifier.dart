@@ -5,7 +5,8 @@ import '../models/budget_info.dart';
 import '../models/candela_config.dart';
 import '../models/span_stats.dart';
 import '../gen/candela/types/user.pbenum.dart' as user_types;
-import '../services/adc_service.dart';
+import '../models/identity_state.dart';
+import '../services/candela_auth_service.dart';
 import '../services/telemetry_service.dart';
 
 // ── Immutable state snapshot ─────────────────────────────────────────────────
@@ -72,7 +73,7 @@ class DashboardState {
 ///    immediate fetch when the app returns to the foreground.
 class DashboardNotifier extends ChangeNotifier {
   TelemetryService? _telemetry;
-  final AdcService _adcService;
+  final CandelaAuthService? _candelaAuth;
   Timer? _refreshTimer;
   bool _disposed = false;
 
@@ -98,6 +99,7 @@ class DashboardNotifier extends ChangeNotifier {
 
   // Team-mode token refresh state.
   String? _remoteUrl;
+  String? _audience;
   int _proxyPort = 8181;
   DateTime? _tokenExpiresAt;
   static const _tokenRefreshBuffer = Duration(minutes: 5);
@@ -107,10 +109,10 @@ class DashboardNotifier extends ChangeNotifier {
 
   DashboardNotifier({
     TelemetryService? telemetry,
-    AdcService? adcService,
+    CandelaAuthService? candelaAuth,
     this.cacheTtl = const Duration(seconds: 50),
   })  : _telemetry = telemetry,
-        _adcService = adcService ?? AdcService();
+        _candelaAuth = candelaAuth;
 
   // ── Configuration ─────────────────────────────────────────────────────────
 
@@ -124,13 +126,23 @@ class DashboardNotifier extends ChangeNotifier {
         config.remote!.isNotEmpty;
 
     if (isTeam) {
-      // Direct OAuth2 refresh from ADC file — no gcloud subprocess needed.
-      final tokenInfo = await _adcService.refreshAccessToken();
+      final auth = _candelaAuth ?? CandelaAuthService();
+      _audience = config.audience;
+      // Use audience-specific ID token when audience is configured
+      // (for IAP / Cloud Run backends); otherwise fall back to access token.
+      String? authToken;
+      TokenInfo? tokenInfo;
+      if (_audience != null && _audience!.isNotEmpty) {
+        authToken = await auth.getIdToken(audience: _audience!);
+      } else {
+        tokenInfo = await auth.getTokenInfo(forceRefresh: true);
+        authToken = tokenInfo?.accessToken;
+      }
       _telemetry?.dispose();
       _telemetry = TelemetryService(
         port: config.port,
         remoteUrl: config.remote,
-        authToken: tokenInfo?.accessToken,
+        authToken: authToken,
       );
       _remoteUrl = config.remote;
       _proxyPort = config.port;
@@ -236,33 +248,46 @@ class DashboardNotifier extends ChangeNotifier {
   /// Re-fetches the auth token and rebuilds the TelemetryService when the
   /// token is within [_tokenRefreshBuffer] of expiry. No-op in local mode.
   Future<void> _refreshTokenIfNeeded() async {
-    if (_remoteUrl == null) return;
+    if (_candelaAuth == null || _remoteUrl == null) return;
     final now = DateTime.now().toUtc();
     final expiresAt = _tokenExpiresAt;
     if (expiresAt != null && expiresAt.difference(now) > _tokenRefreshBuffer) {
       return;
     }
-    // Direct OAuth2 refresh — no gcloud subprocess.
-    final tokenInfo = await _adcService.refreshAccessToken();
+    // Use audience-specific ID token when audience is configured;
+    // otherwise fall back to standard access token.
+    String? authToken;
+    TokenInfo? tokenInfo;
+    if (_audience != null && _audience!.isNotEmpty) {
+      authToken = await _candelaAuth.getIdToken(audience: _audience!);
+    } else {
+      tokenInfo = await _candelaAuth.getTokenInfo();
+      authToken = tokenInfo?.accessToken;
+    }
     // If refresh fails but the current token hasn't actually expired yet,
     // keep using it rather than replacing with a null-token service.
-    if (tokenInfo == null && expiresAt != null && expiresAt.isAfter(now)) {
+    if (authToken == null && expiresAt != null && expiresAt.isAfter(now)) {
       return;
     }
     final oldSvc = _telemetry;
     _telemetry = TelemetryService(
       port: _proxyPort,
       remoteUrl: _remoteUrl,
-      authToken: tokenInfo?.accessToken,
+      authToken: authToken,
     );
     _tokenExpiresAt = tokenInfo?.expiresAt;
     oldSvc?.dispose();
   }
 
   /// Refresh the auth token (team mode only). Returns the new token or null.
+  ///
+  /// Uses audience-specific ID token when configured, otherwise access token.
   Future<String?> refreshToken() async {
-    if (_remoteUrl == null) return null;
-    final info = await _adcService.refreshAccessToken();
+    if (_candelaAuth == null || _remoteUrl == null) return null;
+    if (_audience != null && _audience!.isNotEmpty) {
+      return _candelaAuth.getIdToken(audience: _audience!);
+    }
+    final info = await _candelaAuth.getTokenInfo();
     return info?.accessToken;
   }
 

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:candela_desktop/services/diagnostic_runner.dart';
 import 'package:candela_desktop/services/config_service.dart';
-import 'package:candela_desktop/services/gcloud_service.dart';
+import 'package:candela_desktop/services/candela_auth_service.dart';
 import 'package:candela_desktop/services/adc_service.dart';
 import 'package:candela_desktop/services/provider_test_service.dart';
 import 'package:candela_desktop/models/diagnostic_entry.dart';
@@ -16,7 +16,7 @@ void main() {
       configService = ConfigService(configPath: '/tmp/nonexistent.yaml');
       runner = DiagnosticRunner(
         config: configService,
-        gcloud: GCloudService(),
+        candelaAuth: CandelaAuthService(),
         adc: AdcService(),
         providers: ProviderTestService(),
       );

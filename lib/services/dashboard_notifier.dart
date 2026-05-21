@@ -77,7 +77,7 @@ class DashboardState {
 /// [ChangeNotifier] or manual listener management required.
 class DashboardController {
   TelemetryService? _telemetry;
-  final CandelaAuthService? _candelaAuth;
+  CandelaAuthService? _candelaAuth;
   Timer? _refreshTimer;
 
   /// Callback invoked whenever [state] changes. Set by the provider to
@@ -136,6 +136,7 @@ class DashboardController {
 
     if (isTeam) {
       final auth = _candelaAuth ?? CandelaAuthService();
+      _candelaAuth = auth;
       _audience = config.audience;
       // Use audience-specific ID token when audience is configured
       // (for IAP / Cloud Run backends); otherwise fall back to access token.
@@ -253,7 +254,12 @@ class DashboardController {
   /// Re-fetches the auth token and rebuilds the TelemetryService when the
   /// token is within [_tokenRefreshBuffer] of expiry. No-op in local mode.
   Future<void> _refreshTokenIfNeeded() async {
-    if (_candelaAuth == null || _remoteUrl == null) return;
+    final auth = _candelaAuth;
+    if (auth == null ||
+        _remoteUrl == null ||
+        !(_telemetry?.isTeamMode ?? false)) {
+      return;
+    }
     final now = DateTime.now().toUtc();
     final expiresAt = _tokenExpiresAt;
     if (expiresAt != null && expiresAt.difference(now) > _tokenRefreshBuffer) {
@@ -264,9 +270,9 @@ class DashboardController {
     String? authToken;
     TokenInfo? tokenInfo;
     if (_audience != null && _audience!.isNotEmpty) {
-      authToken = await _candelaAuth.getIdToken(audience: _audience!);
+      authToken = await auth.getIdToken(audience: _audience!);
     } else {
-      tokenInfo = await _candelaAuth.getTokenInfo();
+      tokenInfo = await auth.getTokenInfo();
       authToken = tokenInfo?.accessToken;
     }
     // If refresh fails but the current token hasn't actually expired yet,
@@ -288,11 +294,16 @@ class DashboardController {
   ///
   /// Uses audience-specific ID token when configured, otherwise access token.
   Future<String?> refreshToken() async {
-    if (_candelaAuth == null || _remoteUrl == null) return null;
-    if (_audience != null && _audience!.isNotEmpty) {
-      return _candelaAuth.getIdToken(audience: _audience!);
+    final auth = _candelaAuth;
+    if (auth == null ||
+        _remoteUrl == null ||
+        !(_telemetry?.isTeamMode ?? false)) {
+      return null;
     }
-    final info = await _candelaAuth.getTokenInfo();
+    if (_audience != null && _audience!.isNotEmpty) {
+      return auth.getIdToken(audience: _audience!);
+    }
+    final info = await auth.getTokenInfo();
     return info?.accessToken;
   }
 

@@ -308,6 +308,63 @@ void main() {
       notifier.dispose();
     });
 
+    test('refreshToken returns null after switching Team→Solo', () async {
+      final adc = _FakeAdcService(token: 'team-token');
+      final auth = CandelaAuthService(adcService: adc);
+      final notifier = DashboardController(candelaAuth: auth);
+
+      // Configure in team mode — auth is called once.
+      await notifier.configure(const CandelaConfig(
+        path: '/tmp/test',
+        mode: CandelaMode.team,
+        remote: 'https://candela.example.com',
+      ));
+      expect(adc.refreshCallCount, 1);
+
+      // Switch to solo mode.
+      await notifier.configure(const CandelaConfig(
+        path: '/tmp/test',
+        mode: CandelaMode.solo,
+      ));
+
+      // refreshToken must return null — the isTeamMode guard prevents
+      // returning a stale token after the mode switch.
+      final token = await notifier.refreshToken();
+      expect(token, isNull);
+      // Auth service should not have been called again.
+      expect(adc.refreshCallCount, 1);
+      notifier.dispose();
+    });
+
+    test('fetch() after Team→Solo does not trigger token refresh', () async {
+      final adc = _ExpiryAdcService(
+        token: 'expiring-team-token',
+        expiresIn: const Duration(minutes: 2), // within refresh buffer
+      );
+      final auth = CandelaAuthService(adcService: adc);
+      final notifier = DashboardController(candelaAuth: auth);
+
+      // Configure in team mode with a near-expiry token.
+      await notifier.configure(const CandelaConfig(
+        path: '/tmp/test',
+        mode: CandelaMode.team,
+        remote: 'https://candela.example.com',
+      ));
+      expect(adc.refreshCallCount, 1);
+
+      // Switch to solo mode.
+      await notifier.configure(const CandelaConfig(
+        path: '/tmp/test',
+        mode: CandelaMode.solo,
+      ));
+
+      // fetch() should NOT trigger a token refresh even though the token
+      // is near expiry, because the controller is now in solo mode.
+      await notifier.fetch();
+      expect(adc.refreshCallCount, 1); // still just the initial configure
+      notifier.dispose();
+    });
+
     test('onStateChanged fires after fetch completes', () async {
       final auth = CandelaAuthService(adcService: _NullAdcService());
       final notifier = DashboardController(candelaAuth: auth);

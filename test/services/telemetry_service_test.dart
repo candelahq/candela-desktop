@@ -89,6 +89,7 @@ class MockConnectApi extends ConnectApiService {
     required DateTime start,
     required DateTime end,
     bool includeBudget = false,
+    UserScope? userScope,
   }) async {
     if (throwOnDashboard != null) throw throwOnDashboard!;
     // If throwOnSummary is set, propagate it as if the consolidated endpoint

@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import '../models/budget_info.dart';
 import '../models/span_stats.dart';
 import '../gen/candela/v1/dashboard_service.pb.dart' hide TimeSeriesPoint;
+import '../gen/candela/types/user.pbenum.dart' as user_types;
 import 'connect_api_service.dart';
 
 // ── Error kinds ───────────────────────────────────────────────────────────────
@@ -93,7 +94,8 @@ class TelemetryService {
   ///
   /// The returned [TelemetryResult] may carry a [TelemetryErrorKind] to let
   /// the UI show actionable error messages (e.g. "token expired").
-  Future<TelemetryResult?> fetch(TokenTimeRange range) async {
+  Future<TelemetryResult?> fetch(TokenTimeRange range,
+      {user_types.UserScope? userScope}) async {
     // C2: reject unsafe remote URLs before making any request.
     if (remoteUrl != null && !isSafeUrl(remoteUrl!)) {
       return const TelemetryResult.withError(
@@ -113,7 +115,7 @@ class TelemetryService {
 
     if (isTeamMode) {
       (spans, errorKind, budget, grants, totalRemainingUsd) =
-          await _fetchRemote(range, now);
+          await _fetchRemote(range, now, userScope: userScope);
     } else {
       (spans, errorKind) = await _fetchLocal(range);
     }
@@ -196,13 +198,15 @@ class TelemetryService {
   // ── Team / ConnectRPC ───────────────────────────────────────────────────────
 
   Future<
-      (
-        List<SpanRecord>,
-        TelemetryErrorKind?,
-        BudgetInfo?,
-        List<GrantInfo>,
-        double?
-      )> _fetchRemote(TokenTimeRange range, DateTime now) async {
+          (
+            List<SpanRecord>,
+            TelemetryErrorKind?,
+            BudgetInfo?,
+            List<GrantInfo>,
+            double?
+          )>
+      _fetchRemote(TokenTimeRange range, DateTime now,
+          {user_types.UserScope? userScope}) async {
     final base = remoteUrl!.replaceAll(RegExp(r'/$'), '');
     final start = range.startFrom(now);
 
@@ -210,7 +214,7 @@ class TelemetryService {
 
     try {
       // Try the consolidated RPC first (single round-trip).
-      return await _fetchConsolidated(api, start, now);
+      return await _fetchConsolidated(api, start, now, userScope: userScope);
     } on ConnectException catch (e) {
       // C1/C3: distinguish 401 (auth expired) from other errors.
       if (e.code == Code.unauthenticated) {
@@ -276,12 +280,13 @@ class TelemetryService {
             List<GrantInfo>,
             double?
           )>
-      _fetchConsolidated(
-          ConnectApiService api, DateTime start, DateTime now) async {
+      _fetchConsolidated(ConnectApiService api, DateTime start, DateTime now,
+          {user_types.UserScope? userScope}) async {
     final resp = await api.getDashboardData(
       start: start,
       end: now,
       includeBudget: true,
+      userScope: userScope,
     );
 
     // Parse budget from the new BudgetContext.

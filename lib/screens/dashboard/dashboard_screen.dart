@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../gen/candela/types/user.pbenum.dart' as user_types;
 import '../../models/span_stats.dart';
 import '../../services/budget_notification_service.dart';
 import '../../services/dashboard_notifier.dart';
@@ -108,6 +109,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             onRefresh: () => notifier.fetch(),
             loading: state.loading,
             isTeamMode: state.isTeamMode,
+            userScope: state.userScope,
+            onScopeChanged: (s) => notifier.setUserScope(s),
             models: uniqueModels,
             selectedModel: _selectedModel,
             onModelChanged: _setSelectedModel,
@@ -134,6 +137,8 @@ class _Header extends StatelessWidget {
   final VoidCallback onRefresh;
   final bool loading;
   final bool isTeamMode;
+  final user_types.UserScope userScope;
+  final ValueChanged<user_types.UserScope> onScopeChanged;
   final List<String> models;
   final String? selectedModel;
   final ValueChanged<String?> onModelChanged;
@@ -144,6 +149,8 @@ class _Header extends StatelessWidget {
     required this.onRefresh,
     required this.loading,
     required this.isTeamMode,
+    required this.userScope,
+    required this.onScopeChanged,
     required this.models,
     required this.selectedModel,
     required this.onModelChanged,
@@ -183,6 +190,12 @@ class _Header extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(width: 16),
+          if (isTeamMode)
+            _ScopeToggle(
+              scope: userScope,
+              onChanged: onScopeChanged,
+            ),
           const Spacer(),
           if (models.isNotEmpty) ...[
             ModelSelectorDropdown(
@@ -227,6 +240,66 @@ class _ModeBadge extends StatelessWidget {
           fontWeight: FontWeight.w600,
           color: isTeam ? CandelaColors.accent : CandelaColors.textMuted,
           letterSpacing: 0.4,
+        ),
+      ),
+    );
+  }
+}
+
+// ── Scope toggle (My / All) ──────────────────────────────────────────────────
+
+class _ScopeToggle extends StatelessWidget {
+  final user_types.UserScope scope;
+  final ValueChanged<user_types.UserScope> onChanged;
+  const _ScopeToggle({required this.scope, required this.onChanged});
+
+  bool get _isGlobal => scope == user_types.UserScope.USER_SCOPE_GLOBAL;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: CandelaColors.bgTertiary,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: CandelaColors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _scopeChip('My', !_isGlobal, () {
+            if (_isGlobal) {
+              onChanged(user_types.UserScope.USER_SCOPE_PERSONAL);
+            }
+          }),
+          _scopeChip('All', _isGlobal, () {
+            if (!_isGlobal) {
+              onChanged(user_types.UserScope.USER_SCOPE_GLOBAL);
+            }
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _scopeChip(String label, bool active, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color:
+              active ? CandelaColors.accent.withAlpha(30) : Colors.transparent,
+          borderRadius: BorderRadius.circular(5),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+            color: active ? CandelaColors.accent : CandelaColors.textMuted,
+            letterSpacing: 0.3,
+          ),
         ),
       ),
     );

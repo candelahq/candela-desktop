@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../models/budget_info.dart';
 import '../models/candela_config.dart';
 import '../models/span_stats.dart';
+import '../gen/candela/types/user.pbenum.dart' as user_types;
 import '../services/adc_service.dart';
 import '../services/telemetry_service.dart';
 
@@ -15,12 +16,14 @@ class DashboardState {
   final bool loading;
   final String? errorMessage;
   final TokenTimeRange range;
+  final user_types.UserScope userScope;
 
   const DashboardState({
     this.result,
     this.loading = false,
     this.errorMessage,
     this.range = TokenTimeRange.d7,
+    this.userScope = user_types.UserScope.USER_SCOPE_UNSPECIFIED,
   });
 
   DashboardState copyWith({
@@ -28,6 +31,7 @@ class DashboardState {
     bool? loading,
     String? errorMessage,
     TokenTimeRange? range,
+    user_types.UserScope? userScope,
     bool clearError = false,
   }) {
     return DashboardState(
@@ -35,6 +39,7 @@ class DashboardState {
       loading: loading ?? this.loading,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       range: range ?? this.range,
+      userScope: userScope ?? this.userScope,
     );
   }
 
@@ -193,7 +198,8 @@ class DashboardNotifier extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await _telemetry!.fetch(_state.range);
+      final result =
+          await _telemetry!.fetch(_state.range, userScope: _state.userScope);
       _lastFetchAt = DateTime.now().toUtc();
       _state = _state.copyWith(
         result: result,
@@ -213,6 +219,14 @@ class DashboardNotifier extends ChangeNotifier {
   Future<void> setRange(TokenTimeRange range) async {
     _state = _state.copyWith(range: range);
     _lastFetchAt = null; // Invalidate cache — new range needs fresh data.
+    notifyListeners();
+    await fetch();
+  }
+
+  /// Switch user scope (Personal / Global), invalidate cache, and re-fetch.
+  Future<void> setUserScope(user_types.UserScope scope) async {
+    _state = _state.copyWith(userScope: scope);
+    _lastFetchAt = null;
     notifyListeners();
     await fetch();
   }

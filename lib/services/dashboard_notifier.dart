@@ -111,8 +111,9 @@ class DashboardController {
   DashboardState _state = const DashboardState(loading: true);
   DashboardState get state => _state;
   set state(DashboardState newState) {
+    if (_disposed) return;
     _state = newState;
-    if (!_disposed) onStateChanged?.call(newState);
+    onStateChanged?.call(newState);
   }
 
   DashboardController({

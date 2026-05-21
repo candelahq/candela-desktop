@@ -122,39 +122,37 @@ void main() {
 
   // ── Basic construction / lifecycle ─────────────────────────────────────────
 
-  group('DashboardNotifier — lifecycle', () {
+  group('DashboardController — lifecycle', () {
     test('isConfigured is false before configure()', () {
-      final notifier = DashboardNotifier();
+      final notifier = DashboardController();
       expect(notifier.isConfigured, isFalse);
       notifier.dispose();
     });
 
-    test('notifies on state change via setRange', () {
-      final notifier = DashboardNotifier();
+    test('notifies on state change via setRange', () async {
+      final notifier = DashboardController();
       int notifyCount = 0;
-      notifier.addListener(() => notifyCount++);
+      notifier.onStateChanged = (_) => notifyCount++;
 
-      notifier.setRange(TokenTimeRange.h24);
-      Future.delayed(const Duration(milliseconds: 200), () {
-        expect(notifyCount, greaterThan(0));
-        notifier.dispose();
-      });
+      await notifier.setRange(TokenTimeRange.h24);
+      expect(notifyCount, greaterThan(0));
+      notifier.dispose();
     });
 
     test('dispose cancels timer', () {
-      final notifier = DashboardNotifier();
+      final notifier = DashboardController();
       notifier.startPolling(interval: const Duration(seconds: 1));
       notifier.dispose();
     });
 
     test('cache TTL defaults to 50 seconds', () {
-      final notifier = DashboardNotifier();
+      final notifier = DashboardController();
       expect(notifier.cacheTtl, const Duration(seconds: 50));
       notifier.dispose();
     });
 
     test('custom cache TTL is respected', () {
-      final notifier = DashboardNotifier(
+      final notifier = DashboardController(
         cacheTtl: const Duration(seconds: 60),
       );
       expect(notifier.cacheTtl, const Duration(seconds: 60));
@@ -162,7 +160,7 @@ void main() {
     });
 
     test('buildFilteredSummary returns null when not configured', () {
-      final notifier = DashboardNotifier();
+      final notifier = DashboardController();
       expect(notifier.buildFilteredSummary(null), isNull);
       notifier.dispose();
     });
@@ -170,11 +168,11 @@ void main() {
 
   // ── CandelaAuthService integration tests ─────────────────────────────────
 
-  group('DashboardNotifier — CandelaAuthService auth', () {
+  group('DashboardController — CandelaAuthService auth', () {
     test('configure() in team mode uses auth service token', () async {
       final adc = _FakeAdcService(token: 'test-token-123');
       final auth = CandelaAuthService(adcService: adc);
-      final notifier = DashboardNotifier(candelaAuth: auth);
+      final notifier = DashboardController(candelaAuth: auth);
 
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
@@ -190,7 +188,7 @@ void main() {
     test('configure() in solo mode does not call auth service', () async {
       final adc = _FakeAdcService(token: 'should-not-be-used');
       final auth = CandelaAuthService(adcService: adc);
-      final notifier = DashboardNotifier(candelaAuth: auth);
+      final notifier = DashboardController(candelaAuth: auth);
 
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
@@ -205,7 +203,7 @@ void main() {
     test('configure() in team mode with null token still configures', () async {
       final adc = _NullAdcService();
       final auth = CandelaAuthService(adcService: adc);
-      final notifier = DashboardNotifier(candelaAuth: auth);
+      final notifier = DashboardController(candelaAuth: auth);
 
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
@@ -222,7 +220,7 @@ void main() {
     test('configure() with empty remote stays in local mode', () async {
       final adc = _FakeAdcService(token: 'should-not-be-used');
       final auth = CandelaAuthService(adcService: adc);
-      final notifier = DashboardNotifier(candelaAuth: auth);
+      final notifier = DashboardController(candelaAuth: auth);
 
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
@@ -238,7 +236,7 @@ void main() {
     test('refreshToken returns token from auth service in team mode', () async {
       final adc = _FakeAdcService(token: 'fresh-token');
       final auth = CandelaAuthService(adcService: adc);
-      final notifier = DashboardNotifier(candelaAuth: auth);
+      final notifier = DashboardController(candelaAuth: auth);
 
       // Must configure in team mode first — refreshToken guards on _remoteUrl.
       await notifier.configure(const CandelaConfig(
@@ -254,7 +252,7 @@ void main() {
 
     test('refreshToken returns null without ADC credentials', () async {
       final auth = CandelaAuthService(adcService: _NullAdcService());
-      final notifier = DashboardNotifier(candelaAuth: auth);
+      final notifier = DashboardController(candelaAuth: auth);
 
       // Configure in team mode but with null-returning AdcService.
       await notifier.configure(const CandelaConfig(
@@ -271,7 +269,7 @@ void main() {
     test('refreshToken returns null in solo mode', () async {
       final adc = _FakeAdcService(token: 'should-not-be-used');
       final auth = CandelaAuthService(adcService: adc);
-      final notifier = DashboardNotifier(candelaAuth: auth);
+      final notifier = DashboardController(candelaAuth: auth);
 
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
@@ -288,7 +286,7 @@ void main() {
     test('configure() in team mode then re-configure in solo mode', () async {
       final adc = _FakeAdcService(token: 'team-token');
       final auth = CandelaAuthService(adcService: adc);
-      final notifier = DashboardNotifier(candelaAuth: auth);
+      final notifier = DashboardController(candelaAuth: auth);
 
       // First: team mode.
       await notifier.configure(const CandelaConfig(
@@ -309,11 +307,11 @@ void main() {
       notifier.dispose();
     });
 
-    test('notifyListeners fires after fetch completes', () async {
+    test('onStateChanged fires after fetch completes', () async {
       final auth = CandelaAuthService(adcService: _NullAdcService());
-      final notifier = DashboardNotifier(candelaAuth: auth);
-      int notifyCount = 0;
-      notifier.addListener(() => notifyCount++);
+      final notifier = DashboardController(candelaAuth: auth);
+      final states = <DashboardState>[];
+      notifier.onStateChanged = (s) => states.add(s);
 
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
@@ -321,26 +319,51 @@ void main() {
       ));
 
       // fetch() will fail (no local proxy running) but should still
-      // notify listeners to clear the loading state.
+      // fire onStateChanged to clear the loading state.
       await notifier.fetch();
-      expect(notifyCount, greaterThan(0));
+      expect(states, isNotEmpty);
       expect(notifier.state.loading, isFalse);
       notifier.dispose();
     });
 
-    test('safe notification after dispose does not throw', () async {
+    test('state changes after dispose do not invoke callback', () async {
       final auth = CandelaAuthService(adcService: _NullAdcService());
-      final notifier = DashboardNotifier(candelaAuth: auth);
+      final notifier = DashboardController(candelaAuth: auth);
+      int callbackCount = 0;
+      notifier.onStateChanged = (_) => callbackCount++;
       notifier.dispose();
 
-      // Should not throw — guarded by _disposed flag.
-      notifier.notifyListeners();
+      // Setting state after dispose should not invoke the callback
+      // and should not throw.
+      notifier.state = const DashboardState(loading: true);
+      expect(callbackCount, 0);
+    });
+
+    test('onStateChanged receives the new state snapshot', () async {
+      final notifier = DashboardController();
+      DashboardState? received;
+      notifier.onStateChanged = (s) => received = s;
+
+      await notifier.setRange(TokenTimeRange.h24);
+      expect(received, isNotNull);
+      expect(received!.range, TokenTimeRange.h24);
+      notifier.dispose();
+    });
+
+    test('onStateChanged is not invoked when callback is null', () {
+      // Ensures no NPE when no callback is registered.
+      final notifier = DashboardController();
+      expect(notifier.onStateChanged, isNull);
+      // Trigger a state change without a registered callback.
+      notifier.state = const DashboardState(loading: true);
+      expect(notifier.state.loading, isTrue);
+      notifier.dispose();
     });
   });
 
   // ── Token refresh lifecycle ───────────────────────────────────────────────
 
-  group('DashboardNotifier — token refresh lifecycle', () {
+  group('DashboardController — token refresh lifecycle', () {
     test('fetch() skips token refresh when token is still fresh', () async {
       // Token expires in 1 hour — well outside the 5-minute refresh buffer.
       final adc = _ExpiryAdcService(
@@ -348,7 +371,7 @@ void main() {
         expiresIn: const Duration(hours: 1),
       );
       final auth = CandelaAuthService(adcService: adc);
-      final notifier = DashboardNotifier(candelaAuth: auth);
+      final notifier = DashboardController(candelaAuth: auth);
 
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
@@ -370,7 +393,7 @@ void main() {
         expiresIn: const Duration(minutes: 2),
       );
       final auth = CandelaAuthService(adcService: adc);
-      final notifier = DashboardNotifier(candelaAuth: auth);
+      final notifier = DashboardController(candelaAuth: auth);
 
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
@@ -392,7 +415,7 @@ void main() {
         expiresIn: const Duration(minutes: -10),
       );
       final auth = CandelaAuthService(adcService: adc);
-      final notifier = DashboardNotifier(candelaAuth: auth);
+      final notifier = DashboardController(candelaAuth: auth);
 
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
@@ -415,7 +438,7 @@ void main() {
         failAfter: 1, // first call succeeds, second call returns null
       );
       final auth = CandelaAuthService(adcService: adc);
-      final notifier = DashboardNotifier(candelaAuth: auth);
+      final notifier = DashboardController(candelaAuth: auth);
 
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
@@ -437,7 +460,7 @@ void main() {
     test('fetch() in local mode skips token refresh entirely', () async {
       final adc = _FakeAdcService(token: 'should-not-be-used');
       final auth = CandelaAuthService(adcService: adc);
-      final notifier = DashboardNotifier(candelaAuth: auth);
+      final notifier = DashboardController(candelaAuth: auth);
 
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
@@ -457,7 +480,7 @@ void main() {
         expiresIn: const Duration(hours: 1),
       );
       final auth = CandelaAuthService(adcService: adc);
-      final notifier = DashboardNotifier(candelaAuth: auth);
+      final notifier = DashboardController(candelaAuth: auth);
 
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
@@ -476,7 +499,7 @@ void main() {
     test('configure() disposes old TelemetryService on re-configure', () async {
       final adc = _FakeAdcService(token: 'token-v1');
       final auth = CandelaAuthService(adcService: adc);
-      final notifier = DashboardNotifier(candelaAuth: auth);
+      final notifier = DashboardController(candelaAuth: auth);
 
       // First configure.
       await notifier.configure(const CandelaConfig(
@@ -499,7 +522,7 @@ void main() {
 
     test('fetch() clears loading state even on error', () async {
       final auth = CandelaAuthService(adcService: _NullAdcService());
-      final notifier = DashboardNotifier(candelaAuth: auth);
+      final notifier = DashboardController(candelaAuth: auth);
 
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
@@ -514,25 +537,25 @@ void main() {
       notifier.dispose();
     });
 
-    test('setRange triggers notification', () async {
+    test('setRange triggers onStateChanged', () async {
       final auth = CandelaAuthService(adcService: _NullAdcService());
-      final notifier = DashboardNotifier(candelaAuth: auth);
+      final notifier = DashboardController(candelaAuth: auth);
       final ranges = <TokenTimeRange>[];
-      notifier.addListener(() => ranges.add(notifier.state.range));
+      notifier.onStateChanged = (s) => ranges.add(s.range);
 
-      notifier.setRange(TokenTimeRange.h24);
+      await notifier.setRange(TokenTimeRange.h24);
       // Allow microtask to complete.
       await Future<void>.delayed(Duration.zero);
       expect(ranges, contains(TokenTimeRange.h24));
       notifier.dispose();
     });
 
-    test('setUserScope updates state and notifies', () async {
-      final notifier = DashboardNotifier();
+    test('setUserScope updates state and fires callback', () async {
+      final notifier = DashboardController();
       expect(notifier.state.userScope, UserScope.USER_SCOPE_PERSONAL);
 
       final scopes = <UserScope>[];
-      notifier.addListener(() => scopes.add(notifier.state.userScope));
+      notifier.onStateChanged = (s) => scopes.add(s.userScope);
 
       await notifier.setUserScope(UserScope.USER_SCOPE_GLOBAL);
       expect(notifier.state.userScope, UserScope.USER_SCOPE_GLOBAL);
@@ -541,7 +564,7 @@ void main() {
     });
 
     test('setUserScope invalidates cache (lastFetchAt)', () async {
-      final notifier = DashboardNotifier();
+      final notifier = DashboardController();
 
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
@@ -553,17 +576,17 @@ void main() {
       expect(notifier.state.loading, isFalse);
 
       // Switching scope should invalidate cache and trigger re-fetch.
-      int notifyCount = 0;
-      notifier.addListener(() => notifyCount++);
+      final states = <DashboardState>[];
+      notifier.onStateChanged = (s) => states.add(s);
       await notifier.setUserScope(UserScope.USER_SCOPE_PERSONAL);
-      // At least one notification from setUserScope + fetch.
-      expect(notifyCount, greaterThanOrEqualTo(1));
+      // At least one callback from setUserScope + fetch.
+      expect(states, isNotEmpty);
       expect(notifier.state.userScope, UserScope.USER_SCOPE_PERSONAL);
       notifier.dispose();
     });
 
     test('setUserScope from PERSONAL to GLOBAL toggles correctly', () async {
-      final notifier = DashboardNotifier();
+      final notifier = DashboardController();
 
       await notifier.setUserScope(UserScope.USER_SCOPE_PERSONAL);
       expect(notifier.state.userScope, UserScope.USER_SCOPE_PERSONAL);

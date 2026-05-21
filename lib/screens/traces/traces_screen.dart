@@ -96,7 +96,7 @@ class _TracesScreenState extends ConsumerState<TracesScreen> {
     try {
       final result = await _svc!.fetch(_range,
           userScope:
-              _isTeamMode ? ref.read(dashboardProvider).state.userScope : null);
+              _isTeamMode ? ref.read(dashboardProvider).userScope : null);
       if (!mounted) return;
       setState(() {
         _spans = result?.spans ?? [];
@@ -222,9 +222,9 @@ class _TracesScreenState extends ConsumerState<TracesScreen> {
           if (_isTeamMode) ...[
             const SizedBox(width: 12),
             ScopeToggle(
-              scope: ref.watch(dashboardProvider).state.userScope,
+              scope: ref.watch(dashboardProvider).userScope,
               onChanged: (s) {
-                ref.read(dashboardProvider).setUserScope(s);
+                ref.read(dashboardProvider.notifier).setUserScope(s);
                 _fetch();
               },
             ),

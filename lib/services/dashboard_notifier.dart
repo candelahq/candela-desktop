@@ -71,17 +71,18 @@ class DashboardState {
 /// 3. **Visibility-aware polling**: Pauses the timer when the app lifecycle
 ///    reports [AppLifecycleState.paused] or [hidden], and resumes with an
 ///    immediate fetch when the app returns to the foreground.
-class DashboardNotifier extends ChangeNotifier {
+///
+/// This class is designed to be used as a Riverpod Notifier. State transitions
+/// are driven by assigning to [state] (immutable snapshots) — no
+/// [ChangeNotifier] or manual listener management required.
+class DashboardController {
   TelemetryService? _telemetry;
   final CandelaAuthService? _candelaAuth;
   Timer? _refreshTimer;
-  bool _disposed = false;
 
-  /// Safe notification — prevents crashes if called after [dispose].
-  @override
-  void notifyListeners() {
-    if (!_disposed) super.notifyListeners();
-  }
+  /// Callback invoked whenever [state] changes. Set by the provider to
+  /// bridge state updates into the Riverpod graph.
+  void Function(DashboardState)? onStateChanged;
 
   /// Minimum interval between actual network fetches.
   /// Set to slightly less than the polling interval so the fetch triggered
@@ -93,6 +94,9 @@ class DashboardNotifier extends ChangeNotifier {
 
   /// Whether the app is currently in the foreground.
   bool _appVisible = true;
+
+  /// Whether this controller has been disposed.
+  bool _disposed = false;
 
   /// Whether the notifier has been configured with a [TelemetryService].
   bool get isConfigured => _telemetry != null;
@@ -106,8 +110,12 @@ class DashboardNotifier extends ChangeNotifier {
 
   DashboardState _state = const DashboardState(loading: true);
   DashboardState get state => _state;
+  set state(DashboardState newState) {
+    _state = newState;
+    if (!_disposed) onStateChanged?.call(newState);
+  }
 
-  DashboardNotifier({
+  DashboardController({
     TelemetryService? telemetry,
     CandelaAuthService? candelaAuth,
     this.cacheTtl = const Duration(seconds: 50),
@@ -166,7 +174,7 @@ class DashboardNotifier extends ChangeNotifier {
   void _tickFetch() {
     if (!_appVisible) return; // Don't fetch while backgrounded.
     if (_isCacheFresh) {
-      debugPrint('[DashboardNotifier] cache still fresh, skipping fetch');
+      debugPrint('[DashboardController] cache still fresh, skipping fetch');
       return;
     }
     fetch();
@@ -185,18 +193,18 @@ class DashboardNotifier extends ChangeNotifier {
     _appVisible = lifecycleState == AppLifecycleState.resumed;
 
     if (_appVisible && !wasVisible) {
-      debugPrint('[DashboardNotifier] app resumed → immediate fetch');
+      debugPrint('[DashboardController] app resumed → immediate fetch');
       // Invalidate cache so we always get fresh data on resume.
       _lastFetchAt = null;
       fetch();
     } else if (!_appVisible && wasVisible) {
-      debugPrint('[DashboardNotifier] app backgrounded → pausing polls');
+      debugPrint('[DashboardController] app backgrounded → pausing polls');
     }
   }
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
 
-  /// Fetch telemetry for the current [range]. Notifies listeners on change.
+  /// Fetch telemetry for the current [range]. Updates [state] on change.
   ///
   /// This is the single entry point for all data loading — no screen should
   /// call [TelemetryService.fetch] directly.
@@ -206,40 +214,36 @@ class DashboardNotifier extends ChangeNotifier {
     await _refreshTokenIfNeeded();
     if (_telemetry == null) return;
 
-    _state = _state.copyWith(loading: true, clearError: true);
-    notifyListeners();
+    state = state.copyWith(loading: true, clearError: true);
 
     try {
       final result =
-          await _telemetry!.fetch(_state.range, userScope: _state.userScope);
+          await _telemetry!.fetch(state.range, userScope: state.userScope);
       _lastFetchAt = DateTime.now().toUtc();
-      _state = _state.copyWith(
+      state = state.copyWith(
         result: result,
         loading: false,
         clearError: true,
       );
     } catch (e) {
-      _state = _state.copyWith(
+      state = state.copyWith(
         loading: false,
         errorMessage: e.toString(),
       );
     }
-    notifyListeners();
   }
 
   /// Switch time range, invalidate cache, and re-fetch.
   Future<void> setRange(TokenTimeRange range) async {
-    _state = _state.copyWith(range: range);
+    state = state.copyWith(range: range);
     _lastFetchAt = null; // Invalidate cache — new range needs fresh data.
-    notifyListeners();
     await fetch();
   }
 
   /// Switch user scope (Personal / Global), invalidate cache, and re-fetch.
   Future<void> setUserScope(user_types.UserScope scope) async {
-    _state = _state.copyWith(userScope: scope);
+    state = state.copyWith(userScope: scope);
     _lastFetchAt = null;
-    notifyListeners();
     await fetch();
   }
 
@@ -296,19 +300,18 @@ class DashboardNotifier extends ChangeNotifier {
   /// Build a filtered [UsageSummary] for a specific model selection.
   /// Used by screens that offer a per-model filter dropdown.
   UsageSummary? buildFilteredSummary(String? selectedModel) {
-    if (_telemetry == null || _state.result == null) return null;
-    if (selectedModel == null) return _state.summary;
+    if (_telemetry == null || state.result == null) return null;
+    if (selectedModel == null) return state.summary;
     final filtered =
-        _state.spans.where((s) => s.model == selectedModel).toList();
+        state.spans.where((s) => s.model == selectedModel).toList();
     if (filtered.isEmpty) return null;
-    return _telemetry!.buildSummary(filtered, _state.range, DateTime.now());
+    return _telemetry!.buildSummary(filtered, state.range, DateTime.now());
   }
 
-  @override
+  /// Release resources. Called by the provider's [onDispose] callback.
   void dispose() {
     _disposed = true;
     _refreshTimer?.cancel();
     _telemetry?.dispose();
-    super.dispose();
   }
 }

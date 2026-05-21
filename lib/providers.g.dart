@@ -102,7 +102,7 @@ final class ConfigProvider extends $FunctionalProvider<
 
 String _$configHash() => r'1dc24e74f7dee07e7658c47f6de79ed8fb4ac5e0';
 
-/// Shared [DashboardNotifier] — the single source of truth for telemetry data.
+/// Shared dashboard state — the single source of truth for telemetry data.
 ///
 /// Both DashboardScreen and TodayScreen consume this provider instead of each
 /// maintaining their own [TelemetryService] and 30-second timer. This cuts
@@ -111,11 +111,15 @@ String _$configHash() => r'1dc24e74f7dee07e7658c47f6de79ed8fb4ac5e0';
 ///
 /// The notifier is lazily configured on first read using the current config,
 /// then re-configured automatically when the config file changes.
+///
+/// Usage:
+///   final state = ref.watch(dashboardNotifierProvider);  // DashboardState
+///   ref.read(dashboardNotifierProvider.notifier).fetch(); // methods
 
-@ProviderFor(dashboardNotifier)
+@ProviderFor(DashboardNotifier)
 final dashboardProvider = DashboardNotifierProvider._();
 
-/// Shared [DashboardNotifier] — the single source of truth for telemetry data.
+/// Shared dashboard state — the single source of truth for telemetry data.
 ///
 /// Both DashboardScreen and TodayScreen consume this provider instead of each
 /// maintaining their own [TelemetryService] and 30-second timer. This cuts
@@ -124,12 +128,13 @@ final dashboardProvider = DashboardNotifierProvider._();
 ///
 /// The notifier is lazily configured on first read using the current config,
 /// then re-configured automatically when the config file changes.
-
-final class DashboardNotifierProvider extends $FunctionalProvider<
-    DashboardNotifier,
-    DashboardNotifier,
-    DashboardNotifier> with $Provider<DashboardNotifier> {
-  /// Shared [DashboardNotifier] — the single source of truth for telemetry data.
+///
+/// Usage:
+///   final state = ref.watch(dashboardNotifierProvider);  // DashboardState
+///   ref.read(dashboardNotifierProvider.notifier).fetch(); // methods
+final class DashboardNotifierProvider extends $NotifierProvider<
+    DashboardNotifier, dashboard_notifier.DashboardState> {
+  /// Shared dashboard state — the single source of truth for telemetry data.
   ///
   /// Both DashboardScreen and TodayScreen consume this provider instead of each
   /// maintaining their own [TelemetryService] and 30-second timer. This cuts
@@ -138,6 +143,10 @@ final class DashboardNotifierProvider extends $FunctionalProvider<
   ///
   /// The notifier is lazily configured on first read using the current config,
   /// then re-configured automatically when the config file changes.
+  ///
+  /// Usage:
+  ///   final state = ref.watch(dashboardNotifierProvider);  // DashboardState
+  ///   ref.read(dashboardNotifierProvider.notifier).fetch(); // methods
   DashboardNotifierProvider._()
       : super(
           from: null,
@@ -154,25 +163,51 @@ final class DashboardNotifierProvider extends $FunctionalProvider<
 
   @$internal
   @override
-  $ProviderElement<DashboardNotifier> $createElement(
-          $ProviderPointer pointer) =>
-      $ProviderElement(pointer);
-
-  @override
-  DashboardNotifier create(Ref ref) {
-    return dashboardNotifier(ref);
-  }
+  DashboardNotifier create() => DashboardNotifier();
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(DashboardNotifier value) {
+  Override overrideWithValue(dashboard_notifier.DashboardState value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<DashboardNotifier>(value),
+      providerOverride:
+          $SyncValueProvider<dashboard_notifier.DashboardState>(value),
     );
   }
 }
 
-String _$dashboardNotifierHash() => r'7362f97184afbe5accf61ef70c7fd1740de60485';
+String _$dashboardNotifierHash() => r'55c069f11b713f3c5440074a421f26df4e7fc4e5';
+
+/// Shared dashboard state — the single source of truth for telemetry data.
+///
+/// Both DashboardScreen and TodayScreen consume this provider instead of each
+/// maintaining their own [TelemetryService] and 30-second timer. This cuts
+/// BigQuery queries by 50% and enables TTL-based caching + visibility-aware
+/// polling.
+///
+/// The notifier is lazily configured on first read using the current config,
+/// then re-configured automatically when the config file changes.
+///
+/// Usage:
+///   final state = ref.watch(dashboardNotifierProvider);  // DashboardState
+///   ref.read(dashboardNotifierProvider.notifier).fetch(); // methods
+
+abstract class _$DashboardNotifier
+    extends $Notifier<dashboard_notifier.DashboardState> {
+  dashboard_notifier.DashboardState build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<dashboard_notifier.DashboardState,
+        dashboard_notifier.DashboardState>;
+    final element = ref.element as $ClassProviderElement<
+        AnyNotifier<dashboard_notifier.DashboardState,
+            dashboard_notifier.DashboardState>,
+        dashboard_notifier.DashboardState,
+        Object?,
+        Object?>;
+    element.handleCreate(ref, build);
+  }
+}
 
 /// The singleton ProcessManager, auto-configured when config changes.
 

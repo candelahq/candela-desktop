@@ -35,8 +35,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
   /// Build a today-scoped summary by filtering the shared notifier's spans
   /// to today's UTC window.
-  UsageSummary? _buildTodaySummary(DashboardNotifier notifier) {
-    final result = notifier.state.result;
+  UsageSummary? _buildTodaySummary(
+      DashboardState state, DashboardNotifier notifier) {
+    final result = state.result;
     if (result == null || !result.hasData) return null;
 
     // Filter spans to today's UTC window.
@@ -94,9 +95,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final notifier = ref.watch(dashboardProvider);
-    final state = notifier.state;
-    final summary = _buildTodaySummary(notifier);
+    final state = ref.watch(dashboardProvider);
+    final notifier = ref.read(dashboardProvider.notifier);
+    final summary = _buildTodaySummary(state, notifier);
     final error = _errorMessage(state);
     final uniqueModels =
         state.result?.models.map((m) => m.model).toSet().toList() ?? [];

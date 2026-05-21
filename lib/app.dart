@@ -168,7 +168,7 @@ class _AppShellState extends ConsumerState<AppShell>
   /// pause polling when backgrounded and resume with an immediate fetch.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    ref.read(dashboardProvider).onAppLifecycleChanged(state);
+    ref.read(dashboardProvider.notifier).onAppLifecycleChanged(state);
   }
 
   /// Close button → minimize to tray instead of quitting.

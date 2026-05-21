@@ -11,6 +11,7 @@ import '../../widgets/area_chart.dart';
 import '../../widgets/budget_waterfall_card.dart';
 import '../../widgets/model_breakdown_table.dart';
 import '../../widgets/model_selector_dropdown.dart';
+import '../../widgets/scope_toggle.dart';
 import '../../widgets/stat_card.dart';
 import '../../widgets/time_range_selector.dart';
 import '../../providers.dart';
@@ -192,7 +193,7 @@ class _Header extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           if (isTeamMode)
-            _ScopeToggle(
+            ScopeToggle(
               scope: userScope,
               onChanged: onScopeChanged,
             ),
@@ -240,66 +241,6 @@ class _ModeBadge extends StatelessWidget {
           fontWeight: FontWeight.w600,
           color: isTeam ? CandelaColors.accent : CandelaColors.textMuted,
           letterSpacing: 0.4,
-        ),
-      ),
-    );
-  }
-}
-
-// ── Scope toggle (My / All) ──────────────────────────────────────────────────
-
-class _ScopeToggle extends StatelessWidget {
-  final user_types.UserScope scope;
-  final ValueChanged<user_types.UserScope> onChanged;
-  const _ScopeToggle({required this.scope, required this.onChanged});
-
-  bool get _isGlobal => scope == user_types.UserScope.USER_SCOPE_GLOBAL;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: CandelaColors.bgTertiary,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: CandelaColors.border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _scopeChip('My', !_isGlobal, () {
-            if (_isGlobal) {
-              onChanged(user_types.UserScope.USER_SCOPE_PERSONAL);
-            }
-          }),
-          _scopeChip('All', _isGlobal, () {
-            if (!_isGlobal) {
-              onChanged(user_types.UserScope.USER_SCOPE_GLOBAL);
-            }
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _scopeChip(String label, bool active, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color:
-              active ? CandelaColors.accent.withAlpha(30) : Colors.transparent,
-          borderRadius: BorderRadius.circular(5),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-            color: active ? CandelaColors.accent : CandelaColors.textMuted,
-            letterSpacing: 0.3,
-          ),
         ),
       ),
     );

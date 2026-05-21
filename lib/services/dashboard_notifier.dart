@@ -23,7 +23,7 @@ class DashboardState {
     this.loading = false,
     this.errorMessage,
     this.range = TokenTimeRange.d7,
-    this.userScope = user_types.UserScope.USER_SCOPE_UNSPECIFIED,
+    this.userScope = user_types.UserScope.USER_SCOPE_PERSONAL,
   });
 
   DashboardState copyWith({

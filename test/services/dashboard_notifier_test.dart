@@ -89,9 +89,9 @@ void main() {
       expect(state.range, TokenTimeRange.h24);
     });
 
-    test('default userScope is UNSPECIFIED', () {
+    test('default userScope is PERSONAL', () {
       const state = DashboardState();
-      expect(state.userScope, UserScope.USER_SCOPE_UNSPECIFIED);
+      expect(state.userScope, UserScope.USER_SCOPE_PERSONAL);
     });
 
     test('copyWith preserves userScope when not specified', () {
@@ -510,7 +510,7 @@ void main() {
 
     test('setUserScope updates state and notifies', () async {
       final notifier = DashboardNotifier(adcService: _NullAdcService());
-      expect(notifier.state.userScope, UserScope.USER_SCOPE_UNSPECIFIED);
+      expect(notifier.state.userScope, UserScope.USER_SCOPE_PERSONAL);
 
       final scopes = <UserScope>[];
       notifier.addListener(() => scopes.add(notifier.state.userScope));

@@ -96,6 +96,15 @@ class ModelBreakdown {
   final double costUsd;
   final double avgLatencyMs;
 
+  /// Static list price — populated from the pricing registry (may be null for
+  /// local/custom models).
+  final double? inputPricePerMillion;
+  final double? outputPricePerMillion;
+
+  /// Cache token counts — used for cache efficiency badges.
+  final int cacheReadTokens;
+  final int cacheCreationTokens;
+
   const ModelBreakdown({
     required this.model,
     required this.provider,
@@ -104,9 +113,31 @@ class ModelBreakdown {
     required this.outputTokens,
     required this.costUsd,
     required this.avgLatencyMs,
+    this.inputPricePerMillion,
+    this.outputPricePerMillion,
+    this.cacheReadTokens = 0,
+    this.cacheCreationTokens = 0,
   });
 
   int get totalTokens => inputTokens + outputTokens;
+
+  /// Returns a copy with pricing data enriched from the static registry.
+  ModelBreakdown withPricing(
+      {double? inputPerMillion, double? outputPerMillion}) {
+    return ModelBreakdown(
+      model: model,
+      provider: provider,
+      callCount: callCount,
+      inputTokens: inputTokens,
+      outputTokens: outputTokens,
+      costUsd: costUsd,
+      avgLatencyMs: avgLatencyMs,
+      inputPricePerMillion: inputPerMillion ?? inputPricePerMillion,
+      outputPricePerMillion: outputPerMillion ?? outputPricePerMillion,
+      cacheReadTokens: cacheReadTokens,
+      cacheCreationTokens: cacheCreationTokens,
+    );
+  }
 }
 
 // ── Time range ───────────────────────────────────────────────────────────────

@@ -69,6 +69,14 @@ class _IdentityCardState extends State<IdentityCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const Text(
+                    'Primary Team Identity (GCP)',
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: CandelaColors.accent),
+                  ),
+                  const SizedBox(height: 2),
                   Text(
                     identity.email ?? 'Not authenticated',
                     style: const TextStyle(

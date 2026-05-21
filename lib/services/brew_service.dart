@@ -20,10 +20,28 @@ class BrewResult {
 /// The caller is responsible for running these off the main isolate if
 /// the UI needs to remain responsive during long-running installs.
 class BrewService {
+  String _brewPath = 'brew';
+  Future<void>? _resolveFuture;
+
+  Future<void> _resolveBrewPath() {
+    return _resolveFuture ??= () async {
+      try {
+        if ((await Process.run('which', ['brew'])).exitCode == 0) {
+          _brewPath = 'brew';
+        } else if (File('/opt/homebrew/bin/brew').existsSync()) {
+          _brewPath = '/opt/homebrew/bin/brew';
+        } else if (File('/usr/local/bin/brew').existsSync()) {
+          _brewPath = '/usr/local/bin/brew';
+        }
+      } catch (_) {}
+    }();
+  }
+
   /// Check if Homebrew is installed.
   Future<bool> isBrewInstalled() async {
+    await _resolveBrewPath();
     try {
-      final result = await Process.run('which', ['brew']);
+      final result = await Process.run(_brewPath, ['--version']);
       return result.exitCode == 0;
     } catch (_) {
       return false;
@@ -32,8 +50,10 @@ class BrewService {
 
   /// Check if a formula is installed (e.g. `candelahq/tap/candela`).
   Future<bool> isFormulaInstalled(String formula) async {
+    await _resolveBrewPath();
     try {
-      final result = await Process.run('brew', ['list', '--formula', formula]);
+      final result =
+          await Process.run(_brewPath, ['list', '--formula', formula]);
       return result.exitCode == 0;
     } catch (_) {
       return false;
@@ -42,9 +62,10 @@ class BrewService {
 
   /// Get the installed version of a formula, or null if not installed.
   Future<String?> installedVersion(String formula) async {
+    await _resolveBrewPath();
     try {
       final result = await Process.run(
-        'brew',
+        _brewPath,
         ['info', '--json=v2', formula],
       );
       if (result.exitCode != 0) return null;
@@ -72,9 +93,10 @@ class BrewService {
 
   /// Get the latest available version from the tap.
   Future<String?> latestVersion(String formula) async {
+    await _resolveBrewPath();
     try {
       final result = await Process.run(
-        'brew',
+        _brewPath,
         ['info', '--json=v2', formula],
       );
       if (result.exitCode != 0) return null;
@@ -102,9 +124,10 @@ class BrewService {
   /// Returns (installedVersion, latestVersion). Either may be null.
   /// This avoids spawning two identical `brew info --json=v2` subprocesses.
   Future<(String?, String?)> formulaVersions(String formula) async {
+    await _resolveBrewPath();
     try {
       final result = await Process.run(
-        'brew',
+        _brewPath,
         ['info', '--json=v2', formula],
       );
       if (result.exitCode != 0) return (null, null);
@@ -159,8 +182,9 @@ class BrewService {
   }
 
   Future<BrewResult> _runBrew(List<String> args) async {
+    await _resolveBrewPath();
     try {
-      final result = await Process.run('brew', args);
+      final result = await Process.run(_brewPath, args);
       final stdout = (result.stdout as String).trim();
       final stderr = (result.stderr as String).trim();
 

@@ -172,7 +172,7 @@ final class DashboardNotifierProvider extends $FunctionalProvider<
   }
 }
 
-String _$dashboardNotifierHash() => r'6f0c6122468e6eb4eea6cef29d799431153961ea';
+String _$dashboardNotifierHash() => r'7362f97184afbe5accf61ef70c7fd1740de60485';
 
 /// The singleton ProcessManager, auto-configured when config changes.
 

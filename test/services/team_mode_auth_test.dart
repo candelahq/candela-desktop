@@ -56,6 +56,7 @@ class MockConnectApi extends ConnectApiService {
   }
 
   @override
+  // ignore: deprecated_member_use_from_same_package
   Future<GetUsageSummaryResponse> getUsageSummary({
     required DateTime start,
     required DateTime end,
@@ -65,6 +66,7 @@ class MockConnectApi extends ConnectApiService {
   }
 
   @override
+  // ignore: deprecated_member_use_from_same_package
   Future<GetModelBreakdownResponse> getModelBreakdown({
     required DateTime start,
     required DateTime end,
@@ -74,6 +76,7 @@ class MockConnectApi extends ConnectApiService {
   }
 
   @override
+  // ignore: deprecated_member_use_from_same_package
   Future<GetMyUsageResponse> getMyUsage({
     required DateTime start,
     required DateTime end,

@@ -62,12 +62,20 @@ class _TracesScreenState extends ConsumerState<TracesScreen> {
 
     if (isTeam) {
       final auth = CandelaAuthService();
-      // Direct OAuth2 refresh — no gcloud subprocess.
-      final tokenInfo = await auth.getTokenInfo();
+      // Use audience-specific ID token for IAP/Cloud Run backends;
+      // fall back to standard access token otherwise.
+      String? authToken;
+      final audience = config.audience;
+      if (audience != null && audience.isNotEmpty) {
+        authToken = await auth.getIdToken(audience: audience);
+      } else {
+        final tokenInfo = await auth.getTokenInfo();
+        authToken = tokenInfo?.accessToken;
+      }
       _svc = TelemetryService(
         port: config.port,
         remoteUrl: config.remote,
-        authToken: tokenInfo?.accessToken,
+        authToken: authToken,
       );
     } else {
       _svc = TelemetryService(port: config.port);

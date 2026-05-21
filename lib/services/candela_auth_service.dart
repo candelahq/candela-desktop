@@ -19,6 +19,11 @@ import 'adc_service.dart';
 class CandelaAuthService {
   final AdcService _adcService;
 
+  /// Cached token from the most recent refresh — avoids redundant network
+  /// round-trips when multiple callers request a token in quick succession
+  /// (e.g., [isApiEnabled] followed by [getAccessToken]).
+  TokenInfo? _cachedToken;
+
   CandelaAuthService({AdcService? adcService})
       : _adcService = adcService ?? AdcService();
 
@@ -31,6 +36,7 @@ class CandelaAuthService {
   Future<AuthStatus> getStatus() async {
     final adc = await _adcService.readAdcFile();
     final token = await _adcService.refreshAccessToken(adcInfo: adc);
+    _cachedToken = token;
 
     // Email: prefer the token's email (from ID token JWT), fall back to
     // service account client_email in the ADC file.
@@ -51,15 +57,60 @@ class CandelaAuthService {
 
   /// Get a fresh access token for API calls (e.g., Vertex AI, Service Usage).
   ///
+  /// Returns a cached token if it is still valid (not near expiry).
   /// Uses direct OAuth2 refresh — no subprocess needed.
   Future<String?> getAccessToken() async {
-    final token = await _adcService.refreshAccessToken();
-    return token?.accessToken;
+    final info = await getTokenInfo();
+    return info?.accessToken;
   }
 
   /// Get a [TokenInfo] with email and expiry metadata.
-  Future<TokenInfo?> getTokenInfo() async {
-    return _adcService.refreshAccessToken();
+  ///
+  /// Returns a cached token if it is still valid (> 5 min remaining) and
+  /// [forceRefresh] is false. Pass `forceRefresh: true` to bypass the cache
+  /// (e.g., during explicit reconfiguration).
+  Future<TokenInfo?> getTokenInfo({bool forceRefresh = false}) async {
+    // Return cached token if still fresh (> 5 min before expiry).
+    if (!forceRefresh && _cachedToken != null) {
+      final remaining =
+          _cachedToken!.expiresAt.difference(DateTime.now().toUtc());
+      if (remaining > const Duration(minutes: 5)) {
+        return _cachedToken;
+      }
+    }
+    final token = await _adcService.refreshAccessToken();
+    _cachedToken = token;
+    return token;
+  }
+
+  /// Get an audience-specific ID token for backends protected by IAP or
+  /// Cloud Run IAM.
+  ///
+  /// Uses the standard OAuth2 token exchange with `audience` parameter.
+  /// Returns the raw ID token string, or null if the exchange fails.
+  Future<String?> getIdToken({required String audience}) async {
+    final adc = await _adcService.readAdcFile();
+    if (adc == null || !adc.canDirectRefresh) return null;
+
+    try {
+      final response = await http.post(
+        Uri.parse('https://oauth2.googleapis.com/token'),
+        body: {
+          'client_id': adc.clientId!,
+          'client_secret': adc.clientSecret!,
+          'refresh_token': adc.refreshToken!,
+          'grant_type': 'refresh_token',
+          'audience': audience,
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode != 200) return null;
+
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      return data['id_token'] as String?;
+    } catch (_) {
+      return null;
+    }
   }
 
   // ── CLI Detection ───────────────────────────────────────────────────────
@@ -83,8 +134,8 @@ class CandelaAuthService {
 
   /// Check if a GCP API is enabled for [project] using a direct REST call.
   ///
-  /// Replaces the legacy `gcloud services list` subprocess. Requires a valid
-  /// access token (obtained via [getAccessToken]).
+  /// Replaces the legacy `gcloud services list` subprocess. Uses a cached
+  /// access token when available to avoid redundant OAuth2 refreshes.
   ///
   /// Returns `true` if the API is enabled, `false` if disabled or if the
   /// check fails (e.g., no token, network error, insufficient permissions).
@@ -93,8 +144,10 @@ class CandelaAuthService {
     if (accessToken == null) return false;
 
     try {
-      final uri = Uri.parse(
-          'https://serviceusage.googleapis.com/v1/projects/$project/services/$api');
+      final uri = Uri.https(
+        'serviceusage.googleapis.com',
+        '/v1/projects/$project/services/$api',
+      );
       final response = await http.get(uri, headers: {
         'Authorization': 'Bearer $accessToken',
       }).timeout(const Duration(seconds: 10));

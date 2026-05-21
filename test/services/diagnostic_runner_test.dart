@@ -210,6 +210,12 @@ void main() {
       final summary = await runner.runAll();
       // Should have more than just the CLI check — config + ADC checks run.
       expect(summary.total, greaterThan(1));
+      // Verify that the runner continues to subsequent steps (like config)
+      // instead of early-exiting on CLI warning.
+      expect(
+        runner.history.any((e) => e.message.contains('Config loaded')),
+        isTrue,
+      );
     });
 
     test('isRunning is false after runAll completes', () async {

@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../models/candela_config.dart';
 import '../../models/span_stats.dart';
 import '../../services/candela_auth_service.dart';
 import '../../services/telemetry_service.dart';
 import '../../theme/colors.dart';
 import '../../providers.dart';
+import '../../widgets/scope_toggle.dart';
 
 /// Full-page distributed trace viewer.
 ///
@@ -28,6 +30,7 @@ class _TracesScreenState extends ConsumerState<TracesScreen> {
   Timer? _autoRefresh;
   TelemetryService? _svc;
   bool _initialized = false;
+  bool _isTeamMode = false;
 
   // Filters
   String _searchQuery = '';
@@ -61,6 +64,7 @@ class _TracesScreenState extends ConsumerState<TracesScreen> {
         config.remote!.isNotEmpty;
 
     if (isTeam) {
+      _isTeamMode = true;
       final auth = CandelaAuthService();
       // Use audience-specific ID token for IAP/Cloud Run backends;
       // fall back to standard access token otherwise.
@@ -90,7 +94,9 @@ class _TracesScreenState extends ConsumerState<TracesScreen> {
     if (!mounted || _svc == null) return;
     setState(() => _loading = true);
     try {
-      final result = await _svc!.fetch(_range);
+      final result = await _svc!.fetch(_range,
+          userScope:
+              _isTeamMode ? ref.read(dashboardProvider).state.userScope : null);
       if (!mounted) return;
       setState(() {
         _spans = result?.spans ?? [];
@@ -213,6 +219,16 @@ class _TracesScreenState extends ConsumerState<TracesScreen> {
               ),
             ],
           ),
+          if (_isTeamMode) ...[
+            const SizedBox(width: 12),
+            ScopeToggle(
+              scope: ref.watch(dashboardProvider).state.userScope,
+              onChanged: (s) {
+                ref.read(dashboardProvider).setUserScope(s);
+                _fetch();
+              },
+            ),
+          ],
           const Spacer(),
           _TimeRangeChips(value: _range, onChanged: _setRange),
           const SizedBox(width: 10),

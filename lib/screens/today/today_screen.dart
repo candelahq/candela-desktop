@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+
 import '../../models/budget_info.dart';
 import '../../models/span_stats.dart';
 import '../../services/dashboard_notifier.dart';
 import '../../services/telemetry_service.dart';
 import '../../theme/colors.dart';
+import '../../widgets/scope_toggle.dart';
 import '../../providers.dart';
 import '../../utils/format.dart';
 import '../../widgets/local_services_card.dart';
@@ -153,6 +155,13 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           ),
           const SizedBox(width: 12),
           _ModeBadge(isTeam: state.isTeamMode),
+          if (state.isTeamMode) ...[
+            const SizedBox(width: 12),
+            ScopeToggle(
+              scope: state.userScope,
+              onChanged: (s) => notifier.setUserScope(s),
+            ),
+          ],
           const Spacer(),
           if (uniqueModels.isNotEmpty) ...[
             ModelSelectorDropdown(

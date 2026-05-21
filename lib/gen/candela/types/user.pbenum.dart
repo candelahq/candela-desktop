@@ -36,6 +36,29 @@ class UserRole extends $pb.ProtobufEnum {
   const UserRole._(super.v, super.n);
 }
 
+/// UserScope determines the data visibility scope.
+class UserScope extends $pb.ProtobufEnum {
+  static const UserScope USER_SCOPE_UNSPECIFIED =
+      UserScope._(0, _omitEnumNames ? '' : 'USER_SCOPE_UNSPECIFIED');
+  static const UserScope USER_SCOPE_PERSONAL =
+      UserScope._(1, _omitEnumNames ? '' : 'USER_SCOPE_PERSONAL');
+  static const UserScope USER_SCOPE_GLOBAL =
+      UserScope._(2, _omitEnumNames ? '' : 'USER_SCOPE_GLOBAL');
+
+  static const $core.List<UserScope> values = <UserScope>[
+    USER_SCOPE_UNSPECIFIED,
+    USER_SCOPE_PERSONAL,
+    USER_SCOPE_GLOBAL,
+  ];
+
+  static final $core.List<UserScope?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static UserScope? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
+
+  const UserScope._(super.v, super.n);
+}
+
 /// UserStatus tracks the lifecycle of a user account.
 class UserStatus extends $pb.ProtobufEnum {
   static const UserStatus USER_STATUS_UNSPECIFIED =

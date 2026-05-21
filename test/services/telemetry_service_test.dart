@@ -72,6 +72,7 @@ class MockConnectApi extends ConnectApiService {
   final ConnectException? throwOnUsage;
   final ConnectException? throwOnDashboardData;
   String? capturedAuthToken;
+  UserScope? capturedUserScope;
 
   MockConnectApi({
     this.summaryResponse,
@@ -89,7 +90,9 @@ class MockConnectApi extends ConnectApiService {
     required DateTime start,
     required DateTime end,
     bool includeBudget = true,
+    UserScope? userScope,
   }) async {
+    capturedUserScope = userScope;
     // If an explicit error is configured for GetDashboardData, throw it.
     if (throwOnDashboardData != null) throw throwOnDashboardData!;
     // If any of the legacy error injectors are set, propagate the first one
@@ -850,6 +853,64 @@ void main() {
       expect(p.state != ProcessState.running, isTrue);
       expect(p.state != ProcessState.stopped, isTrue);
       expect(p.state != ProcessState.notInstalled, isTrue);
+    });
+  });
+
+  // ── UserScope threading ──────────────────────────────────────────────────
+
+  group('TelemetryService — UserScope propagation', () {
+    test('fetch without scope sends null to ConnectApiService', () async {
+      final mock = MockConnectApi();
+      final svc = _teamSvcWithMock(mock);
+
+      await svc.fetch(TokenTimeRange.h24);
+      expect(mock.capturedUserScope, isNull);
+      svc.dispose();
+    });
+
+    test('fetch with PERSONAL scope threads it to ConnectApiService', () async {
+      final mock = MockConnectApi();
+      final svc = _teamSvcWithMock(mock);
+
+      await svc.fetch(TokenTimeRange.h24,
+          userScope: UserScope.USER_SCOPE_PERSONAL);
+      expect(mock.capturedUserScope, UserScope.USER_SCOPE_PERSONAL);
+      svc.dispose();
+    });
+
+    test('fetch with GLOBAL scope threads it to ConnectApiService', () async {
+      final mock = MockConnectApi();
+      final svc = _teamSvcWithMock(mock);
+
+      await svc.fetch(TokenTimeRange.h24,
+          userScope: UserScope.USER_SCOPE_GLOBAL);
+      expect(mock.capturedUserScope, UserScope.USER_SCOPE_GLOBAL);
+      svc.dispose();
+    });
+
+    test('fetch with UNSPECIFIED scope threads it to ConnectApiService',
+        () async {
+      final mock = MockConnectApi();
+      final svc = _teamSvcWithMock(mock);
+
+      await svc.fetch(TokenTimeRange.d7,
+          userScope: UserScope.USER_SCOPE_UNSPECIFIED);
+      expect(mock.capturedUserScope, UserScope.USER_SCOPE_UNSPECIFIED);
+      svc.dispose();
+    });
+
+    test('changing scope between fetches updates captured value', () async {
+      final mock = MockConnectApi();
+      final svc = _teamSvcWithMock(mock);
+
+      await svc.fetch(TokenTimeRange.h24,
+          userScope: UserScope.USER_SCOPE_PERSONAL);
+      expect(mock.capturedUserScope, UserScope.USER_SCOPE_PERSONAL);
+
+      await svc.fetch(TokenTimeRange.h24,
+          userScope: UserScope.USER_SCOPE_GLOBAL);
+      expect(mock.capturedUserScope, UserScope.USER_SCOPE_GLOBAL);
+      svc.dispose();
     });
   });
 }

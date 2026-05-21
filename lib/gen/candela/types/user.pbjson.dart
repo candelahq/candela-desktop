@@ -28,6 +28,21 @@ final $typed_data.Uint8List userRoleDescriptor = $convert.base64Decode(
     'CghVc2VyUm9sZRIZChVVU0VSX1JPTEVfVU5TUEVDSUZJRUQQABIXChNVU0VSX1JPTEVfREVWRU'
     'xPUEVSEAESEwoPVVNFUl9ST0xFX0FETUlOEAI=');
 
+@$core.Deprecated('Use userScopeDescriptor instead')
+const UserScope$json = {
+  '1': 'UserScope',
+  '2': [
+    {'1': 'USER_SCOPE_UNSPECIFIED', '2': 0},
+    {'1': 'USER_SCOPE_PERSONAL', '2': 1},
+    {'1': 'USER_SCOPE_GLOBAL', '2': 2},
+  ],
+};
+
+/// Descriptor for `UserScope`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List userScopeDescriptor = $convert.base64Decode(
+    'CglVc2VyU2NvcGUSGgoWVVNFUl9TQ09QRV9VTlNQRUNJRklFRBAAEhcKE1VTRVJfU0NPUEVfUE'
+    'VSU09OQUwQARIVChFVU0VSX1NDT1BFX0dMT0JBTBAC');
+
 @$core.Deprecated('Use userStatusDescriptor instead')
 const UserStatus$json = {
   '1': 'UserStatus',

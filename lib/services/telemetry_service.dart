@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import '../models/budget_info.dart';
 import '../models/span_stats.dart';
 import '../gen/candela/v1/dashboard_service.pb.dart' hide TimeSeriesPoint;
+import '../gen/candela/types/user.pbenum.dart' as user_types;
 import 'connect_api_service.dart';
 
 // ── Error kinds ───────────────────────────────────────────────────────────────
@@ -94,7 +95,8 @@ class TelemetryService {
   ///
   /// The returned [TelemetryResult] may carry a [TelemetryErrorKind] to let
   /// the UI show actionable error messages (e.g. "token expired").
-  Future<TelemetryResult?> fetch(TokenTimeRange range) async {
+  Future<TelemetryResult?> fetch(TokenTimeRange range,
+      {user_types.UserScope? userScope}) async {
     // C2: reject unsafe remote URLs before making any request.
     if (remoteUrl != null && !isSafeUrl(remoteUrl!)) {
       return const TelemetryResult.withError(
@@ -114,7 +116,7 @@ class TelemetryService {
 
     if (isTeamMode) {
       (spans, errorKind, budget, grants, totalRemainingUsd) =
-          await _fetchRemote(range, now);
+          await _fetchRemote(range, now, userScope: userScope);
     } else {
       (spans, errorKind) = await _fetchLocal(range);
     }
@@ -197,13 +199,15 @@ class TelemetryService {
   // ── Team / ConnectRPC ───────────────────────────────────────────────────────
 
   Future<
-      (
-        List<SpanRecord>,
-        TelemetryErrorKind?,
-        BudgetInfo?,
-        List<GrantInfo>,
-        double?
-      )> _fetchRemote(TokenTimeRange range, DateTime now) async {
+          (
+            List<SpanRecord>,
+            TelemetryErrorKind?,
+            BudgetInfo?,
+            List<GrantInfo>,
+            double?
+          )>
+      _fetchRemote(TokenTimeRange range, DateTime now,
+          {user_types.UserScope? userScope}) async {
     final base = remoteUrl!.replaceAll(RegExp(r'/$'), '');
     final start = range.startFrom(now);
 
@@ -211,7 +215,7 @@ class TelemetryService {
 
     try {
       // ── Consolidated path: single RPC (GetDashboardData) ─────────────────
-      return await _fetchDashboardData(api, start, now);
+      return await _fetchDashboardData(api, start, now, userScope: userScope);
     } on ConnectException catch (e) {
       // Graceful rollback: if the server hasn't been updated yet, the new RPC
       // returns Unimplemented. Fall back to the legacy 3-RPC fan-out so the
@@ -290,12 +294,14 @@ class TelemetryService {
       )> _fetchDashboardData(
     ConnectApiService api,
     DateTime start,
-    DateTime now,
-  ) async {
+    DateTime now, {
+    user_types.UserScope? userScope,
+  }) async {
     final resp = await api.getDashboardData(
       start: start,
       end: now,
       includeBudget: true,
+      userScope: userScope,
     );
 
     // Parse budget/grant data (non-fatal if missing).

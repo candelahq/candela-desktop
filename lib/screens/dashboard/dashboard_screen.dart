@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../gen/candela/types/user.pbenum.dart' as user_types;
 import '../../models/span_stats.dart';
 import '../../services/budget_notification_service.dart';
 import '../../services/dashboard_notifier.dart';
@@ -10,6 +11,7 @@ import '../../widgets/area_chart.dart';
 import '../../widgets/budget_waterfall_card.dart';
 import '../../widgets/model_breakdown_table.dart';
 import '../../widgets/model_selector_dropdown.dart';
+import '../../widgets/scope_toggle.dart';
 import '../../widgets/stat_card.dart';
 import '../../widgets/time_range_selector.dart';
 import '../../providers.dart';
@@ -108,6 +110,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             onRefresh: () => notifier.fetch(),
             loading: state.loading,
             isTeamMode: state.isTeamMode,
+            userScope: state.userScope,
+            onScopeChanged: (s) => notifier.setUserScope(s),
             models: uniqueModels,
             selectedModel: _selectedModel,
             onModelChanged: _setSelectedModel,
@@ -134,6 +138,8 @@ class _Header extends StatelessWidget {
   final VoidCallback onRefresh;
   final bool loading;
   final bool isTeamMode;
+  final user_types.UserScope userScope;
+  final ValueChanged<user_types.UserScope> onScopeChanged;
   final List<String> models;
   final String? selectedModel;
   final ValueChanged<String?> onModelChanged;
@@ -144,6 +150,8 @@ class _Header extends StatelessWidget {
     required this.onRefresh,
     required this.loading,
     required this.isTeamMode,
+    required this.userScope,
+    required this.onScopeChanged,
     required this.models,
     required this.selectedModel,
     required this.onModelChanged,
@@ -183,6 +191,12 @@ class _Header extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(width: 16),
+          if (isTeamMode)
+            ScopeToggle(
+              scope: userScope,
+              onChanged: onScopeChanged,
+            ),
           const Spacer(),
           if (models.isNotEmpty) ...[
             ModelSelectorDropdown(

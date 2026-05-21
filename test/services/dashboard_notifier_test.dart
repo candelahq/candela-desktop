@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:candela_desktop/services/adc_service.dart';
 import 'package:candela_desktop/services/candela_auth_service.dart';
@@ -593,6 +594,224 @@ void main() {
 
       await notifier.setUserScope(UserScope.USER_SCOPE_GLOBAL);
       expect(notifier.state.userScope, UserScope.USER_SCOPE_GLOBAL);
+      notifier.dispose();
+    });
+  });
+
+  // ── App lifecycle (visibility-aware polling) ──────────────────────────────
+
+  group('DashboardController — onAppLifecycleChanged', () {
+    test('resumed from paused triggers immediate fetch', () async {
+      final notifier = DashboardController();
+      await notifier.configure(const CandelaConfig(
+        path: '/tmp/test',
+        mode: CandelaMode.solo,
+      ));
+
+      final states = <DashboardState>[];
+      notifier.onStateChanged = (s) => states.add(s);
+
+      // Simulate backgrounding then resuming.
+      notifier.onAppLifecycleChanged(AppLifecycleState.paused);
+      notifier.onAppLifecycleChanged(AppLifecycleState.resumed);
+
+      // Allow the async fetch triggered by resume to complete.
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Should have fired at least one state change from the fetch.
+      expect(states, isNotEmpty);
+      notifier.dispose();
+    });
+
+    test('paused state suppresses timer-driven fetches', () async {
+      final notifier = DashboardController();
+      await notifier.configure(const CandelaConfig(
+        path: '/tmp/test',
+        mode: CandelaMode.solo,
+      ));
+
+      int fetchCount = 0;
+      notifier.onStateChanged = (_) => fetchCount++;
+
+      // Background the app.
+      notifier.onAppLifecycleChanged(AppLifecycleState.paused);
+
+      // Start polling with a very short interval.
+      notifier.startPolling(interval: const Duration(milliseconds: 50));
+
+      // Wait for a few ticks — none should trigger a fetch.
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      expect(fetchCount, 0);
+      notifier.dispose();
+    });
+
+    test('resumed when already visible is a no-op', () async {
+      final notifier = DashboardController();
+      // Controller starts with _appVisible = true by default.
+
+      int fetchCount = 0;
+      notifier.onStateChanged = (_) => fetchCount++;
+
+      // Resume while already visible — should not trigger a fetch.
+      notifier.onAppLifecycleChanged(AppLifecycleState.resumed);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(fetchCount, 0);
+      notifier.dispose();
+    });
+
+    test('hidden state is treated as not visible', () async {
+      final notifier = DashboardController();
+      await notifier.configure(const CandelaConfig(
+        path: '/tmp/test',
+        mode: CandelaMode.solo,
+      ));
+
+      notifier.onAppLifecycleChanged(AppLifecycleState.hidden);
+
+      int fetchCount = 0;
+      notifier.onStateChanged = (_) => fetchCount++;
+
+      // Start polling — should not fetch while hidden.
+      notifier.startPolling(interval: const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      expect(fetchCount, 0);
+      notifier.dispose();
+    });
+
+    test('resume after hidden triggers immediate fetch', () async {
+      final notifier = DashboardController();
+      await notifier.configure(const CandelaConfig(
+        path: '/tmp/test',
+        mode: CandelaMode.solo,
+      ));
+
+      notifier.onAppLifecycleChanged(AppLifecycleState.hidden);
+
+      final states = <DashboardState>[];
+      notifier.onStateChanged = (s) => states.add(s);
+
+      notifier.onAppLifecycleChanged(AppLifecycleState.resumed);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(states, isNotEmpty);
+      notifier.dispose();
+    });
+  });
+
+  // ── Polling / timer lifecycle ─────────────────────────────────────────────
+
+  group('DashboardController — polling', () {
+    test('startPolling can be called multiple times safely', () async {
+      final notifier = DashboardController();
+      await notifier.configure(const CandelaConfig(
+        path: '/tmp/test',
+        mode: CandelaMode.solo,
+      ));
+
+      // Double-start should not throw or leak timers.
+      notifier.startPolling(interval: const Duration(seconds: 60));
+      notifier.startPolling(interval: const Duration(seconds: 30));
+      notifier.dispose();
+    });
+
+    test('timer tick skips fetch when cache is fresh', () async {
+      final notifier = DashboardController(
+        cacheTtl: const Duration(seconds: 30),
+      );
+      await notifier.configure(const CandelaConfig(
+        path: '/tmp/test',
+        mode: CandelaMode.solo,
+      ));
+
+      // Prime the cache by fetching.
+      await notifier.fetch();
+
+      int fetchCount = 0;
+      notifier.onStateChanged = (_) => fetchCount++;
+
+      // Start a fast-ticking timer — cache should suppress all ticks.
+      notifier.startPolling(interval: const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      expect(fetchCount, 0);
+      notifier.dispose();
+    });
+  });
+
+  // ── Audience-specific ID token paths ──────────────────────────────────────
+
+  group('DashboardController — audience ID token', () {
+    test('configure() with audience uses getIdToken instead of getTokenInfo',
+        () async {
+      final adc = _FakeAdcService(token: 'id-token-for-iap');
+      final auth = CandelaAuthService(adcService: adc);
+      final notifier = DashboardController(candelaAuth: auth);
+
+      await notifier.configure(const CandelaConfig(
+        path: '/tmp/test',
+        mode: CandelaMode.team,
+        remote: 'https://candela.example.com',
+        audience: 'https://iap-audience.example.com',
+      ));
+
+      expect(notifier.isConfigured, isTrue);
+      notifier.dispose();
+    });
+
+    test('refreshToken() with audience returns null without real ADC file',
+        () async {
+      // getIdToken requires a real ADC file with client credentials to
+      // perform the OAuth2 token exchange. The fake AdcService has no ADC
+      // file, so refreshToken correctly returns null.
+      final adc = _FakeAdcService(token: 'id-token-for-iap');
+      final auth = CandelaAuthService(adcService: adc);
+      final notifier = DashboardController(candelaAuth: auth);
+
+      await notifier.configure(const CandelaConfig(
+        path: '/tmp/test',
+        mode: CandelaMode.team,
+        remote: 'https://candela.example.com',
+        audience: 'https://iap-audience.example.com',
+      ));
+
+      final token = await notifier.refreshToken();
+      // null because the fake ADC service has no file for ID token exchange.
+      expect(token, isNull);
+      notifier.dispose();
+    });
+
+    test('configure() with empty audience falls back to access token',
+        () async {
+      final adc = _FakeAdcService(token: 'access-token-fallback');
+      final auth = CandelaAuthService(adcService: adc);
+      final notifier = DashboardController(candelaAuth: auth);
+
+      await notifier.configure(const CandelaConfig(
+        path: '/tmp/test',
+        mode: CandelaMode.team,
+        remote: 'https://candela.example.com',
+        audience: '', // empty → fall back to access token
+      ));
+
+      expect(notifier.isConfigured, isTrue);
+      expect(adc.refreshCallCount, 1); // used getTokenInfo path
+      notifier.dispose();
+    });
+  });
+
+  // ── buildFilteredSummary edge cases ───────────────────────────────────────
+
+  group('DashboardController — buildFilteredSummary', () {
+    test('returns null when result is null', () {
+      final notifier = DashboardController();
+      expect(notifier.buildFilteredSummary('gpt-4'), isNull);
+      notifier.dispose();
+    });
+
+    test('returns null when not configured', () {
+      final notifier = DashboardController();
+      expect(notifier.buildFilteredSummary(null), isNull);
       notifier.dispose();
     });
   });

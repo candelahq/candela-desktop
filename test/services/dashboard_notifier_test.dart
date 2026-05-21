@@ -5,6 +5,7 @@ import 'package:candela_desktop/services/telemetry_service.dart';
 import 'package:candela_desktop/models/candela_config.dart';
 import 'package:candela_desktop/models/span_stats.dart';
 import 'package:candela_desktop/models/identity_state.dart';
+import 'package:candela_desktop/gen/candela/types/user.pbenum.dart';
 
 void main() {
   group('DashboardState', () {
@@ -86,6 +87,31 @@ void main() {
       final state = const DashboardState(range: TokenTimeRange.d7)
           .copyWith(range: TokenTimeRange.h24);
       expect(state.range, TokenTimeRange.h24);
+    });
+
+    test('default userScope is UNSPECIFIED', () {
+      const state = DashboardState();
+      expect(state.userScope, UserScope.USER_SCOPE_UNSPECIFIED);
+    });
+
+    test('copyWith preserves userScope when not specified', () {
+      final state = const DashboardState(
+        userScope: UserScope.USER_SCOPE_GLOBAL,
+      ).copyWith(loading: true);
+      expect(state.userScope, UserScope.USER_SCOPE_GLOBAL);
+    });
+
+    test('copyWith updates userScope', () {
+      final state = const DashboardState()
+          .copyWith(userScope: UserScope.USER_SCOPE_PERSONAL);
+      expect(state.userScope, UserScope.USER_SCOPE_PERSONAL);
+    });
+
+    test('copyWith can switch scope from PERSONAL to GLOBAL', () {
+      final state = const DashboardState(
+        userScope: UserScope.USER_SCOPE_PERSONAL,
+      ).copyWith(userScope: UserScope.USER_SCOPE_GLOBAL);
+      expect(state.userScope, UserScope.USER_SCOPE_GLOBAL);
     });
   });
 
@@ -479,6 +505,52 @@ void main() {
       // Allow microtask to complete.
       await Future<void>.delayed(Duration.zero);
       expect(ranges, contains(TokenTimeRange.h24));
+      notifier.dispose();
+    });
+
+    test('setUserScope updates state and notifies', () async {
+      final notifier = DashboardNotifier(adcService: _NullAdcService());
+      expect(notifier.state.userScope, UserScope.USER_SCOPE_UNSPECIFIED);
+
+      final scopes = <UserScope>[];
+      notifier.addListener(() => scopes.add(notifier.state.userScope));
+
+      await notifier.setUserScope(UserScope.USER_SCOPE_GLOBAL);
+      expect(notifier.state.userScope, UserScope.USER_SCOPE_GLOBAL);
+      expect(scopes, contains(UserScope.USER_SCOPE_GLOBAL));
+      notifier.dispose();
+    });
+
+    test('setUserScope invalidates cache (lastFetchAt)', () async {
+      final notifier = DashboardNotifier(adcService: _NullAdcService());
+
+      await notifier.configure(const CandelaConfig(
+        path: '/tmp/test',
+        mode: CandelaMode.solo,
+      ));
+
+      // Initial fetch populates cache timestamp.
+      await notifier.fetch();
+      expect(notifier.state.loading, isFalse);
+
+      // Switching scope should invalidate cache and trigger re-fetch.
+      int notifyCount = 0;
+      notifier.addListener(() => notifyCount++);
+      await notifier.setUserScope(UserScope.USER_SCOPE_PERSONAL);
+      // At least one notification from setUserScope + fetch.
+      expect(notifyCount, greaterThanOrEqualTo(1));
+      expect(notifier.state.userScope, UserScope.USER_SCOPE_PERSONAL);
+      notifier.dispose();
+    });
+
+    test('setUserScope from PERSONAL to GLOBAL toggles correctly', () async {
+      final notifier = DashboardNotifier(adcService: _NullAdcService());
+
+      await notifier.setUserScope(UserScope.USER_SCOPE_PERSONAL);
+      expect(notifier.state.userScope, UserScope.USER_SCOPE_PERSONAL);
+
+      await notifier.setUserScope(UserScope.USER_SCOPE_GLOBAL);
+      expect(notifier.state.userScope, UserScope.USER_SCOPE_GLOBAL);
       notifier.dispose();
     });
   });

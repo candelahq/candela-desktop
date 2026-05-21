@@ -255,7 +255,11 @@ class DashboardController {
   /// token is within [_tokenRefreshBuffer] of expiry. No-op in local mode.
   Future<void> _refreshTokenIfNeeded() async {
     final auth = _candelaAuth;
-    if (auth == null || _remoteUrl == null) return;
+    if (auth == null ||
+        _remoteUrl == null ||
+        !(_telemetry?.isTeamMode ?? false)) {
+      return;
+    }
     final now = DateTime.now().toUtc();
     final expiresAt = _tokenExpiresAt;
     if (expiresAt != null && expiresAt.difference(now) > _tokenRefreshBuffer) {
@@ -291,7 +295,11 @@ class DashboardController {
   /// Uses audience-specific ID token when configured, otherwise access token.
   Future<String?> refreshToken() async {
     final auth = _candelaAuth;
-    if (auth == null || _remoteUrl == null) return null;
+    if (auth == null ||
+        _remoteUrl == null ||
+        !(_telemetry?.isTeamMode ?? false)) {
+      return null;
+    }
     if (_audience != null && _audience!.isNotEmpty) {
       return auth.getIdToken(audience: _audience!);
     }

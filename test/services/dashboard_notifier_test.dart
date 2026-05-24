@@ -365,6 +365,82 @@ void main() {
       notifier.dispose();
     });
 
+    test('Solo→Team→Solo→Team round-trip recovers auth correctly', () async {
+      final adc = _FakeAdcService(token: 'round-trip-token');
+      final auth = CandelaAuthService(adcService: adc);
+      final notifier = DashboardController(candelaAuth: auth);
+
+      // 1. Start in Solo — no auth call.
+      await notifier.configure(const CandelaConfig(
+        path: '/tmp/test',
+        mode: CandelaMode.solo,
+      ));
+      expect(adc.refreshCallCount, 0);
+
+      // 2. Switch to Team — auth called.
+      await notifier.configure(const CandelaConfig(
+        path: '/tmp/test',
+        mode: CandelaMode.team,
+        remote: 'https://candela.example.com',
+      ));
+      expect(adc.refreshCallCount, 1);
+      var token = await notifier.refreshToken();
+      expect(token, 'round-trip-token');
+
+      // 3. Switch back to Solo — refresh blocked.
+      await notifier.configure(const CandelaConfig(
+        path: '/tmp/test',
+        mode: CandelaMode.solo,
+      ));
+      token = await notifier.refreshToken();
+      expect(token, isNull);
+      expect(adc.refreshCallCount, 1); // no extra call
+
+      // 4. Switch to Team again — auth recovers.
+      await notifier.configure(const CandelaConfig(
+        path: '/tmp/test',
+        mode: CandelaMode.team,
+        remote: 'https://v2.candela.example.com',
+      ));
+      expect(adc.refreshCallCount, 2); // called again for new Team config
+      token = await notifier.refreshToken();
+      expect(token, 'round-trip-token');
+      notifier.dispose();
+    });
+
+    test('polling timer after Team→Solo does not trigger token refresh',
+        () async {
+      final adc = _ExpiryAdcService(
+        token: 'expiring-team-token',
+        expiresIn: const Duration(minutes: 2), // within refresh buffer
+      );
+      final auth = CandelaAuthService(adcService: adc);
+      final notifier = DashboardController(candelaAuth: auth);
+
+      // Configure in team mode with a near-expiry token, start polling.
+      await notifier.configure(const CandelaConfig(
+        path: '/tmp/test',
+        mode: CandelaMode.team,
+        remote: 'https://candela.example.com',
+      ));
+      expect(adc.refreshCallCount, 1);
+      notifier.startPolling(interval: const Duration(milliseconds: 50));
+
+      // Switch to solo mode — timer is still running.
+      await notifier.configure(const CandelaConfig(
+        path: '/tmp/test',
+        mode: CandelaMode.solo,
+      ));
+
+      // Let several timer ticks fire.
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+
+      // Despite the near-expiry token and active timer, no refresh should
+      // have occurred because the controller is now in solo mode.
+      expect(adc.refreshCallCount, 1);
+      notifier.dispose();
+    });
+
     test('onStateChanged fires after fetch completes', () async {
       final auth = CandelaAuthService(adcService: _NullAdcService());
       final notifier = DashboardController(candelaAuth: auth);

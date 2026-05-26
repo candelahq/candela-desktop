@@ -318,4 +318,158 @@ void main() {
       expect(grants.map((g) => g.id).toList(), ['g-1', 'g-2', 'g-3']);
     });
   });
+
+  // ── modelBreakdownsFromProto ─────────────────────────────────────────────
+
+  group('ConnectApiService.modelBreakdownsFromProto', () {
+    test('returns empty list for empty models', () {
+      final result = ConnectApiService.modelBreakdownsFromProto([]);
+      expect(result, isEmpty);
+    });
+
+    test('converts single ModelUsage correctly', () {
+      final model = ModelUsage()
+        ..model = 'gpt-4o'
+        ..provider = 'openai'
+        ..callCount = Int64(42)
+        ..inputTokens = Int64(10000)
+        ..outputTokens = Int64(5000)
+        ..costUsd = 1.25
+        ..avgLatencyMs = 300.0
+        ..cacheReadTokens = Int64(2000)
+        ..cacheCreationTokens = Int64(500);
+
+      final result = ConnectApiService.modelBreakdownsFromProto([model]);
+      expect(result.length, 1);
+      expect(result.first.model, 'gpt-4o');
+      expect(result.first.provider, 'openai');
+      expect(result.first.callCount, 42);
+      expect(result.first.inputTokens, 10000);
+      expect(result.first.outputTokens, 5000);
+      expect(result.first.costUsd, 1.25);
+      expect(result.first.avgLatencyMs, 300.0);
+      expect(result.first.cacheReadTokens, 2000);
+      expect(result.first.cacheCreationTokens, 500);
+    });
+
+    test('aggregates same model with different providers into one row', () {
+      final m1 = ModelUsage()
+        ..model = 'claude-sonnet-4-20250514'
+        ..provider = 'anthropic'
+        ..callCount = Int64(1000)
+        ..inputTokens = Int64(100000)
+        ..outputTokens = Int64(50000)
+        ..costUsd = 30.0
+        ..avgLatencyMs = 200.0;
+
+      final m2 = ModelUsage()
+        ..model = 'claude-sonnet-4-20250514'
+        ..provider = 'team'
+        ..callCount = Int64(46)
+        ..inputTokens = Int64(4600)
+        ..outputTokens = Int64(2300)
+        ..costUsd = 1.38
+        ..avgLatencyMs = 250.0;
+
+      final result = ConnectApiService.modelBreakdownsFromProto([m1, m2]);
+      expect(result.length, 1, reason: 'same model should be merged');
+      expect(result.first.model, 'claude-sonnet-4-20250514');
+      expect(result.first.callCount, 1046);
+      expect(result.first.inputTokens, 104600);
+      expect(result.first.outputTokens, 52300);
+      expect(result.first.costUsd, closeTo(31.38, 0.01));
+    });
+
+    test('weighted average latency is computed correctly', () {
+      final m1 = ModelUsage()
+        ..model = 'gpt-4o'
+        ..provider = 'openai'
+        ..callCount = Int64(100)
+        ..inputTokens = Int64(1000)
+        ..outputTokens = Int64(500)
+        ..costUsd = 1.0
+        ..avgLatencyMs = 200.0;
+
+      final m2 = ModelUsage()
+        ..model = 'gpt-4o'
+        ..provider = 'azure'
+        ..callCount = Int64(100)
+        ..inputTokens = Int64(1000)
+        ..outputTokens = Int64(500)
+        ..costUsd = 1.0
+        ..avgLatencyMs = 400.0;
+
+      final result = ConnectApiService.modelBreakdownsFromProto([m1, m2]);
+      // (100*200 + 100*400) / 200 = 300
+      expect(result.first.avgLatencyMs, closeTo(300.0, 0.01));
+    });
+
+    test('results are sorted by cost descending', () {
+      final cheap = ModelUsage()
+        ..model = 'gemini-flash'
+        ..provider = 'google'
+        ..callCount = Int64(100)
+        ..inputTokens = Int64(1000)
+        ..outputTokens = Int64(500)
+        ..costUsd = 0.01
+        ..avgLatencyMs = 50.0;
+
+      final expensive = ModelUsage()
+        ..model = 'claude-opus'
+        ..provider = 'anthropic'
+        ..callCount = Int64(10)
+        ..inputTokens = Int64(500)
+        ..outputTokens = Int64(250)
+        ..costUsd = 5.0
+        ..avgLatencyMs = 500.0;
+
+      final result =
+          ConnectApiService.modelBreakdownsFromProto([cheap, expensive]);
+      expect(result.first.model, 'claude-opus');
+      expect(result.last.model, 'gemini-flash');
+    });
+
+    test('defaults empty model name to "unknown"', () {
+      final model = ModelUsage()
+        ..model = ''
+        ..provider = 'openai'
+        ..callCount = Int64(1)
+        ..inputTokens = Int64(10)
+        ..outputTokens = Int64(5)
+        ..costUsd = 0.01
+        ..avgLatencyMs = 50.0;
+
+      final result = ConnectApiService.modelBreakdownsFromProto([model]);
+      expect(result.first.model, 'unknown');
+    });
+
+    test('defaults empty provider to "team"', () {
+      final model = ModelUsage()
+        ..model = 'gpt-4o'
+        ..provider = ''
+        ..callCount = Int64(1)
+        ..inputTokens = Int64(10)
+        ..outputTokens = Int64(5)
+        ..costUsd = 0.01
+        ..avgLatencyMs = 50.0;
+
+      final result = ConnectApiService.modelBreakdownsFromProto([model]);
+      expect(result.first.provider, 'team');
+    });
+
+    test('preserves real call count above 1000 (no clamping)', () {
+      final model = ModelUsage()
+        ..model = 'gpt-4o'
+        ..provider = 'openai'
+        ..callCount = Int64(5000)
+        ..inputTokens = Int64(500000)
+        ..outputTokens = Int64(250000)
+        ..costUsd = 50.0
+        ..avgLatencyMs = 100.0;
+
+      final result = ConnectApiService.modelBreakdownsFromProto([model]);
+      expect(result.first.callCount, 5000,
+          reason: 'real call count must not be clamped to 1000');
+    });
+  });
 }

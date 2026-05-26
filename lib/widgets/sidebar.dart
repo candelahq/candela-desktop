@@ -119,9 +119,13 @@ class _CandelaSidebarState extends State<CandelaSidebar> {
             style: FilledButton.styleFrom(
               backgroundColor: CandelaColors.accent,
             ),
-            onPressed: () {
+            onPressed: () async {
               Navigator.of(ctx).pop();
-              svc.performBrewUpgrade();
+              final success = await svc.performBrewUpgrade();
+              if (!success && mounted) {
+                _showUpdateSnackBar(
+                    'Upgrade failed. Please run: brew upgrade candela');
+              }
             },
             child: const Text('Update & Relaunch'),
           ),

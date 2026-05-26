@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 
 /// How the app was installed — determines update mechanism.
 enum InstallChannel {
@@ -38,6 +39,9 @@ enum UpdateStatus {
 class UpdateService extends ChangeNotifier {
   static const _releaseFeedUrl =
       'https://api.github.com/repos/candelahq/candela-desktop/releases/latest';
+
+  /// Public releases page URL for direct-install users.
+  static const releasesPageUrl = 'https://candelahq.com/releases';
 
   final http.Client _client;
 
@@ -139,6 +143,16 @@ class UpdateService extends ChangeNotifier {
         debugPrint(
             '[UpdateService] Unknown install channel for: ${Platform.resolvedExecutable}');
         return 'Visit candelahq.com/releases for the latest version.';
+    }
+  }
+
+  /// Open the releases page in the default browser (for direct/unknown installs).
+  Future<bool> openReleasesPage() async {
+    final uri = Uri.parse(releasesPageUrl);
+    try {
+      return await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      return false;
     }
   }
 

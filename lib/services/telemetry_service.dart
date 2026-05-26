@@ -113,9 +113,10 @@ class TelemetryService {
     BudgetInfo? budget;
     List<GrantInfo> grants = [];
     double? totalRemainingUsd;
+    List<ModelBreakdown>? preBuiltModels;
 
     if (isTeamMode) {
-      (spans, errorKind, budget, grants, totalRemainingUsd) =
+      (spans, errorKind, budget, grants, totalRemainingUsd, preBuiltModels) =
           await _fetchRemote(range, now, userScope: userScope);
     } else {
       (spans, errorKind) = await _fetchLocal(range);
@@ -153,7 +154,7 @@ class TelemetryService {
 
     return TelemetryResult(
       summary: buildSummary(filtered, range, now),
-      models: _buildModelBreakdown(filtered),
+      models: preBuiltModels ?? _buildModelBreakdown(filtered),
       spans: filtered,
       isTeamMode: isTeamMode,
       budget: budget,
@@ -204,7 +205,8 @@ class TelemetryService {
             TelemetryErrorKind?,
             BudgetInfo?,
             List<GrantInfo>,
-            double?
+            double?,
+            List<ModelBreakdown>?,
           )>
       _fetchRemote(TokenTimeRange range, DateTime now,
           {user_types.UserScope? userScope}) async {
@@ -235,7 +237,8 @@ class TelemetryService {
           TelemetryErrorKind.authExpired,
           null,
           <GrantInfo>[],
-          null
+          null,
+          null,
         );
       }
 
@@ -252,7 +255,8 @@ class TelemetryService {
               TelemetryErrorKind.authExpired,
               null,
               <GrantInfo>[],
-              null
+              null,
+              null,
             );
           }
           return (
@@ -260,7 +264,8 @@ class TelemetryService {
             TelemetryErrorKind.unreachable,
             null,
             <GrantInfo>[],
-            null
+            null,
+            null,
           );
         }
       }
@@ -270,7 +275,8 @@ class TelemetryService {
         TelemetryErrorKind.unreachable,
         null,
         <GrantInfo>[],
-        null
+        null,
+        null,
       );
     } catch (_) {
       return (
@@ -278,7 +284,8 @@ class TelemetryService {
         TelemetryErrorKind.unreachable,
         null,
         <GrantInfo>[],
-        null
+        null,
+        null,
       );
     }
   }
@@ -290,7 +297,8 @@ class TelemetryService {
         TelemetryErrorKind?,
         BudgetInfo?,
         List<GrantInfo>,
-        double?
+        double?,
+        List<ModelBreakdown>?,
       )> _fetchDashboardData(
     ConnectApiService api,
     DateTime start,
@@ -326,7 +334,9 @@ class TelemetryService {
 
     // Convert proto ModelUsage → SpanRecord for the chart pipeline.
     final spans = ConnectApiService.spansFromModels(resp.models, start, now);
-    return (spans, null, budget, grants, totalRemainingUsd);
+    // Build model breakdowns directly from proto data (real call counts).
+    final models = ConnectApiService.modelBreakdownsFromProto(resp.models);
+    return (spans, null, budget, grants, totalRemainingUsd, models);
   }
 
   /// Legacy 3-RPC fan-out fallback for servers that haven't been updated yet.
@@ -336,7 +346,8 @@ class TelemetryService {
         TelemetryErrorKind?,
         BudgetInfo?,
         List<GrantInfo>,
-        double?
+        double?,
+        List<ModelBreakdown>?,
       )> _fetchRemoteLegacy(
     ConnectApiService api,
     DateTime start,
@@ -383,7 +394,10 @@ class TelemetryService {
       // Convert proto ModelUsage → SpanRecord for the chart pipeline.
       final spans =
           ConnectApiService.spansFromModels(modelsResp.models, start, now);
-      return (spans, null, budget, grants, totalRemainingUsd);
+      // Build model breakdowns directly from proto data (real call counts).
+      final models =
+          ConnectApiService.modelBreakdownsFromProto(modelsResp.models);
+      return (spans, null, budget, grants, totalRemainingUsd, models);
     } on ConnectException catch (e) {
       if (e.code == Code.unauthenticated) {
         return (
@@ -391,7 +405,8 @@ class TelemetryService {
           TelemetryErrorKind.authExpired,
           null,
           <GrantInfo>[],
-          null
+          null,
+          null,
         );
       }
 
@@ -400,7 +415,8 @@ class TelemetryService {
         TelemetryErrorKind.unreachable,
         null,
         <GrantInfo>[],
-        null
+        null,
+        null,
       );
     } catch (_) {
       return (
@@ -408,7 +424,8 @@ class TelemetryService {
         TelemetryErrorKind.unreachable,
         null,
         <GrantInfo>[],
-        null
+        null,
+        null,
       );
     }
   }
@@ -442,8 +459,10 @@ class TelemetryService {
   List<ModelBreakdown> _buildModelBreakdown(List<SpanRecord> spans) {
     final map = <String, _Accum>{};
     for (final s in spans) {
-      final a = map.putIfAbsent('${s.provider}::${s.model}',
-          () => _Accum(model: s.model, provider: s.provider));
+      // Key by model name only — prevents duplicate rows when the same model
+      // appears under different providers.
+      final a = map.putIfAbsent(
+          s.model, () => _Accum(model: s.model, provider: s.provider));
       a.callCount++;
       a.inputTokens += s.inputTokens;
       a.outputTokens += s.outputTokens;

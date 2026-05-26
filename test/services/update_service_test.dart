@@ -233,4 +233,13 @@ void main() {
       expect(UpdateService().latestVersion, isNull);
     });
   });
+
+  group('UpdateService — releasesPageUrl', () {
+    test('releasesPageUrl is a valid https URL', () {
+      final uri = Uri.parse(UpdateService.releasesPageUrl);
+      expect(uri.scheme, anyOf('https', 'http'));
+      expect(uri.host, isNotEmpty);
+      expect(uri.host, contains('candelahq'));
+    });
+  });
 }

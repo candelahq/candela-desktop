@@ -80,15 +80,68 @@ class _CandelaSidebarState extends State<CandelaSidebar> {
     if (svc == null) return;
 
     final channel = svc.detectChannel();
-    // Show instructions for the current install channel.
-    _showUpdateSnackBar(svc.updateInstructions(channel));
+    switch (channel) {
+      case InstallChannel.homebrew:
+        _showBrewUpgradeDialog(svc);
+      case InstallChannel.direct:
+      case InstallChannel.unknown:
+        final opened = await svc.openReleasesPage();
+        if (!opened) {
+          _showUpdateSnackBar(svc.updateInstructions(channel));
+        }
+      case InstallChannel.nix:
+        _showUpdateSnackBar(svc.updateInstructions(channel));
+    }
+  }
+
+  void _showBrewUpgradeDialog(UpdateService svc) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: CandelaColors.bgSecondary,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Text(
+          'Update Candela',
+          style: TextStyle(color: CandelaColors.textPrimary),
+        ),
+        content: Text(
+          'A new version is available ($_version → v$_newVersion).\n\n'
+          'This will run brew upgrade and relaunch the app.',
+          style: const TextStyle(color: CandelaColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel',
+                style: TextStyle(color: CandelaColors.textMuted)),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: CandelaColors.accent,
+            ),
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              final success = await svc.performBrewUpgrade();
+              if (!success && mounted) {
+                _showUpdateSnackBar(
+                    'Upgrade failed. Please run: brew upgrade candela');
+              }
+            },
+            child: const Text('Update & Relaunch'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showUpdateSnackBar(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text(
+          message,
+          style: const TextStyle(color: CandelaColors.textPrimary),
+        ),
         behavior: SnackBarBehavior.floating,
         backgroundColor: CandelaColors.bgTertiary,
         shape: RoundedRectangleBorder(

@@ -337,7 +337,7 @@ void main() {
   // ── Model breakdown aggregation ───────────────────────────────────────────
 
   group('TelemetryService — model breakdown', () {
-    test('groups spans by provider::model', () async {
+    test('groups spans by model name', () async {
       final ts = DateTime.now().toIso8601String();
       final spans = [
         _spanJson(
@@ -355,6 +355,25 @@ void main() {
       final result = await svc.fetch(TokenTimeRange.h24);
 
       expect(result!.models.length, 2);
+    });
+
+    test('merges same model with different providers into one row', () async {
+      final ts = DateTime.now().toIso8601String();
+      final spans = [
+        _spanJson(
+            model: 'gpt-4o', provider: 'openai', costUsd: 0.01, timestamp: ts),
+        _spanJson(
+            model: 'gpt-4o', provider: 'azure', costUsd: 0.02, timestamp: ts),
+      ];
+      final client = _mockClient(jsonEncode({'spans': spans}));
+      final svc = _localSvc(client);
+      final result = await svc.fetch(TokenTimeRange.h24);
+
+      expect(result!.models.length, 1,
+          reason: 'same model under different providers should be merged');
+      expect(result.models.first.model, 'gpt-4o');
+      expect(result.models.first.callCount, 2);
+      expect(result.models.first.costUsd, closeTo(0.03, 1e-9));
     });
 
     test('sorts models by cost descending', () async {
@@ -574,6 +593,60 @@ void main() {
       final svc = _teamSvcWithMock(mock, authToken: null);
       await svc.fetch(TokenTimeRange.h24);
       expect(mock.capturedAuthToken, isNull);
+    });
+
+    test('preBuiltModels preserves real call count above 1000', () async {
+      final model = ModelUsage()
+        ..model = 'gpt-4o'
+        ..provider = 'openai'
+        ..callCount = Int64(5000)
+        ..inputTokens = Int64(500000)
+        ..outputTokens = Int64(250000)
+        ..costUsd = 50.0
+        ..avgLatencyMs = 100.0;
+
+      final mock = MockConnectApi(
+        modelResponse: GetModelBreakdownResponse()..models.add(model),
+      );
+      final svc = _teamSvcWithMock(mock);
+      final result = await svc.fetch(TokenTimeRange.d7);
+
+      // The model breakdown should use the real call count (5000),
+      // not the clamped synthetic span count (1000).
+      expect(result!.models.length, 1);
+      expect(result.models.first.callCount, 5000,
+          reason: 'team mode should use preBuiltModels with real call count');
+    });
+
+    test('team mode deduplicates same model across providers', () async {
+      final m1 = ModelUsage()
+        ..model = 'claude-sonnet-4-20250514'
+        ..provider = 'anthropic'
+        ..callCount = Int64(1000)
+        ..inputTokens = Int64(100000)
+        ..outputTokens = Int64(50000)
+        ..costUsd = 30.0
+        ..avgLatencyMs = 200.0;
+
+      final m2 = ModelUsage()
+        ..model = 'claude-sonnet-4-20250514'
+        ..provider = 'team'
+        ..callCount = Int64(46)
+        ..inputTokens = Int64(4600)
+        ..outputTokens = Int64(2300)
+        ..costUsd = 1.38
+        ..avgLatencyMs = 250.0;
+
+      final mock = MockConnectApi(
+        modelResponse: GetModelBreakdownResponse()..models.addAll([m1, m2]),
+      );
+      final svc = _teamSvcWithMock(mock);
+      final result = await svc.fetch(TokenTimeRange.d7);
+
+      expect(result!.models.length, 1,
+          reason: 'same model under different providers should be merged');
+      expect(result.models.first.model, 'claude-sonnet-4-20250514');
+      expect(result.models.first.callCount, 1046);
     });
   });
 

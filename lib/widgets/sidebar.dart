@@ -138,7 +138,10 @@ class _CandelaSidebarState extends State<CandelaSidebar> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text(
+          message,
+          style: const TextStyle(color: CandelaColors.textPrimary),
+        ),
         behavior: SnackBarBehavior.floating,
         backgroundColor: CandelaColors.bgTertiary,
         shape: RoundedRectangleBorder(

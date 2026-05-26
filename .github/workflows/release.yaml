@@ -280,8 +280,6 @@ jobs:
     name: Update Homebrew Cask
     needs: [release]
     runs-on: ubuntu-latest
-    # Don't block the release if the cask update fails (token issues, etc).
-    continue-on-error: true
     # Skip cask updates for pre-releases.
     if: ${{ !contains(github.ref_name, '-beta') && !contains(github.ref_name, '-rc') }}
     steps:

@@ -241,6 +241,26 @@ vertex_ai:
       expect(regionIssue.first.severity, IssueSeverity.warning);
     });
 
+    test('team mode skips vertex_ai.project and region validation', () async {
+      File(testConfigPath).writeAsStringSync('''
+remote: https://candela.example.com
+audience: my-audience
+providers:
+  - name: google
+  - name: anthropic
+''');
+      final config = await service.load();
+      expect(config.mode, CandelaMode.team);
+      final projectIssues =
+          config.issues.where((i) => i.field == 'vertex_ai.project');
+      final regionIssues =
+          config.issues.where((i) => i.field == 'vertex_ai.region');
+      expect(projectIssues, isEmpty,
+          reason: 'team mode should not require vertex_ai.project');
+      expect(regionIssues, isEmpty,
+          reason: 'team mode should not warn about vertex_ai.region');
+    });
+
     // --- vertex_ai parsing ---
 
     test('load parses vertex_ai config', () async {

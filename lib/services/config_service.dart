@@ -285,26 +285,30 @@ class ConfigService {
       ));
     }
 
-    // Cloud providers require vertex_ai.project.
-    final hasGcpProvider = providers.any(
-      (p) => p.name == 'google' || p.name == 'anthropic' || p.name == 'gemini',
-    );
-    if (hasGcpProvider &&
-        (vertexAI?.project == null || vertexAI!.project!.isEmpty)) {
-      issues.add(const ConfigIssue(
-        severity: IssueSeverity.error,
-        message: '`vertex_ai.project` is required for cloud providers',
-        field: 'vertex_ai.project',
-      ));
-    }
+    // Cloud providers require vertex_ai.project — but only in solo modes.
+    // In team mode, the remote server provides GCP credentials.
+    if (mode != CandelaMode.team) {
+      final hasGcpProvider = providers.any(
+        (p) =>
+            p.name == 'google' || p.name == 'anthropic' || p.name == 'gemini',
+      );
+      if (hasGcpProvider &&
+          (vertexAI?.project == null || vertexAI!.project!.isEmpty)) {
+        issues.add(const ConfigIssue(
+          severity: IssueSeverity.error,
+          message: '`vertex_ai.project` is required for cloud providers',
+          field: 'vertex_ai.project',
+        ));
+      }
 
-    // Region warning.
-    if (hasGcpProvider && vertexAI?.region == null) {
-      issues.add(const ConfigIssue(
-        severity: IssueSeverity.warning,
-        message: '`vertex_ai.region` not set — defaulting to us-central1',
-        field: 'vertex_ai.region',
-      ));
+      // Region warning.
+      if (hasGcpProvider && vertexAI?.region == null) {
+        issues.add(const ConfigIssue(
+          severity: IssueSeverity.warning,
+          message: '`vertex_ai.region` not set — defaulting to us-central1',
+          field: 'vertex_ai.region',
+        ));
+      }
     }
 
     return CandelaConfig(

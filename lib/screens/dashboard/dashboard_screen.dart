@@ -70,7 +70,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // TelemetryResult.empty() means connected but no calls yet — not an error.
     if (!result.hasData && result.error == null) return null;
     if (result.error == TelemetryErrorKind.authExpired) {
-      return 'Session expired \u2014 run: gcloud auth application-default login';
+      return 'Session expired \u2014 run: candela auth login';
     }
     if (result.error == TelemetryErrorKind.unreachable) {
       return state.isTeamMode

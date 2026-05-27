@@ -117,7 +117,7 @@ void main() {
             : 'Could not reach the Candela proxy. Is it running?';
       }
       if (result.error == TelemetryErrorKind.authExpired) {
-        return 'Session expired — run: gcloud auth application-default login';
+        return 'Session expired — run: candela auth login';
       }
       if (result.error == TelemetryErrorKind.unreachable) {
         return isTeamMode
@@ -137,11 +137,10 @@ void main() {
           'Could not reach the team backend. Check your network and auth.');
     });
 
-    test('authExpired result → gcloud login message', () {
+    test('authExpired result → candela auth login message', () {
       final result = const TelemetryResult.withError(
           isTeamMode: true, error: TelemetryErrorKind.authExpired);
-      expect(errorMessage(result, true),
-          contains('gcloud auth application-default login'));
+      expect(errorMessage(result, true), contains('candela auth login'));
     });
 
     test('unreachable result in team mode → team-specific message', () {

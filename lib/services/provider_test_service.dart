@@ -51,7 +51,7 @@ class ProviderTestService {
           displayName: 'Google / Vertex AI',
           state: ProviderState.error,
           statusMessage: 'No access token',
-          fixCommand: 'gcloud auth application-default login',
+          fixCommand: 'candela auth login',
           project: project,
           icon: 'G');
     }
@@ -111,9 +111,8 @@ class ProviderTestService {
           displayName: 'Anthropic (Vertex)',
           state: ProviderState.error,
           statusMessage: project == null ? 'No project' : 'No token',
-          fixCommand: project == null
-              ? 'Set vertex_ai.project'
-              : 'gcloud auth application-default login',
+          fixCommand:
+              project == null ? 'Set vertex_ai.project' : 'candela auth login',
           project: project,
           region: region,
           icon: 'A');

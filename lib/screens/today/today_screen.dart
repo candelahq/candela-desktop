@@ -87,7 +87,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     }
     if (result == null) return state.errorMessage;
     if (result.error == TelemetryErrorKind.authExpired) {
-      return 'Session expired — run: gcloud auth application-default login';
+      return 'Session expired — run: candela auth login';
     }
     if (result.error != null) return 'Backend unreachable.';
     return null;

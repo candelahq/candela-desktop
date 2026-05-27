@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:http/http.dart' as http;
 import '../models/diagnostic_entry.dart';
 import '../models/provider_status.dart';
 import '../models/candela_config.dart';
@@ -148,6 +149,61 @@ class DiagnosticRunner {
           DiagnosticStatus.pass);
       passed++;
       accessTokenStr = token.accessToken;
+    }
+
+    // 4b. Team backend auth (ID token + connectivity)
+    if (config.mode == CandelaMode.team &&
+        config.remote != null &&
+        config.remote!.isNotEmpty) {
+      if (_disposed) {
+        return DiagnosticSummary(
+            passed: passed, failed: failed, warned: warned);
+      }
+
+      // Test audience-specific ID token if configured.
+      if (config.audience != null &&
+          config.audience!.isNotEmpty &&
+          adc != null) {
+        _emit('Validating team auth (ID token for ${config.audience})...',
+            DiagnosticStatus.running);
+        final idToken =
+            await _candelaAuth.getIdToken(audience: config.audience!);
+        if (idToken == null) {
+          _emit('Could not acquire ID token for team backend',
+              DiagnosticStatus.fail,
+              detail:
+                  'The access token works, but the audience-specific ID token '
+                  'exchange failed. Your ADC credentials may need refreshing.',
+              fixCommand: 'candela auth login');
+          failed++;
+        } else {
+          _emit('Team auth: ID token acquired', DiagnosticStatus.pass);
+          passed++;
+        }
+      }
+
+      // Test connectivity to the remote backend.
+      _emit('Testing team backend (${config.remote})...',
+          DiagnosticStatus.running);
+      try {
+        final uri = Uri.parse(config.remote!);
+        final healthUri = uri.replace(path: '/healthz');
+        final resp =
+            await http.get(healthUri).timeout(const Duration(seconds: 5));
+        if (resp.statusCode == 200 || resp.statusCode == 204) {
+          _emit('Team backend: Reachable', DiagnosticStatus.pass);
+          passed++;
+        } else {
+          _emit('Team backend: HTTP ${resp.statusCode}', DiagnosticStatus.warn,
+              detail: 'Backend responded but health check returned '
+                  '${resp.statusCode}');
+          warned++;
+        }
+      } catch (e) {
+        _emit('Team backend: Unreachable', DiagnosticStatus.fail,
+            detail: 'Could not connect to ${config.remote}');
+        failed++;
+      }
     }
 
     // 5. GCP Project (from config or ADC quota_project — no subprocess)

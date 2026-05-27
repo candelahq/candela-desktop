@@ -86,28 +86,46 @@ class CandelaAuthService {
   /// Get an audience-specific ID token for backends protected by IAP or
   /// Cloud Run IAM.
   ///
-  /// Uses the standard OAuth2 token exchange with `audience` parameter.
+  /// Uses the IAM Credentials API to impersonate [serviceAccount] and generate
+  /// an OIDC ID token with the specified [audience]. This mirrors the approach
+  /// used by the Go CLI in `iap_token.go`.
+  ///
+  /// The user must have `roles/iam.serviceAccountTokenCreator` on the service
+  /// account (project owners/editors have this by default).
+  ///
   /// Returns the raw ID token string, or null if the exchange fails.
-  Future<String?> getIdToken({required String audience}) async {
-    final adc = await _adcService.readAdcFile();
-    if (adc == null || !adc.canDirectRefresh) return null;
+  Future<String?> getIdToken({
+    required String audience,
+    required String serviceAccount,
+  }) async {
+    // Need a valid access token to call the IAM API.
+    final tokenInfo = await getTokenInfo();
+    final accessToken = tokenInfo?.accessToken;
+    if (accessToken == null) return null;
 
     try {
-      final response = await http.post(
-        Uri.parse('https://oauth2.googleapis.com/token'),
-        body: {
-          'client_id': adc.clientId!,
-          'client_secret': adc.clientSecret!,
-          'refresh_token': adc.refreshToken!,
-          'grant_type': 'refresh_token',
-          'audience': audience,
-        },
-      ).timeout(const Duration(seconds: 10));
+      final url = Uri.parse(
+        'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/'
+        '$serviceAccount:generateIdToken',
+      );
+      final response = await http
+          .post(
+            url,
+            headers: {
+              'Authorization': 'Bearer $accessToken',
+              'Content-Type': 'application/json',
+            },
+            body: json.encode({
+              'audience': audience,
+              'includeEmail': true,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode != 200) return null;
 
       final data = json.decode(response.body) as Map<String, dynamic>;
-      return data['id_token'] as String?;
+      return data['token'] as String?;
     } catch (_) {
       return null;
     }

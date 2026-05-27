@@ -5,6 +5,7 @@ class CandelaConfig {
   final int configVersion;
   final String? remote;
   final String? audience;
+  final String? iapServiceAccount;
   final int port;
   final int lmStudioPort;
   final List<ProviderConfig> providers;
@@ -20,6 +21,7 @@ class CandelaConfig {
     this.configVersion = 0,
     this.remote,
     this.audience,
+    this.iapServiceAccount,
     this.port = 8181,
     this.lmStudioPort = 1234,
     this.providers = const [],

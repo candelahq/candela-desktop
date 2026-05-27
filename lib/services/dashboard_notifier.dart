@@ -104,6 +104,7 @@ class DashboardController {
   // Team-mode token refresh state.
   String? _remoteUrl;
   String? _audience;
+  String? _iapServiceAccount;
   int _proxyPort = 8181;
   DateTime? _tokenExpiresAt;
   static const _tokenRefreshBuffer = Duration(minutes: 5);
@@ -138,12 +139,19 @@ class DashboardController {
       final auth = _candelaAuth ?? CandelaAuthService();
       _candelaAuth = auth;
       _audience = config.audience;
+      _iapServiceAccount = config.iapServiceAccount;
       // Use audience-specific ID token when audience is configured
       // (for IAP / Cloud Run backends); otherwise fall back to access token.
       String? authToken;
       TokenInfo? tokenInfo;
-      if (_audience != null && _audience!.isNotEmpty) {
-        authToken = await auth.getIdToken(audience: _audience!);
+      if (_audience != null &&
+          _audience!.isNotEmpty &&
+          _iapServiceAccount != null &&
+          _iapServiceAccount!.isNotEmpty) {
+        authToken = await auth.getIdToken(
+          audience: _audience!,
+          serviceAccount: _iapServiceAccount!,
+        );
       } else {
         tokenInfo = await auth.getTokenInfo(forceRefresh: true);
         authToken = tokenInfo?.accessToken;
@@ -269,8 +277,14 @@ class DashboardController {
     // otherwise fall back to standard access token.
     String? authToken;
     TokenInfo? tokenInfo;
-    if (_audience != null && _audience!.isNotEmpty) {
-      authToken = await auth.getIdToken(audience: _audience!);
+    if (_audience != null &&
+        _audience!.isNotEmpty &&
+        _iapServiceAccount != null &&
+        _iapServiceAccount!.isNotEmpty) {
+      authToken = await auth.getIdToken(
+        audience: _audience!,
+        serviceAccount: _iapServiceAccount!,
+      );
     } else {
       tokenInfo = await auth.getTokenInfo();
       authToken = tokenInfo?.accessToken;
@@ -300,8 +314,14 @@ class DashboardController {
         !(_telemetry?.isTeamMode ?? false)) {
       return null;
     }
-    if (_audience != null && _audience!.isNotEmpty) {
-      return auth.getIdToken(audience: _audience!);
+    if (_audience != null &&
+        _audience!.isNotEmpty &&
+        _iapServiceAccount != null &&
+        _iapServiceAccount!.isNotEmpty) {
+      return auth.getIdToken(
+        audience: _audience!,
+        serviceAccount: _iapServiceAccount!,
+      );
     }
     final info = await auth.getTokenInfo();
     return info?.accessToken;

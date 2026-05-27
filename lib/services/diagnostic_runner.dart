@@ -163,17 +163,21 @@ class DiagnosticRunner {
       // Test audience-specific ID token if configured.
       if (config.audience != null &&
           config.audience!.isNotEmpty &&
+          config.iapServiceAccount != null &&
+          config.iapServiceAccount!.isNotEmpty &&
           adc != null) {
         _emit('Validating team auth (ID token for ${config.audience})...',
             DiagnosticStatus.running);
-        final idToken =
-            await _candelaAuth.getIdToken(audience: config.audience!);
+        final idToken = await _candelaAuth.getIdToken(
+          audience: config.audience!,
+          serviceAccount: config.iapServiceAccount!,
+        );
         if (idToken == null) {
           _emit('Could not acquire ID token for team backend',
               DiagnosticStatus.fail,
-              detail:
-                  'The access token works, but the audience-specific ID token '
-                  'exchange failed. Your ADC credentials may need refreshing.',
+              detail: 'IAM generateIdToken failed. Ensure you have '
+                  'roles/iam.serviceAccountTokenCreator on '
+                  '${config.iapServiceAccount}.',
               fixCommand: 'candela auth login');
           failed++;
         } else {

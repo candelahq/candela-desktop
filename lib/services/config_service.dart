@@ -182,6 +182,7 @@ class ConfigService {
         yaml['config_version'] is int ? yaml['config_version'] as int : 0;
     final remote = yaml['remote']?.toString();
     final audience = yaml['audience']?.toString();
+    final iapServiceAccount = yaml['iap_service_account']?.toString();
     final port = yaml['port'] is int ? yaml['port'] as int : 8181;
     final lmStudioPort =
         yaml['lmstudio_port'] is int ? yaml['lmstudio_port'] as int : 1234;
@@ -285,6 +286,17 @@ class ConfigService {
       ));
     }
 
+    // Team mode: iap_service_account is needed for ID token acquisition.
+    if (mode == CandelaMode.team &&
+        (iapServiceAccount == null || iapServiceAccount.isEmpty)) {
+      issues.add(const ConfigIssue(
+        severity: IssueSeverity.warning,
+        message: '`iap_service_account` not set — team auth may fail. '
+            'Set it to the service account email used by your team backend.',
+        field: 'iap_service_account',
+      ));
+    }
+
     // Cloud providers require vertex_ai.project — but only in solo modes.
     // In team mode, the remote server provides GCP credentials.
     if (mode != CandelaMode.team) {
@@ -317,6 +329,7 @@ class ConfigService {
       configVersion: configVersion,
       remote: remote,
       audience: audience,
+      iapServiceAccount: iapServiceAccount,
       port: port,
       lmStudioPort: lmStudioPort,
       providers: providers,

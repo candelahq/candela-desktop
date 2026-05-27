@@ -70,8 +70,15 @@ class _TracesScreenState extends ConsumerState<TracesScreen> {
       // fall back to standard access token otherwise.
       String? authToken;
       final audience = config.audience;
-      if (audience != null && audience.isNotEmpty) {
-        authToken = await auth.getIdToken(audience: audience);
+      final serviceAccount = config.iapServiceAccount;
+      if (audience != null &&
+          audience.isNotEmpty &&
+          serviceAccount != null &&
+          serviceAccount.isNotEmpty) {
+        authToken = await auth.getIdToken(
+          audience: audience,
+          serviceAccount: serviceAccount,
+        );
       } else {
         final tokenInfo = await auth.getTokenInfo();
         authToken = tokenInfo?.accessToken;

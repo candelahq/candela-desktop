@@ -154,7 +154,7 @@ class UpdateService extends ChangeNotifier {
   String updateInstructions(InstallChannel channel) {
     switch (channel) {
       case InstallChannel.direct:
-        return 'Download the latest version from candelahq.com/releases';
+        return 'Download the latest version from GitHub releases';
       case InstallChannel.homebrew:
         return 'Run: brew upgrade --cask candelahq/tap/candela-desktop';
       case InstallChannel.nix:
@@ -162,7 +162,7 @@ class UpdateService extends ChangeNotifier {
       case InstallChannel.unknown:
         debugPrint(
             '[UpdateService] Unknown install channel for: ${Platform.resolvedExecutable}');
-        return 'Visit candelahq.com/releases for the latest version.';
+        return 'Visit GitHub releases for the latest version.';
     }
   }
 

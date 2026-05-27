@@ -177,7 +177,7 @@ void main() {
     test('CRITICAL-6: unknown channel returns fallback URL message', () {
       final service = UpdateService();
       final msg = service.updateInstructions(InstallChannel.unknown);
-      expect(msg, contains('candelahq.com'));
+      expect(msg, contains('releases'));
     });
   });
 
@@ -239,7 +239,7 @@ void main() {
       final uri = Uri.parse(UpdateService.releasesPageUrl);
       expect(uri.scheme, anyOf('https', 'http'));
       expect(uri.host, isNotEmpty);
-      expect(uri.host, contains('candelahq'));
+      expect(uri.host, contains('github'));
     });
   });
 }

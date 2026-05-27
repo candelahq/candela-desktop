@@ -2,6 +2,15 @@
 
 All notable changes to Candela Desktop are documented here.
 
+## v0.5.4 — 2026-05-27
+
+### Fixes
+- fix: diagnostics now tests team backend ID token exchange — previously showed "OK" while dashboard showed "Session expired"
+- fix: diagnostics now tests connectivity to the remote team backend
+- fix: all auth error messages now say `candela auth login` instead of `gcloud auth application-default login`
+
+---
+
 ## v0.5.3 — 2026-05-27
 
 ### Fixes

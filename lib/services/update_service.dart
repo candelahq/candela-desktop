@@ -41,7 +41,8 @@ class UpdateService extends ChangeNotifier {
       'https://api.github.com/repos/candelahq/candela-desktop/releases/latest';
 
   /// Public releases page URL for direct-install users.
-  static const releasesPageUrl = 'https://candelahq.com/releases';
+  static const releasesPageUrl =
+      'https://github.com/candelahq/candela-desktop/releases';
 
   final http.Client _client;
 
@@ -83,11 +84,30 @@ class UpdateService extends ChangeNotifier {
       _cachedChannel = InstallChannel.homebrew;
     } else if (appPath.contains('/nix/store/')) {
       _cachedChannel = InstallChannel.nix;
+    } else if (_hasBrewCaskReceipt()) {
+      // Homebrew Cask copies the app to /Applications, so the executable
+      // path won't contain /Caskroom/. Check for a Caskroom receipt instead.
+      _cachedChannel = InstallChannel.homebrew;
     } else {
       _cachedChannel = InstallChannel.direct;
     }
 
     return _cachedChannel!;
+  }
+
+  /// Check if a Homebrew Caskroom receipt exists for candela-desktop.
+  bool _hasBrewCaskReceipt() {
+    try {
+      // Homebrew on Apple Silicon: /opt/homebrew/Caskroom
+      // Homebrew on Intel: /usr/local/Caskroom
+      for (final prefix in ['/opt/homebrew', '/usr/local']) {
+        final receipt = Directory('$prefix/Caskroom/candela-desktop');
+        if (receipt.existsSync()) return true;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Check GitHub Releases for a newer version.

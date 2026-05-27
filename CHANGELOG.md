@@ -2,6 +2,13 @@
 
 All notable changes to Candela Desktop are documented here.
 
+## v0.5.3 — 2026-05-27
+
+### Fixes
+- fix: skip `vertex_ai.project` and `vertex_ai.region` validation in team mode — the remote server provides GCP credentials, so these are not required locally
+
+---
+
 ## v0.5.2 — 2026-05-25
 
 ### Fixes

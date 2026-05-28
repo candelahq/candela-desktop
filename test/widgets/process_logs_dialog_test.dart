@@ -59,12 +59,7 @@ Widget _wrapDialog(FakeProcessManager pm, {String processName = 'proxy'}) =>
             builder: (context) => ElevatedButton(
               onPressed: () => showDialog(
                 context: context,
-                builder: (_) => ProviderScope(
-                  overrides: [
-                    processManagerProvider.overrideWithValue(pm),
-                  ],
-                  child: ProcessLogsDialog(processName: processName),
-                ),
+                builder: (_) => ProcessLogsDialog(processName: processName),
               ),
               child: const Text('Open'),
             ),

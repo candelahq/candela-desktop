@@ -228,11 +228,8 @@ void main() {
 
     // ── findOpenDesignProjects ───────────────────────────────────────────────
     //
-    // findOpenDesignProjects() scans from Platform.environment['HOME'],
-    // so we create a temp structure and call the internal scanner logic
-    // via the public API. Since the public method uses HOME, these tests
-    // construct a realistic directory tree within a temp dir and use a
-    // helper that mirrors the scanning logic to validate behavior.
+    // The `startDir` parameter allows direct testing of the scanning logic
+    // against a controlled temp directory without relying on HOME.
 
     group('findOpenDesignProjects (directory scanning logic)', () {
       late Directory scanRoot;
@@ -252,9 +249,10 @@ void main() {
         // Create a non-project dir.
         Directory('${scanRoot.path}/notAProject').createSync();
 
-        // Use the same scanning pattern as the source.
-        final results = <String>[];
-        await _scanForOdDirs(scanRoot, 0, 3, results);
+        final results = await IdeConfigWriter.findOpenDesignProjects(
+          maxDepth: 3,
+          startDir: scanRoot,
+        );
 
         expect(results, contains('${scanRoot.path}/projectA'));
         expect(results, contains('${scanRoot.path}/projectB'));
@@ -268,8 +266,10 @@ void main() {
         Directory('${scanRoot.path}/shallow/.od').createSync(recursive: true);
 
         // maxDepth=1: should find shallow (at depth 1) but not deep (at depth 3).
-        final results = <String>[];
-        await _scanForOdDirs(scanRoot, 0, 1, results);
+        final results = await IdeConfigWriter.findOpenDesignProjects(
+          maxDepth: 1,
+          startDir: scanRoot,
+        );
 
         expect(results, contains('${scanRoot.path}/shallow'));
         expect(
@@ -286,8 +286,10 @@ void main() {
         // Regular dir with .od — should be found.
         Directory('${scanRoot.path}/visible/.od').createSync(recursive: true);
 
-        final results = <String>[];
-        await _scanForOdDirs(scanRoot, 0, 3, results);
+        final results = await IdeConfigWriter.findOpenDesignProjects(
+          maxDepth: 3,
+          startDir: scanRoot,
+        );
 
         expect(results, contains('${scanRoot.path}/visible'));
         expect(
@@ -306,8 +308,10 @@ void main() {
         Directory('${scanRoot.path}/realProject/.od')
             .createSync(recursive: true);
 
-        final results = <String>[];
-        await _scanForOdDirs(scanRoot, 0, 3, results);
+        final results = await IdeConfigWriter.findOpenDesignProjects(
+          maxDepth: 3,
+          startDir: scanRoot,
+        );
 
         expect(results, contains('${scanRoot.path}/realProject'));
         // All excluded dirs should be skipped.
@@ -318,8 +322,10 @@ void main() {
         Directory('${scanRoot.path}/foo/bar').createSync(recursive: true);
         Directory('${scanRoot.path}/baz').createSync();
 
-        final results = <String>[];
-        await _scanForOdDirs(scanRoot, 0, 3, results);
+        final results = await IdeConfigWriter.findOpenDesignProjects(
+          maxDepth: 3,
+          startDir: scanRoot,
+        );
 
         expect(results, isEmpty);
       });
@@ -328,68 +334,13 @@ void main() {
         // If scanRoot itself has .od, it should be detected.
         Directory('${scanRoot.path}/.od').createSync();
 
-        final results = <String>[];
-        await _scanForOdDirs(scanRoot, 0, 3, results);
+        final results = await IdeConfigWriter.findOpenDesignProjects(
+          maxDepth: 3,
+          startDir: scanRoot,
+        );
 
         expect(results, contains(scanRoot.path));
       });
     });
   });
-}
-
-// ── Test helper: mirrors IdeConfigWriter._scanForOdDirs ─────────────────────
-//
-// Since _scanForOdDirs is private, we replicate its logic here to unit-test
-// the scanning behavior in isolation with controlled temp directories.
-// This is the same algorithm used in the source (see ide_config_writer.dart).
-
-const _skipDirs = {
-  'node_modules',
-  '.git',
-  'vendor',
-  'target',
-  'build',
-  'dist',
-  '.gradle',
-  '__pycache__',
-  'venv',
-  '.venv',
-  'Library',
-  'Applications',
-  'Music',
-  'Pictures',
-  'Movies',
-};
-
-Future<void> _scanForOdDirs(
-  Directory dir,
-  int depth,
-  int maxDepth,
-  List<String> results,
-) async {
-  if (depth > maxDepth) return;
-
-  try {
-    await for (final entity in dir.list(followLinks: false)) {
-      if (entity is! Directory) continue;
-      final name = entity.path.split('/').last;
-
-      // Skip hidden dirs (except .od which is what we look for).
-      if (name.startsWith('.') && name != '.od') continue;
-
-      if (name == '.od') {
-        // Parent is the project root.
-        results.add(dir.path);
-        // Don't recurse into .od itself.
-        continue;
-      }
-
-      // Skip large/irrelevant dirs.
-      if (_skipDirs.contains(name)) continue;
-
-      await _scanForOdDirs(entity, depth + 1, maxDepth, results);
-    }
-  } on FileSystemException {
-    // Permission denied — skip silently.
-  }
 }

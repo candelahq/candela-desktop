@@ -55,8 +55,8 @@ void main() {
     // The installedVersion, latestVersion, and formulaVersions methods all
     // parse the same `brew info --json=v2` output. Since Process.run is not
     // injectable, we can't call these methods directly without brew.
-    // Instead, we test the JSON parsing logic in isolation by extracting
-    // the same parsing patterns used in the source.
+    // The core parsing logic is exposed as
+    // BrewService.parseFormulaVersionsFromJson and tested here directly.
 
     group('brew info --json=v2 formula parsing', () {
       test('extracts installed version from formulae[0].installed', () {
@@ -153,7 +153,8 @@ void main() {
         );
 
         // Replicate the formulaVersions parsing logic.
-        final (installed, latest) = _parseFormulaVersions(json);
+        final (installed, latest) =
+            BrewService.parseFormulaVersionsFromJson(json);
 
         expect(installed, '0.2.0');
         expect(latest, '0.3.0');
@@ -165,7 +166,8 @@ void main() {
           'casks': <dynamic>[],
         };
 
-        final (installed, latest) = _parseFormulaVersions(json);
+        final (installed, latest) =
+            BrewService.parseFormulaVersionsFromJson(json);
 
         expect(installed, isNull);
         expect(latest, isNull);
@@ -182,7 +184,8 @@ void main() {
           ],
         };
 
-        final (installed, latest) = _parseFormulaVersions(json);
+        final (installed, latest) =
+            BrewService.parseFormulaVersionsFromJson(json);
 
         expect(installed, '5.0.0');
         expect(latest, '5.1.0');
@@ -194,7 +197,8 @@ void main() {
           stableVersion: '1.0.0',
         );
 
-        final (installed, latest) = _parseFormulaVersions(json);
+        final (installed, latest) =
+            BrewService.parseFormulaVersionsFromJson(json);
 
         expect(installed, isNull);
         expect(latest, '1.0.0');
@@ -213,7 +217,8 @@ void main() {
           'casks': <dynamic>[],
         };
 
-        final (installed, latest) = _parseFormulaVersions(json);
+        final (installed, latest) =
+            BrewService.parseFormulaVersionsFromJson(json);
 
         expect(installed, '1.0.0');
         expect(latest, isNull);
@@ -249,16 +254,16 @@ void main() {
     //   - isFormulaInstalled(formula)
     //   - installedVersion(formula)
     //   - latestVersion(formula)
-    //   - formulaVersions(formula)
     //   - install(formula)
     //   - upgrade(formula)
     //   - upgradeCask(cask)
     //   - updateTap()
     //   - _resolveBrewPath()
     //
-    // To properly unit-test these, Process.run would need to be injected
-    // (e.g., via a ProcessRunner abstraction). The parsing logic they
-    // contain is tested above via extracted JSON parsing patterns.
+    // The formulaVersions JSON parsing is now tested directly via
+    // BrewService.parseFormulaVersionsFromJson. To test the full methods,
+    // Process.run would need to be injected (e.g., via a ProcessRunner
+    // abstraction).
   });
 }
 
@@ -280,32 +285,4 @@ Map<String, dynamic> _makeBrewInfoJson({
     ],
     'casks': <dynamic>[],
   };
-}
-
-/// Replicates the formulaVersions parsing logic from BrewService.
-/// This mirrors the code in brew_service.dart lines 126-161.
-(String?, String?) _parseFormulaVersions(Map<String, dynamic> json) {
-  final formulae = json['formulae'] as List<dynamic>?;
-  if (formulae != null && formulae.isNotEmpty) {
-    final f = formulae[0];
-    // Installed version.
-    String? installed;
-    final installedList = f['installed'] as List<dynamic>?;
-    if (installedList != null && installedList.isNotEmpty) {
-      installed = installedList.last['version'] as String?;
-    }
-    // Latest stable version.
-    final versions = f['versions'] as Map<String, dynamic>?;
-    final latest = versions?['stable'] as String?;
-    return (installed, latest);
-  }
-
-  // Cask fallback.
-  final casks = json['casks'] as List<dynamic>?;
-  if (casks != null && casks.isNotEmpty) {
-    final c = casks[0];
-    return (c['installed'] as String?, c['version'] as String?);
-  }
-
-  return (null, null);
 }

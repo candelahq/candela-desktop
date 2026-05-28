@@ -35,20 +35,20 @@ Widget _wrap(Widget child) => MaterialApp(
     );
 
 void main() {
+  late Directory tempDir;
   late ConfigService configService;
   late String testConfigPath;
   late int onCompleteCount;
 
   setUp(() {
-    testConfigPath =
-        '${Directory.systemTemp.path}/candela_onboarding_test_${DateTime.now().millisecondsSinceEpoch}.yaml';
+    tempDir = Directory.systemTemp.createTempSync('candela_onboarding_test_');
+    testConfigPath = '${tempDir.path}/config.yaml';
     configService = ConfigService(configPath: testConfigPath);
     onCompleteCount = 0;
   });
 
   tearDown(() {
-    final f = File(testConfigPath);
-    if (f.existsSync()) f.deleteSync();
+    if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
   });
 
   Widget buildScreen() => _wrap(

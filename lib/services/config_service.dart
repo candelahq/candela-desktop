@@ -186,6 +186,9 @@ class ConfigService {
     final port = yaml['port'] is int ? yaml['port'] as int : 8181;
     final lmStudioPort =
         yaml['lmstudio_port'] is int ? yaml['lmstudio_port'] as int : 1234;
+    final autoStartProxy = yaml['auto_start_proxy'] is bool
+        ? yaml['auto_start_proxy'] as bool
+        : true;
 
     // Parse providers.
     final providers = <ProviderConfig>[];
@@ -337,6 +340,7 @@ class ConfigService {
       pricing: pricing,
       optimizations: optimizations,
       mode: mode,
+      autoStartProxy: autoStartProxy,
       issues: issues,
     );
   }
@@ -487,6 +491,22 @@ class ConfigService {
       await _writeRaw(file, editor.toString());
     } else {
       await _writeYaml(file, {'config_version': 1, field: port});
+    }
+  }
+
+  /// Set the auto_start_proxy flag in the config.
+  Future<void> setAutoStartProxy(bool enabled) async {
+    final resolvedPath = _resolveConfigPath();
+    final file = File(resolvedPath);
+
+    if (await file.exists()) {
+      final content = await file.readAsString();
+      final editor = YamlEditor(content);
+      editor.update(['auto_start_proxy'], enabled);
+      await _writeRaw(file, editor.toString());
+    } else {
+      await _writeYaml(
+          file, {'config_version': 1, 'auto_start_proxy': enabled});
     }
   }
 

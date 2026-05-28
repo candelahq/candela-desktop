@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 import 'theme/candela_theme.dart';
 import 'theme/colors.dart';
@@ -25,6 +26,36 @@ class CandelaApp extends StatefulWidget {
 class _CandelaAppState extends State<CandelaApp> {
   ThemeMode _themeMode = ThemeMode.dark;
 
+  static const _kThemeModeKey = 'theme_mode';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTheme();
+  }
+
+  Future<void> _loadTheme() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString(_kThemeModeKey);
+    final mode = switch (saved) {
+      'system' => ThemeMode.system,
+      'light' => ThemeMode.light,
+      _ => ThemeMode.dark,
+    };
+    if (mounted && mode != _themeMode) setState(() => _themeMode = mode);
+  }
+
+  Future<void> _setThemeMode(ThemeMode mode) async {
+    setState(() => _themeMode = mode);
+    final prefs = await SharedPreferences.getInstance();
+    final value = switch (mode) {
+      ThemeMode.system => 'system',
+      ThemeMode.light => 'light',
+      ThemeMode.dark => 'dark',
+    };
+    await prefs.setString(_kThemeModeKey, value);
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -35,7 +66,7 @@ class _CandelaAppState extends State<CandelaApp> {
       themeMode: _themeMode,
       home: _AppRouter(
         themeMode: _themeMode,
-        onThemeModeChanged: (mode) => setState(() => _themeMode = mode),
+        onThemeModeChanged: _setThemeMode,
       ),
     );
   }
@@ -147,10 +178,14 @@ class _AppShellState extends ConsumerState<AppShell>
     // Detect already-running processes.
     final pm = ref.read(processManagerProvider);
     await pm.detectRunning();
+    if (!mounted) return;
 
     // Auto-start proxy if installed but not already running.
+    final configService = ref.read(configServiceProvider);
+    final config = await configService.load();
     final proxy = pm.get('proxy');
-    if (proxy != null &&
+    if (config.autoStartProxy &&
+        proxy != null &&
         proxy.state == ProcessState.stopped &&
         await pm.isInstalled('proxy')) {
       pm.start('proxy');

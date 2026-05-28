@@ -698,5 +698,52 @@ providers:
         expect(config.providers, isEmpty);
       });
     });
+
+    group('autoStartProxy', () {
+      test('auto_start_proxy: false is parsed correctly', () async {
+        File(testConfigPath).writeAsStringSync('''
+port: 8181
+auto_start_proxy: false
+''');
+        final config = await service.load();
+        expect(config.autoStartProxy, isFalse);
+      });
+
+      test('missing auto_start_proxy defaults to true', () async {
+        File(testConfigPath).writeAsStringSync('''
+port: 8181
+''');
+        final config = await service.load();
+        expect(config.autoStartProxy, isTrue);
+      });
+
+      test('setAutoStartProxy(false) writes to YAML correctly', () async {
+        File(testConfigPath).writeAsStringSync('''
+port: 8181
+auto_start_proxy: true
+''');
+        await service.setAutoStartProxy(false);
+        final config = await service.load();
+        expect(config.autoStartProxy, isFalse);
+      });
+
+      test('setAutoStartProxy(true) writes to YAML correctly', () async {
+        File(testConfigPath).writeAsStringSync('''
+port: 8181
+auto_start_proxy: false
+''');
+        await service.setAutoStartProxy(true);
+        final config = await service.load();
+        expect(config.autoStartProxy, isTrue);
+      });
+
+      test('setAutoStartProxy creates config file if missing', () async {
+        expect(File(testConfigPath).existsSync(), isFalse);
+        await service.setAutoStartProxy(false);
+        expect(File(testConfigPath).existsSync(), isTrue);
+        final config = await service.load();
+        expect(config.autoStartProxy, isFalse);
+      });
+    });
   });
 }

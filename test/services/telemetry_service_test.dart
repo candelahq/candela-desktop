@@ -424,20 +424,29 @@ void main() {
   // ── Time series bucketing ─────────────────────────────────────────────────
 
   group('TelemetryService — time series', () {
-    test('produces exactly 24 buckets for all time ranges', () async {
+    test('produces range-appropriate bucket counts', () async {
       final ts = DateTime.now().toIso8601String();
       final client = _mockClient(jsonEncode({
         'spans': [_spanJson(timestamp: ts)],
       }));
 
+      // Adaptive bucket counts per range.
+      final expected = {
+        TokenTimeRange.todayUtc: 48,
+        TokenTimeRange.h24: 48,
+        TokenTimeRange.d7: 28,
+        TokenTimeRange.d30: 30,
+      };
+
       for (final range in TokenTimeRange.values) {
         final svc = _localSvc(client);
         final result = await svc.fetch(range);
-        expect(result!.summary!.costOverTime.length, 24,
+        final n = expected[range]!;
+        expect(result!.summary!.costOverTime.length, n,
             reason: 'range: ${range.label}');
-        expect(result.summary!.tokensOverTime.length, 24,
+        expect(result.summary!.tokensOverTime.length, n,
             reason: 'range: ${range.label}');
-        expect(result.summary!.callsOverTime.length, 24,
+        expect(result.summary!.callsOverTime.length, n,
             reason: 'range: ${range.label}');
       }
     });

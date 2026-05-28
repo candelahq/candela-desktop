@@ -29,6 +29,30 @@ import '../../providers.dart';
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
+  /// Returns the user-facing error message for the current dashboard state,
+  /// or `null` if there is no error to display.
+  @visibleForTesting
+  static String? errorMessageFor(DashboardState state) {
+    final result = state.result;
+    if (result == null && !state.loading) {
+      return state.isTeamMode
+          ? 'Could not reach the Candela proxy \u2014 run: candela start'
+          : 'Could not reach the Candela proxy. Is it running?';
+    }
+    if (result == null) return state.errorMessage;
+    // TelemetryResult.empty() means connected but no calls yet \u2014 not an error.
+    if (!result.hasData && result.error == null) return null;
+    if (result.error == TelemetryErrorKind.authExpired) {
+      return 'Session expired \u2014 run: candela auth login';
+    }
+    if (result.error == TelemetryErrorKind.unreachable) {
+      return state.isTeamMode
+          ? 'Backend unreachable \u2014 check Candela proxy status'
+          : 'Candela proxy unreachable. Is it running?';
+    }
+    return null;
+  }
+
   @override
   ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
@@ -59,27 +83,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     setState(() => _selectedModel = model);
   }
 
-  String? _errorMessage(DashboardState state) {
-    final result = state.result;
-    if (result == null && !state.loading) {
-      return state.isTeamMode
-          ? 'Could not reach the Candela proxy \u2014 run: candela start'
-          : 'Could not reach the Candela proxy. Is it running?';
-    }
-    if (result == null) return state.errorMessage;
-    // TelemetryResult.empty() means connected but no calls yet — not an error.
-    if (!result.hasData && result.error == null) return null;
-    if (result.error == TelemetryErrorKind.authExpired) {
-      return 'Session expired \u2014 run: candela auth login';
-    }
-    if (result.error == TelemetryErrorKind.unreachable) {
-      return state.isTeamMode
-          ? 'Backend unreachable \u2014 check Candela proxy status'
-          : 'Candela proxy unreachable. Is it running?';
-    }
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(dashboardProvider);
@@ -93,7 +96,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final uniqueModels =
         state.result?.models.map((m) => m.model).toSet().toList() ?? [];
 
-    final error = _errorMessage(state);
+    final error = DashboardScreen.errorMessageFor(state);
 
     // Fire threshold notifications when budget data is available.
     if (state.result?.budget != null) {
@@ -318,7 +321,7 @@ class _Body extends StatelessWidget {
           ],
           _StatGrid(summary: filteredSummary, loading: loading),
           const SizedBox(height: 20),
-          _ChartRow(summary: filteredSummary),
+          _ChartSection(summary: filteredSummary),
           const SizedBox(height: 20),
           ModelBreakdownTable(models: result?.models ?? []),
         ],
@@ -394,45 +397,65 @@ class _StatGrid extends StatelessWidget {
 
 // ── Charts ────────────────────────────────────────────────────────────────────
 
-class _ChartRow extends StatelessWidget {
+class _ChartSection extends StatelessWidget {
   final UsageSummary? summary;
-  const _ChartRow({required this.summary});
+  const _ChartSection({required this.summary});
 
   @override
   Widget build(BuildContext context) {
     final s = summary;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
       children: [
-        Expanded(
-          child: _ChartCard(
-            title: 'Cost Over Time',
-            subtitle: s != null
-                ? '\$${s.totalCostUsd.toStringAsFixed(4)} total'
-                : null,
-            chart: CandelaAreaChart(
-              data: s?.costOverTime ?? [],
-              height: 200,
-              color: const Color(0xFF4ADE80),
-              formatValue: (v) => '\$${v.toStringAsFixed(4)}',
-              emptyMessage: 'No cost data yet',
+        // Row 1: Cost + Tokens side-by-side.
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _ChartCard(
+                title: 'Cost Over Time',
+                subtitle: s != null
+                    ? '\$${s.totalCostUsd.toStringAsFixed(4)} total'
+                    : null,
+                chart: CandelaAreaChart(
+                  data: s?.costOverTime ?? [],
+                  height: 200,
+                  color: const Color(0xFF4ADE80),
+                  formatValue: (v) => '\$${v.toStringAsFixed(4)}',
+                  emptyMessage: 'No cost data yet',
+                ),
+              ),
             ),
-          ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _ChartCard(
+                title: 'Tokens Over Time',
+                subtitle: s != null ? _fmtTok(s.totalTokens) : null,
+                chart: CandelaAreaChart(
+                  data: s?.tokensOverTime ?? [],
+                  height: 200,
+                  color: const Color(0xFF60A5FA),
+                  formatValue: (v) => v >= 1000
+                      ? '${(v / 1000).toStringAsFixed(1)}k'
+                      : '${v.round()}',
+                  emptyMessage: 'No token data yet',
+                ),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _ChartCard(
-            title: 'Tokens Over Time',
-            subtitle: s != null ? _fmtTok(s.totalTokens) : null,
-            chart: CandelaAreaChart(
-              data: s?.tokensOverTime ?? [],
-              height: 200,
-              color: const Color(0xFF60A5FA),
-              formatValue: (v) => v >= 1000
-                  ? '${(v / 1000).toStringAsFixed(1)}k'
-                  : '${v.round()}',
-              emptyMessage: 'No token data yet',
-            ),
+        const SizedBox(height: 16),
+        // Row 2: Calls full-width — genuinely different shape from cost/tokens.
+        _ChartCard(
+          title: 'Calls Over Time',
+          subtitle: s != null ? '${s.totalCalls} total' : null,
+          chart: CandelaAreaChart(
+            data: s?.callsOverTime ?? [],
+            height: 160,
+            color: const Color(0xFFA78BFA),
+            formatValue: (v) => v >= 1000
+                ? '${(v / 1000).toStringAsFixed(1)}k'
+                : '${v.round()}',
+            emptyMessage: 'No call data yet',
           ),
         ),
       ],

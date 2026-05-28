@@ -490,7 +490,12 @@ class TelemetryService {
     DateTime now,
     double Function(SpanRecord) val,
   ) {
-    const n = 24;
+    // Adaptive bucket count — higher resolution for shorter ranges.
+    final n = switch (range) {
+      TokenTimeRange.h24 || TokenTimeRange.todayUtc => 48, // 30-min buckets
+      TokenTimeRange.d7 => 28, // ~6-hour buckets
+      TokenTimeRange.d30 => 30, // daily buckets
+    };
     final start = range.startFrom(now);
     final bucketMs = range.duration.inMilliseconds ~/ n;
 

@@ -184,16 +184,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             activeTrackColor: CandelaColors.accent,
           ),
         ),
-        const _SettingsRow(
+        _SettingsRow(
           label: 'Auto-start proxy',
           subtitle: 'Start the candela proxy when the app launches',
           child: Switch(
-            value: true, // Currently always-on (hardcoded in app.dart)
-            onChanged: null, // TODO: make configurable
+            value: _config?.autoStartProxy ?? true,
+            onChanged: _toggleAutoStartProxy,
+            activeTrackColor: CandelaColors.accent,
           ),
         ),
       ],
     );
+  }
+
+  Future<void> _toggleAutoStartProxy(bool value) async {
+    await ref.read(configServiceProvider).setAutoStartProxy(value);
+    await _loadAll();
   }
 
   Widget _buildNetworkSection() {

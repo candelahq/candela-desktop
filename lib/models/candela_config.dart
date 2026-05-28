@@ -13,6 +13,7 @@ class CandelaConfig {
   final PricingConfig? pricing;
   final OptimizationConfig? optimizations;
   final CandelaMode mode;
+  final bool autoStartProxy;
   final List<ConfigIssue> issues;
 
   const CandelaConfig({
@@ -29,6 +30,7 @@ class CandelaConfig {
     this.pricing,
     this.optimizations,
     this.mode = CandelaMode.solo,
+    this.autoStartProxy = true,
     this.issues = const [],
   });
 

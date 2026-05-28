@@ -318,7 +318,7 @@ class _Body extends StatelessWidget {
           ],
           _StatGrid(summary: filteredSummary, loading: loading),
           const SizedBox(height: 20),
-          _ChartRow(summary: filteredSummary),
+          _ChartSection(summary: filteredSummary),
           const SizedBox(height: 20),
           ModelBreakdownTable(models: result?.models ?? []),
         ],
@@ -394,45 +394,65 @@ class _StatGrid extends StatelessWidget {
 
 // ── Charts ────────────────────────────────────────────────────────────────────
 
-class _ChartRow extends StatelessWidget {
+class _ChartSection extends StatelessWidget {
   final UsageSummary? summary;
-  const _ChartRow({required this.summary});
+  const _ChartSection({required this.summary});
 
   @override
   Widget build(BuildContext context) {
     final s = summary;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
       children: [
-        Expanded(
-          child: _ChartCard(
-            title: 'Cost Over Time',
-            subtitle: s != null
-                ? '\$${s.totalCostUsd.toStringAsFixed(4)} total'
-                : null,
-            chart: CandelaAreaChart(
-              data: s?.costOverTime ?? [],
-              height: 200,
-              color: const Color(0xFF4ADE80),
-              formatValue: (v) => '\$${v.toStringAsFixed(4)}',
-              emptyMessage: 'No cost data yet',
+        // Row 1: Cost + Tokens side-by-side.
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _ChartCard(
+                title: 'Cost Over Time',
+                subtitle: s != null
+                    ? '\$${s.totalCostUsd.toStringAsFixed(4)} total'
+                    : null,
+                chart: CandelaAreaChart(
+                  data: s?.costOverTime ?? [],
+                  height: 200,
+                  color: const Color(0xFF4ADE80),
+                  formatValue: (v) => '\$${v.toStringAsFixed(4)}',
+                  emptyMessage: 'No cost data yet',
+                ),
+              ),
             ),
-          ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _ChartCard(
+                title: 'Tokens Over Time',
+                subtitle: s != null ? _fmtTok(s.totalTokens) : null,
+                chart: CandelaAreaChart(
+                  data: s?.tokensOverTime ?? [],
+                  height: 200,
+                  color: const Color(0xFF60A5FA),
+                  formatValue: (v) => v >= 1000
+                      ? '${(v / 1000).toStringAsFixed(1)}k'
+                      : '${v.round()}',
+                  emptyMessage: 'No token data yet',
+                ),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _ChartCard(
-            title: 'Tokens Over Time',
-            subtitle: s != null ? _fmtTok(s.totalTokens) : null,
-            chart: CandelaAreaChart(
-              data: s?.tokensOverTime ?? [],
-              height: 200,
-              color: const Color(0xFF60A5FA),
-              formatValue: (v) => v >= 1000
-                  ? '${(v / 1000).toStringAsFixed(1)}k'
-                  : '${v.round()}',
-              emptyMessage: 'No token data yet',
-            ),
+        const SizedBox(height: 16),
+        // Row 2: Calls full-width — genuinely different shape from cost/tokens.
+        _ChartCard(
+          title: 'Calls Over Time',
+          subtitle: s != null ? '${s.totalCalls} total' : null,
+          chart: CandelaAreaChart(
+            data: s?.callsOverTime ?? [],
+            height: 160,
+            color: const Color(0xFFA78BFA),
+            formatValue: (v) => v >= 1000
+                ? '${(v / 1000).toStringAsFixed(1)}k'
+                : '${v.round()}',
+            emptyMessage: 'No call data yet',
           ),
         ),
       ],

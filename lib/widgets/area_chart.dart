@@ -64,6 +64,7 @@ class _CandelaAreaChartState extends State<CandelaAreaChart> {
                     data: widget.data,
                     color: widget.color,
                     hoveredIndex: _hoveredIndex,
+                    formatValue: widget.formatValue,
                   ),
                   child: const SizedBox.expand(),
                 ),
@@ -85,7 +86,7 @@ class _CandelaAreaChartState extends State<CandelaAreaChart> {
   }
 
   void _onHover(Offset pos, double width) {
-    const padL = 48.0, padR = 12.0;
+    const padL = 56.0, padR = 12.0;
     final chartW = width - padL - padR;
     if (chartW <= 0 || widget.data.isEmpty) return;
 
@@ -104,17 +105,19 @@ class _CandelaAreaChartState extends State<CandelaAreaChart> {
 
 // ── Painter ─────────────────────────────────────────────────────────────────
 
-const _padT = 8.0, _padB = 28.0, _padL = 48.0, _padR = 12.0;
+const _padT = 8.0, _padB = 28.0, _padL = 56.0, _padR = 12.0;
 
 class _AreaPainter extends CustomPainter {
   final List<TimeSeriesPoint> data;
   final Color color;
   final int? hoveredIndex;
+  final String Function(double) formatValue;
 
   _AreaPainter({
     required this.data,
     required this.color,
     this.hoveredIndex,
+    required this.formatValue,
   });
 
   @override
@@ -151,7 +154,7 @@ class _AreaPainter extends CustomPainter {
       canvas.drawLine(Offset(_padL, y), Offset(_padL + chartW, y), gridPaint);
 
       final tp = TextPainter(
-        text: TextSpan(text: _compact(val), style: labelStyle),
+        text: TextSpan(text: formatValue(val), style: labelStyle),
         textDirection: TextDirection.ltr,
       )..layout();
       tp.paint(canvas, Offset(_padL - tp.width - 6, y - tp.height / 2));
@@ -243,18 +246,12 @@ class _AreaPainter extends CustomPainter {
     return Offset(p.dx + math.cos(angle) * len, p.dy + math.sin(angle) * len);
   }
 
-  String _compact(double v) {
-    if (v >= 1000000) return '${(v / 1000000).toStringAsFixed(1)}M';
-    if (v >= 1000) return '${(v / 1000).toStringAsFixed(1)}k';
-    if (v < 1 && v > 0) return v.toStringAsFixed(4);
-    return v.toStringAsFixed(0);
-  }
-
   @override
   bool shouldRepaint(_AreaPainter old) =>
       old.data != data ||
       old.color != color ||
-      old.hoveredIndex != hoveredIndex;
+      old.hoveredIndex != hoveredIndex ||
+      old.formatValue != formatValue;
 }
 
 // ── Tooltip overlay ──────────────────────────────────────────────────────────
@@ -276,7 +273,7 @@ class _Tooltip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const w = 90.0, h = 46.0;
+    const w = 110.0, h = 46.0;
     final left = (pos.dx - w / 2).clamp(0.0, containerWidth - w);
     final top = (pos.dy - h - 10).clamp(0.0, containerHeight - h);
 

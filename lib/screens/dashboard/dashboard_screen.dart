@@ -63,7 +63,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final result = state.result;
     if (result == null && !state.loading) {
       return state.isTeamMode
-          ? 'Could not reach the team backend. Check your network and auth.'
+          ? 'Could not reach the Candela proxy \u2014 run: candela start'
           : 'Could not reach the Candela proxy. Is it running?';
     }
     if (result == null) return state.errorMessage;
@@ -74,7 +74,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }
     if (result.error == TelemetryErrorKind.unreachable) {
       return state.isTeamMode
-          ? 'Team backend unreachable. Check your network.'
+          ? 'Backend unreachable \u2014 check Candela proxy status'
           : 'Candela proxy unreachable. Is it running?';
     }
     return null;

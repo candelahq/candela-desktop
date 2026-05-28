@@ -82,14 +82,18 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     final result = state.result;
     if (result == null && !state.loading) {
       return state.isTeamMode
-          ? 'Could not reach the team backend.'
+          ? 'Could not reach the Candela proxy — run: candela start'
           : 'Could not reach the Candela proxy.';
     }
     if (result == null) return state.errorMessage;
     if (result.error == TelemetryErrorKind.authExpired) {
       return 'Session expired — run: candela auth login';
     }
-    if (result.error != null) return 'Backend unreachable.';
+    if (result.error != null) {
+      return state.isTeamMode
+          ? 'Backend unreachable — check Candela proxy status'
+          : 'Backend unreachable.';
+    }
     return null;
   }
 

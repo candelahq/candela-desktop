@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/candela_config.dart';
 import '../../models/span_stats.dart';
-import '../../services/candela_auth_service.dart';
 import '../../services/telemetry_service.dart';
 import '../../theme/colors.dart';
 import '../../providers.dart';
@@ -65,28 +64,11 @@ class _TracesScreenState extends ConsumerState<TracesScreen> {
 
     if (isTeam) {
       _isTeamMode = true;
-      final auth = CandelaAuthService();
-      // Use audience-specific ID token for IAP/Cloud Run backends;
-      // fall back to standard access token otherwise.
-      String? authToken;
-      final audience = config.audience;
-      final serviceAccount = config.iapServiceAccount;
-      if (audience != null &&
-          audience.isNotEmpty &&
-          serviceAccount != null &&
-          serviceAccount.isNotEmpty) {
-        authToken = await auth.getIdToken(
-          audience: audience,
-          serviceAccount: serviceAccount,
-        );
-      } else {
-        final tokenInfo = await auth.getTokenInfo();
-        authToken = tokenInfo?.accessToken;
-      }
+      // Route through the local proxy — it handles all IAP auth via its
+      // reverse proxy catch-all. No token management needed here.
       _svc = TelemetryService(
         port: config.port,
-        remoteUrl: config.remote,
-        authToken: authToken,
+        remoteUrl: 'http://localhost:${config.port}',
       );
     } else {
       _svc = TelemetryService(port: config.port);

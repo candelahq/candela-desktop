@@ -5,7 +5,6 @@ import '../models/budget_info.dart';
 import '../models/candela_config.dart';
 import '../models/span_stats.dart';
 import '../gen/candela/types/user.pbenum.dart' as user_types;
-import '../models/identity_state.dart';
 import '../services/candela_auth_service.dart';
 import '../services/telemetry_service.dart';
 
@@ -77,7 +76,7 @@ class DashboardState {
 /// [ChangeNotifier] or manual listener management required.
 class DashboardController {
   TelemetryService? _telemetry;
-  CandelaAuthService? _candelaAuth;
+  final CandelaAuthService _candelaAuth;
   Timer? _refreshTimer;
 
   /// Callback invoked whenever [state] changes. Set by the provider to
@@ -101,14 +100,6 @@ class DashboardController {
   /// Whether the notifier has been configured with a [TelemetryService].
   bool get isConfigured => _telemetry != null;
 
-  // Team-mode token refresh state.
-  String? _remoteUrl;
-  String? _audience;
-  String? _iapServiceAccount;
-  int _proxyPort = 8181;
-  DateTime? _tokenExpiresAt;
-  static const _tokenRefreshBuffer = Duration(minutes: 5);
-
   DashboardState _state = const DashboardState(loading: true);
   DashboardState get state => _state;
   set state(DashboardState newState) {
@@ -122,7 +113,7 @@ class DashboardController {
     CandelaAuthService? candelaAuth,
     this.cacheTtl = const Duration(seconds: 50),
   })  : _telemetry = telemetry,
-        _candelaAuth = candelaAuth;
+        _candelaAuth = candelaAuth ?? CandelaAuthService();
 
   // ── Configuration ─────────────────────────────────────────────────────────
 
@@ -130,41 +121,26 @@ class DashboardController {
   ///
   /// Called once from the provider setup. After this, [startPolling] can be
   /// called to begin the refresh loop.
+  ///
+  /// In team mode, dashboard data is fetched through the local candela proxy
+  /// (`localhost:{port}`) which handles all IAP auth via its reverse proxy
+  /// catch-all route. The desktop app does NOT need to manage IAP tokens
+  /// for dashboard requests — it simply points ConnectRPC at the proxy.
   Future<void> configure(CandelaConfig config) async {
     final isTeam = config.mode == CandelaMode.team &&
         config.remote != null &&
         config.remote!.isNotEmpty;
 
     if (isTeam) {
-      final auth = _candelaAuth ?? CandelaAuthService();
-      _candelaAuth = auth;
-      _audience = config.audience;
-      _iapServiceAccount = config.iapServiceAccount;
-      // Use audience-specific ID token when audience is configured
-      // (for IAP / Cloud Run backends); otherwise fall back to access token.
-      String? authToken;
-      TokenInfo? tokenInfo;
-      if (_audience != null &&
-          _audience!.isNotEmpty &&
-          _iapServiceAccount != null &&
-          _iapServiceAccount!.isNotEmpty) {
-        authToken = await auth.getIdToken(
-          audience: _audience!,
-          serviceAccount: _iapServiceAccount!,
-        );
-      } else {
-        tokenInfo = await auth.getTokenInfo(forceRefresh: true);
-        authToken = tokenInfo?.accessToken;
-      }
+      // Route through the local proxy — no auth needed.
+      // The proxy's catch-all (`/` → remoteProxy) forwards ConnectRPC
+      // requests to the remote backend with IAP + X-Candela-Auth headers
+      // automatically injected.
       _telemetry?.dispose();
       _telemetry = TelemetryService(
         port: config.port,
-        remoteUrl: config.remote,
-        authToken: authToken,
+        remoteUrl: 'http://localhost:${config.port}',
       );
-      _remoteUrl = config.remote;
-      _proxyPort = config.port;
-      _tokenExpiresAt = tokenInfo?.expiresAt;
     } else {
       _telemetry?.dispose();
       _telemetry = TelemetryService(port: config.port);
@@ -221,9 +197,6 @@ class DashboardController {
   Future<void> fetch() async {
     if (_telemetry == null) return;
 
-    await _refreshTokenIfNeeded();
-    if (_telemetry == null) return;
-
     state = state.copyWith(loading: true, clearError: true);
 
     try {
@@ -257,73 +230,13 @@ class DashboardController {
     await fetch();
   }
 
-  // ── Token refresh ─────────────────────────────────────────────────────────
-
-  /// Re-fetches the auth token and rebuilds the TelemetryService when the
-  /// token is within [_tokenRefreshBuffer] of expiry. No-op in local mode.
-  Future<void> _refreshTokenIfNeeded() async {
-    final auth = _candelaAuth;
-    if (auth == null ||
-        _remoteUrl == null ||
-        !(_telemetry?.isTeamMode ?? false)) {
-      return;
-    }
-    final now = DateTime.now().toUtc();
-    final expiresAt = _tokenExpiresAt;
-    if (expiresAt != null && expiresAt.difference(now) > _tokenRefreshBuffer) {
-      return;
-    }
-    // Use audience-specific ID token when audience is configured;
-    // otherwise fall back to standard access token.
-    String? authToken;
-    TokenInfo? tokenInfo;
-    if (_audience != null &&
-        _audience!.isNotEmpty &&
-        _iapServiceAccount != null &&
-        _iapServiceAccount!.isNotEmpty) {
-      authToken = await auth.getIdToken(
-        audience: _audience!,
-        serviceAccount: _iapServiceAccount!,
-      );
-    } else {
-      tokenInfo = await auth.getTokenInfo();
-      authToken = tokenInfo?.accessToken;
-    }
-    // If refresh fails but the current token hasn't actually expired yet,
-    // keep using it rather than replacing with a null-token service.
-    if (authToken == null && expiresAt != null && expiresAt.isAfter(now)) {
-      return;
-    }
-    final oldSvc = _telemetry;
-    _telemetry = TelemetryService(
-      port: _proxyPort,
-      remoteUrl: _remoteUrl,
-      authToken: authToken,
-    );
-    _tokenExpiresAt = tokenInfo?.expiresAt;
-    oldSvc?.dispose();
-  }
-
-  /// Refresh the auth token (team mode only). Returns the new token or null.
+  /// Refresh the auth token. Returns the new token or null.
   ///
-  /// Uses audience-specific ID token when configured, otherwise access token.
+  /// In the proxy-routed architecture, the desktop doesn't manage tokens
+  /// for dashboard requests. This is kept for other callers (e.g. diagnostics)
+  /// that may need a direct token.
   Future<String?> refreshToken() async {
-    final auth = _candelaAuth;
-    if (auth == null ||
-        _remoteUrl == null ||
-        !(_telemetry?.isTeamMode ?? false)) {
-      return null;
-    }
-    if (_audience != null &&
-        _audience!.isNotEmpty &&
-        _iapServiceAccount != null &&
-        _iapServiceAccount!.isNotEmpty) {
-      return auth.getIdToken(
-        audience: _audience!,
-        serviceAccount: _iapServiceAccount!,
-      );
-    }
-    final info = await auth.getTokenInfo();
+    final info = await _candelaAuth.getTokenInfo();
     return info?.accessToken;
   }
 

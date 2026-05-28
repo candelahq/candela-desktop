@@ -170,7 +170,7 @@ void main() {
   // ── CandelaAuthService integration tests ─────────────────────────────────
 
   group('DashboardController — CandelaAuthService auth', () {
-    test('configure() in team mode uses auth service token', () async {
+    test('configure() in team mode does not call auth service', () async {
       final adc = _FakeAdcService(token: 'test-token-123');
       final auth = CandelaAuthService(adcService: adc);
       final notifier = DashboardController(candelaAuth: auth);
@@ -181,8 +181,9 @@ void main() {
         remote: 'https://candela.example.com',
       ));
 
+      // Proxy-routed: configure() never calls auth in team mode.
       expect(notifier.isConfigured, isTrue);
-      expect(adc.refreshCallCount, 1);
+      expect(adc.refreshCallCount, 0);
       notifier.dispose();
     });
 
@@ -239,13 +240,14 @@ void main() {
       final auth = CandelaAuthService(adcService: adc);
       final notifier = DashboardController(candelaAuth: auth);
 
-      // Must configure in team mode first — refreshToken guards on _remoteUrl.
+      // Configure in team mode — no auth call from configure.
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
         mode: CandelaMode.team,
         remote: 'https://candela.example.com',
       ));
 
+      // refreshToken always tries auth.getTokenInfo() regardless of mode.
       final token = await notifier.refreshToken();
       expect(token, 'fresh-token');
       notifier.dispose();
@@ -267,8 +269,8 @@ void main() {
       notifier.dispose();
     });
 
-    test('refreshToken returns null in solo mode', () async {
-      final adc = _FakeAdcService(token: 'should-not-be-used');
+    test('refreshToken returns token even in solo mode', () async {
+      final adc = _FakeAdcService(token: 'solo-token');
       final auth = CandelaAuthService(adcService: adc);
       final notifier = DashboardController(candelaAuth: auth);
 
@@ -277,10 +279,10 @@ void main() {
         mode: CandelaMode.solo,
       ));
 
+      // refreshToken no longer guards on team mode — always calls auth.
       final token = await notifier.refreshToken();
-      expect(token, isNull);
-      // AdcService should not have been called for refreshToken.
-      expect(adc.refreshCallCount, 0);
+      expect(token, 'solo-token');
+      expect(adc.refreshCallCount, 1);
       notifier.dispose();
     });
 
@@ -289,13 +291,13 @@ void main() {
       final auth = CandelaAuthService(adcService: adc);
       final notifier = DashboardController(candelaAuth: auth);
 
-      // First: team mode.
+      // First: team mode — no auth call from configure.
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
         mode: CandelaMode.team,
         remote: 'https://candela.example.com',
       ));
-      expect(adc.refreshCallCount, 1);
+      expect(adc.refreshCallCount, 0);
 
       // Second: switch to solo.
       await notifier.configure(const CandelaConfig(
@@ -303,23 +305,23 @@ void main() {
         mode: CandelaMode.solo,
       ));
       expect(notifier.isConfigured, isTrue);
-      // No additional AdcService call for solo mode.
-      expect(adc.refreshCallCount, 1);
+      // No AdcService calls from configure in either mode.
+      expect(adc.refreshCallCount, 0);
       notifier.dispose();
     });
 
-    test('refreshToken returns null after switching Team→Solo', () async {
+    test('refreshToken returns token after switching Team→Solo', () async {
       final adc = _FakeAdcService(token: 'team-token');
       final auth = CandelaAuthService(adcService: adc);
       final notifier = DashboardController(candelaAuth: auth);
 
-      // Configure in team mode — auth is called once.
+      // Configure in team mode — no auth call from configure.
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
         mode: CandelaMode.team,
         remote: 'https://candela.example.com',
       ));
-      expect(adc.refreshCallCount, 1);
+      expect(adc.refreshCallCount, 0);
 
       // Switch to solo mode.
       await notifier.configure(const CandelaConfig(
@@ -327,11 +329,9 @@ void main() {
         mode: CandelaMode.solo,
       ));
 
-      // refreshToken must return null — the isTeamMode guard prevents
-      // returning a stale token after the mode switch.
+      // refreshToken no longer guards on team mode — always calls auth.
       final token = await notifier.refreshToken();
-      expect(token, isNull);
-      // Auth service should not have been called again.
+      expect(token, 'team-token');
       expect(adc.refreshCallCount, 1);
       notifier.dispose();
     });
@@ -344,13 +344,13 @@ void main() {
       final auth = CandelaAuthService(adcService: adc);
       final notifier = DashboardController(candelaAuth: auth);
 
-      // Configure in team mode with a near-expiry token.
+      // Configure in team mode — no auth call from configure.
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
         mode: CandelaMode.team,
         remote: 'https://candela.example.com',
       ));
-      expect(adc.refreshCallCount, 1);
+      expect(adc.refreshCallCount, 0);
 
       // Switch to solo mode.
       await notifier.configure(const CandelaConfig(
@@ -358,10 +358,9 @@ void main() {
         mode: CandelaMode.solo,
       ));
 
-      // fetch() should NOT trigger a token refresh even though the token
-      // is near expiry, because the controller is now in solo mode.
+      // _refreshTokenIfNeeded is a no-op — fetch never triggers token refresh.
       await notifier.fetch();
-      expect(adc.refreshCallCount, 1); // still just the initial configure
+      expect(adc.refreshCallCount, 0);
       notifier.dispose();
     });
 
@@ -370,41 +369,46 @@ void main() {
       final auth = CandelaAuthService(adcService: adc);
       final notifier = DashboardController(candelaAuth: auth);
 
-      // 1. Start in Solo — no auth call.
+      // 1. Start in Solo — no auth call from configure.
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
         mode: CandelaMode.solo,
       ));
       expect(adc.refreshCallCount, 0);
 
-      // 2. Switch to Team — auth called.
+      // 2. Switch to Team — still no auth call from configure.
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
         mode: CandelaMode.team,
         remote: 'https://candela.example.com',
       ));
-      expect(adc.refreshCallCount, 1);
+      expect(adc.refreshCallCount, 0);
+      // refreshToken always calls auth regardless of mode.
       var token = await notifier.refreshToken();
       expect(token, 'round-trip-token');
+      expect(adc.refreshCallCount, 1);
 
-      // 3. Switch back to Solo — refresh blocked.
+      // 3. Switch back to Solo — refreshToken still works.
+      // Note: CandelaAuthService caches the token (1hr expiry > 5min buffer),
+      // so this call returns the cached token without calling AdcService.
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
         mode: CandelaMode.solo,
       ));
       token = await notifier.refreshToken();
-      expect(token, isNull);
-      expect(adc.refreshCallCount, 1); // no extra call
+      expect(token, 'round-trip-token');
+      expect(adc.refreshCallCount, 1); // cached, no extra call
 
-      // 4. Switch to Team again — auth recovers.
+      // 4. Switch to Team again — auth still works (still cached).
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
         mode: CandelaMode.team,
         remote: 'https://v2.candela.example.com',
       ));
-      expect(adc.refreshCallCount, 2); // called again for new Team config
+      expect(adc.refreshCallCount, 1); // no call from configure
       token = await notifier.refreshToken();
       expect(token, 'round-trip-token');
+      expect(adc.refreshCallCount, 1); // still cached
       notifier.dispose();
     });
 
@@ -417,13 +421,13 @@ void main() {
       final auth = CandelaAuthService(adcService: adc);
       final notifier = DashboardController(candelaAuth: auth);
 
-      // Configure in team mode with a near-expiry token, start polling.
+      // Configure in team mode — no auth call from configure.
       await notifier.configure(const CandelaConfig(
         path: '/tmp/test',
         mode: CandelaMode.team,
         remote: 'https://candela.example.com',
       ));
-      expect(adc.refreshCallCount, 1);
+      expect(adc.refreshCallCount, 0);
       notifier.startPolling(interval: const Duration(milliseconds: 50));
 
       // Switch to solo mode — timer is still running.
@@ -435,9 +439,8 @@ void main() {
       // Let several timer ticks fire.
       await Future<void>.delayed(const Duration(milliseconds: 250));
 
-      // Despite the near-expiry token and active timer, no refresh should
-      // have occurred because the controller is now in solo mode.
-      expect(adc.refreshCallCount, 1);
+      // _refreshTokenIfNeeded is a no-op — timer ticks never trigger refresh.
+      expect(adc.refreshCallCount, 0);
       notifier.dispose();
     });
 
@@ -498,8 +501,9 @@ void main() {
   // ── Token refresh lifecycle ───────────────────────────────────────────────
 
   group('DashboardController — token refresh lifecycle', () {
-    test('fetch() skips token refresh when token is still fresh', () async {
-      // Token expires in 1 hour — well outside the 5-minute refresh buffer.
+    test('fetch() does not trigger token refresh (proxy handles auth)',
+        () async {
+      // _refreshTokenIfNeeded is a no-op in proxy-routed architecture.
       final adc = _ExpiryAdcService(
         token: 'fresh-token',
         expiresIn: const Duration(hours: 1),
@@ -512,16 +516,16 @@ void main() {
         mode: CandelaMode.team,
         remote: 'https://candela.example.com',
       ));
-      expect(adc.refreshCallCount, 1); // initial configure
+      expect(adc.refreshCallCount, 0); // configure no longer calls auth
 
-      // fetch() should NOT trigger another refresh.
+      // fetch() should NOT trigger any refresh — proxy handles auth.
       await notifier.fetch();
-      expect(adc.refreshCallCount, 1); // still 1
+      expect(adc.refreshCallCount, 0);
       notifier.dispose();
     });
 
-    test('fetch() triggers token refresh when token is near expiry', () async {
-      // Token expires in 2 minutes — within the 5-minute buffer.
+    test('fetch() with near-expiry token does not trigger refresh', () async {
+      // _refreshTokenIfNeeded is now a no-op.
       final adc = _ExpiryAdcService(
         token: 'expiring-token',
         expiresIn: const Duration(minutes: 2),
@@ -534,16 +538,16 @@ void main() {
         mode: CandelaMode.team,
         remote: 'https://candela.example.com',
       ));
-      expect(adc.refreshCallCount, 1); // initial configure
+      expect(adc.refreshCallCount, 0);
 
-      // fetch() should trigger a refresh (token is within 5-min buffer).
+      // fetch() no longer refreshes tokens — proxy handles auth.
       await notifier.fetch();
-      expect(adc.refreshCallCount, 2); // refreshed!
+      expect(adc.refreshCallCount, 0);
       notifier.dispose();
     });
 
-    test('fetch() triggers refresh when token is already expired', () async {
-      // Token expired 10 minutes ago.
+    test('fetch() with expired token does not trigger refresh', () async {
+      // _refreshTokenIfNeeded is now a no-op.
       final adc = _ExpiryAdcService(
         token: 'expired-token',
         expiresIn: const Duration(minutes: -10),
@@ -556,20 +560,19 @@ void main() {
         mode: CandelaMode.team,
         remote: 'https://candela.example.com',
       ));
-      expect(adc.refreshCallCount, 1);
+      expect(adc.refreshCallCount, 0);
 
       await notifier.fetch();
-      expect(adc.refreshCallCount, 2);
+      expect(adc.refreshCallCount, 0);
       notifier.dispose();
     });
 
-    test('fetch() preserves service when refresh fails but token still valid',
-        () async {
-      // First configure with a token expiring in 3 minutes (within buffer).
+    test('fetch() preserves service (no refresh attempt)', () async {
+      // _refreshTokenIfNeeded is a no-op, so no refresh is attempted.
       final adc = _FailAfterNAdcService(
         token: 'original-token',
         expiresIn: const Duration(minutes: 3),
-        failAfter: 1, // first call succeeds, second call returns null
+        failAfter: 1,
       );
       final auth = CandelaAuthService(adcService: adc);
       final notifier = DashboardController(candelaAuth: auth);
@@ -579,14 +582,12 @@ void main() {
         mode: CandelaMode.team,
         remote: 'https://candela.example.com',
       ));
-      expect(adc.refreshCallCount, 1); // configure succeeded
+      expect(adc.refreshCallCount, 0);
 
-      // fetch() tries to refresh (within buffer), but refresh returns null.
-      // Since the token hasn't actually expired, the existing service should
-      // be preserved.
+      // fetch() does not attempt token refresh — proxy handles auth.
       await notifier.fetch();
-      expect(adc.refreshCallCount, 2); // attempted refresh
-      // The notifier should still be configured (service not wiped).
+      expect(adc.refreshCallCount, 0);
+      // The notifier should still be configured.
       expect(notifier.isConfigured, isTrue);
       notifier.dispose();
     });
@@ -603,12 +604,12 @@ void main() {
       expect(adc.refreshCallCount, 0);
 
       await notifier.fetch();
-      // AdcService should never be called in local mode.
+      // AdcService should never be called — _refreshTokenIfNeeded is a no-op.
       expect(adc.refreshCallCount, 0);
       notifier.dispose();
     });
 
-    test('multiple fetches with fresh token only refresh once', () async {
+    test('multiple fetches never trigger token refresh', () async {
       final adc = _ExpiryAdcService(
         token: 'long-lived',
         expiresIn: const Duration(hours: 1),
@@ -622,11 +623,11 @@ void main() {
         remote: 'https://candela.example.com',
       ));
 
-      // Multiple fetches — none should trigger refresh.
+      // Multiple fetches — none should trigger refresh (proxy handles auth).
       await notifier.fetch();
       await notifier.fetch();
       await notifier.fetch();
-      expect(adc.refreshCallCount, 1); // only the initial configure
+      expect(adc.refreshCallCount, 0);
       notifier.dispose();
     });
 
@@ -650,7 +651,8 @@ void main() {
         remote: 'https://v2.candela.example.com',
       ));
       expect(notifier.isConfigured, isTrue);
-      expect(adc.refreshCallCount, 2); // one per configure
+      // configure() never calls auth in proxy-routed architecture.
+      expect(adc.refreshCallCount, 0);
       notifier.dispose();
     });
 
@@ -875,7 +877,7 @@ void main() {
   // ── Audience-specific ID token paths ──────────────────────────────────────
 
   group('DashboardController — audience ID token', () {
-    test('configure() with audience+SA uses getIdToken instead of getTokenInfo',
+    test('configure() with audience+SA configures without calling auth',
         () async {
       final adc = _FakeAdcService(token: 'id-token-for-iap');
       final auth = CandelaAuthService(adcService: adc);
@@ -889,15 +891,16 @@ void main() {
         iapServiceAccount: 'sa@project.iam.gserviceaccount.com',
       ));
 
+      // Proxy-routed: configure() never calls auth, even with audience.
       expect(notifier.isConfigured, isTrue);
+      expect(adc.refreshCallCount, 0);
       notifier.dispose();
     });
 
-    test('refreshToken() with audience+SA returns null without real IAM access',
+    test('refreshToken() with audience+SA returns token via getTokenInfo',
         () async {
-      // getIdToken now calls IAM generateIdToken which requires real GCP
-      // credentials. The fake AdcService provides an access token, but the
-      // IAM API call will fail, so refreshToken correctly returns null.
+      // refreshToken() now always calls auth.getTokenInfo() which returns
+      // the access token from the FakeAdcService.
       final adc = _FakeAdcService(token: 'id-token-for-iap');
       final auth = CandelaAuthService(adcService: adc);
       final notifier = DashboardController(candelaAuth: auth);
@@ -911,13 +914,13 @@ void main() {
       ));
 
       final token = await notifier.refreshToken();
-      // null because the IAM generateIdToken call fails without real creds.
-      expect(token, isNull);
+      // refreshToken now calls getTokenInfo directly, returning the token.
+      expect(token, 'id-token-for-iap');
       notifier.dispose();
     });
 
     test(
-        'configure() with audience but no iapServiceAccount falls back to access token',
+        'configure() with audience but no iapServiceAccount does not call auth',
         () async {
       final adc = _FakeAdcService(token: 'access-token-fallback');
       final auth = CandelaAuthService(adcService: adc);
@@ -931,13 +934,13 @@ void main() {
         // iapServiceAccount intentionally omitted
       ));
 
+      // Proxy-routed: configure() never calls auth.
       expect(notifier.isConfigured, isTrue);
-      expect(adc.refreshCallCount, 1); // used getTokenInfo path
+      expect(adc.refreshCallCount, 0);
       notifier.dispose();
     });
 
-    test('configure() with empty audience falls back to access token',
-        () async {
+    test('configure() with empty audience does not call auth', () async {
       final adc = _FakeAdcService(token: 'access-token-fallback');
       final auth = CandelaAuthService(adcService: adc);
       final notifier = DashboardController(candelaAuth: auth);
@@ -946,11 +949,12 @@ void main() {
         path: '/tmp/test',
         mode: CandelaMode.team,
         remote: 'https://candela.example.com',
-        audience: '', // empty → fall back to access token
+        audience: '', // empty → no auth call regardless
       ));
 
+      // Proxy-routed: configure() never calls auth.
       expect(notifier.isConfigured, isTrue);
-      expect(adc.refreshCallCount, 1); // used getTokenInfo path
+      expect(adc.refreshCallCount, 0);
       notifier.dispose();
     });
   });

@@ -221,7 +221,7 @@ class _AreaPainter extends CustomPainter {
     if (pts.length < 2) {
       return Path()..moveTo(pts.first.dx, pts.first.dy);
     }
-    const s = 0.2;
+    const s = 0.05;
     final p = Path()..moveTo(pts.first.dx, pts.first.dy);
 
     for (int i = 1; i < pts.length; i++) {

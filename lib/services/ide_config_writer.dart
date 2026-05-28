@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 
 /// Writes the Candela proxy endpoint into IDE and tool config files.
@@ -142,16 +143,20 @@ class IdeConfigWriter {
 
   // ── Auto-detect Open Design projects ─────────────────────────────────────
 
-  /// Scan `~` up to [maxDepth] directory levels for Open Design project roots.
+  /// Scan [startDir] (defaults to `~`) up to [maxDepth] directory levels
+  /// for Open Design project roots.
   ///
   /// A project root is any directory that contains a `.od/` subdirectory
   /// (but not the `.od/` dir itself, and not directories inside `.od/`).
-  static Future<List<String>> findOpenDesignProjects({int maxDepth = 3}) async {
-    final home = Platform.environment['HOME'] ?? '';
-    if (home.isEmpty) return [];
+  static Future<List<String>> findOpenDesignProjects({
+    int maxDepth = 3,
+    @visibleForTesting Directory? startDir,
+  }) async {
+    final root = startDir ?? Directory(Platform.environment['HOME'] ?? '');
+    if (!root.existsSync()) return [];
 
     final results = <String>[];
-    await _scanForOdDirs(Directory(home), 0, maxDepth, results);
+    await _scanForOdDirs(root, 0, maxDepth, results);
     // Sort by path length (shortest = closest to home) for best UX.
     results.sort((a, b) => a.length.compareTo(b.length));
     return results;

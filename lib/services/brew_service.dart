@@ -1,4 +1,6 @@
 import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 import 'dart:io';
 
 /// Result of a Homebrew command.
@@ -119,6 +121,32 @@ class BrewService {
     }
   }
 
+  /// Parse installed and latest version from a `brew info --json=v2` response.
+  ///
+  /// Exposed for testing — production code calls this from [formulaVersions].
+  @visibleForTesting
+  static (String?, String?) parseFormulaVersionsFromJson(
+      Map<String, dynamic> json) {
+    final formulae = json['formulae'] as List<dynamic>?;
+    if (formulae != null && formulae.isNotEmpty) {
+      final f = formulae[0];
+      String? installed;
+      final installedList = f['installed'] as List<dynamic>?;
+      if (installedList != null && installedList.isNotEmpty) {
+        installed = installedList.last['version'] as String?;
+      }
+      final versions = f['versions'] as Map<String, dynamic>?;
+      final latest = versions?['stable'] as String?;
+      return (installed, latest);
+    }
+    final casks = json['casks'] as List<dynamic>?;
+    if (casks != null && casks.isNotEmpty) {
+      final c = casks[0];
+      return (c['installed'] as String?, c['version'] as String?);
+    }
+    return (null, null);
+  }
+
   /// Get both installed and latest version in a single `brew info` call.
   ///
   /// Returns (installedVersion, latestVersion). Either may be null.
@@ -133,29 +161,7 @@ class BrewService {
       if (result.exitCode != 0) return (null, null);
 
       final json = jsonDecode(result.stdout as String) as Map<String, dynamic>;
-      final formulae = json['formulae'] as List<dynamic>?;
-      if (formulae != null && formulae.isNotEmpty) {
-        final f = formulae[0];
-        // Installed version.
-        String? installed;
-        final installedList = f['installed'] as List<dynamic>?;
-        if (installedList != null && installedList.isNotEmpty) {
-          installed = installedList.last['version'] as String?;
-        }
-        // Latest stable version.
-        final versions = f['versions'] as Map<String, dynamic>?;
-        final latest = versions?['stable'] as String?;
-        return (installed, latest);
-      }
-
-      // Cask fallback.
-      final casks = json['casks'] as List<dynamic>?;
-      if (casks != null && casks.isNotEmpty) {
-        final c = casks[0];
-        return (c['installed'] as String?, c['version'] as String?);
-      }
-
-      return (null, null);
+      return parseFormulaVersionsFromJson(json);
     } catch (_) {
       return (null, null);
     }

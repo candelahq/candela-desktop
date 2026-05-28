@@ -528,6 +528,7 @@ class _BudgetDetailCard extends StatelessWidget {
                   g.isExhausted ? CandelaColors.error : CandelaColors.accent,
               isExpiringSoon: g.expiresAt != null &&
                   g.expiresAt!.difference(now).inDays < 7,
+              grantedBy: g.grantedBy.isNotEmpty ? g.grantedBy : null,
             ),
           ],
         ],
@@ -551,6 +552,7 @@ class _DetailRow extends StatelessWidget {
   final String subtitle;
   final Color barColor;
   final bool isExpiringSoon;
+  final String? grantedBy;
 
   const _DetailRow({
     required this.label,
@@ -560,6 +562,7 @@ class _DetailRow extends StatelessWidget {
     required this.subtitle,
     required this.barColor,
     this.isExpiringSoon = false,
+    this.grantedBy,
   });
 
   @override
@@ -612,8 +615,22 @@ class _DetailRow extends StatelessWidget {
             ),
             if (isExpiringSoon) ...[
               const SizedBox(width: 4),
-              const Text('⚠',
-                  style: TextStyle(fontSize: 12, color: CandelaColors.warning)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                decoration: BoxDecoration(
+                  color: CandelaColors.warning.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                      color: CandelaColors.warning.withValues(alpha: 0.4)),
+                ),
+                child: const Text(
+                  '⚠ expiring',
+                  style: TextStyle(
+                      fontSize: 9,
+                      color: CandelaColors.warning,
+                      fontWeight: FontWeight.w500),
+                ),
+              ),
             ],
           ],
         ),
@@ -621,7 +638,9 @@ class _DetailRow extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(left: 100),
           child: Text(
-            subtitle,
+            grantedBy != null && grantedBy!.isNotEmpty
+                ? 'by $grantedBy · $subtitle'
+                : subtitle,
             style:
                 const TextStyle(fontSize: 10, color: CandelaColors.textMuted),
           ),

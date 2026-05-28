@@ -2,6 +2,16 @@
 
 All notable changes to Candela Desktop are documented here.
 
+## v0.5.5 — 2026-05-27
+
+### Fixes
+- fix: use IAM `generateIdToken` for team backend auth — fixes "Session expired" banner
+  - The previous `refresh_token` + `audience` approach failed with `invalid_audience` because gcloud's OAuth client is in a different GCP project than the Candela audience
+  - Now uses IAM Credentials API to impersonate `iap_service_account` (mirroring the Go CLI's `iap_token.go`)
+- feat: parse `iap_service_account` from config and warn when missing in team mode
+
+---
+
 ## v0.5.4 — 2026-05-27
 
 ### Fixes

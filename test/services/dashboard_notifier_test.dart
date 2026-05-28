@@ -875,7 +875,7 @@ void main() {
   // ── Audience-specific ID token paths ──────────────────────────────────────
 
   group('DashboardController — audience ID token', () {
-    test('configure() with audience uses getIdToken instead of getTokenInfo',
+    test('configure() with audience+SA uses getIdToken instead of getTokenInfo',
         () async {
       final adc = _FakeAdcService(token: 'id-token-for-iap');
       final auth = CandelaAuthService(adcService: adc);
@@ -886,17 +886,18 @@ void main() {
         mode: CandelaMode.team,
         remote: 'https://candela.example.com',
         audience: 'https://iap-audience.example.com',
+        iapServiceAccount: 'sa@project.iam.gserviceaccount.com',
       ));
 
       expect(notifier.isConfigured, isTrue);
       notifier.dispose();
     });
 
-    test('refreshToken() with audience returns null without real ADC file',
+    test('refreshToken() with audience+SA returns null without real IAM access',
         () async {
-      // getIdToken requires a real ADC file with client credentials to
-      // perform the OAuth2 token exchange. The fake AdcService has no ADC
-      // file, so refreshToken correctly returns null.
+      // getIdToken now calls IAM generateIdToken which requires real GCP
+      // credentials. The fake AdcService provides an access token, but the
+      // IAM API call will fail, so refreshToken correctly returns null.
       final adc = _FakeAdcService(token: 'id-token-for-iap');
       final auth = CandelaAuthService(adcService: adc);
       final notifier = DashboardController(candelaAuth: auth);
@@ -906,11 +907,32 @@ void main() {
         mode: CandelaMode.team,
         remote: 'https://candela.example.com',
         audience: 'https://iap-audience.example.com',
+        iapServiceAccount: 'sa@project.iam.gserviceaccount.com',
       ));
 
       final token = await notifier.refreshToken();
-      // null because the fake ADC service has no file for ID token exchange.
+      // null because the IAM generateIdToken call fails without real creds.
       expect(token, isNull);
+      notifier.dispose();
+    });
+
+    test(
+        'configure() with audience but no iapServiceAccount falls back to access token',
+        () async {
+      final adc = _FakeAdcService(token: 'access-token-fallback');
+      final auth = CandelaAuthService(adcService: adc);
+      final notifier = DashboardController(candelaAuth: auth);
+
+      await notifier.configure(const CandelaConfig(
+        path: '/tmp/test',
+        mode: CandelaMode.team,
+        remote: 'https://candela.example.com',
+        audience: 'https://iap-audience.example.com',
+        // iapServiceAccount intentionally omitted
+      ));
+
+      expect(notifier.isConfigured, isTrue);
+      expect(adc.refreshCallCount, 1); // used getTokenInfo path
       notifier.dispose();
     });
 

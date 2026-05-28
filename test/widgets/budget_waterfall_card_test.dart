@@ -118,21 +118,22 @@ void main() {
       expect(find.textContaining('\$2.00 / \$25.00'), findsOneWidget);
     });
 
-    testWidgets('shows expiry warning ⚠ for soon-expiring grant',
+    testWidgets('shows expiry warning badge for soon-expiring grant',
         (tester) async {
       final soonGrant =
           makeGrant(expiresAt: DateTime.now().add(const Duration(days: 2)));
       await tester
           .pumpWidget(buildApp(budget: makeBudget(), grants: [soonGrant]));
-      expect(find.text('⚠'), findsOneWidget);
+      expect(find.text('⚠ expiring'), findsOneWidget);
     });
 
-    testWidgets('does not show ⚠ for grant expiring far away', (tester) async {
+    testWidgets('does not show expiry badge for grant expiring far away',
+        (tester) async {
       final farGrant =
           makeGrant(expiresAt: DateTime.now().add(const Duration(days: 60)));
       await tester
           .pumpWidget(buildApp(budget: makeBudget(), grants: [farGrant]));
-      expect(find.text('⚠'), findsNothing);
+      expect(find.text('⚠ expiring'), findsNothing);
     });
 
     testWidgets('shows no Active Grants section when grants list is empty',

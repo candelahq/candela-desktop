@@ -236,47 +236,80 @@ class _BudgetWaterfallCardState extends State<BudgetWaterfallCard> {
         g.expiresAt != null && g.expiresAt!.difference(now).inDays < 7;
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (isPinned)
-            const Text('⭐ ', style: TextStyle(fontSize: 11))
-          else
-            const SizedBox(width: 16),
-          SizedBox(
-            width: 64,
+          Row(
+            children: [
+              if (isPinned)
+                const Text('⭐ ', style: TextStyle(fontSize: 11))
+              else
+                const SizedBox(width: 16),
+              SizedBox(
+                width: 64,
+                child: Text(
+                  g.displayLabel,
+                  style: const TextStyle(
+                      fontSize: 11, color: CandelaColors.textSecondary),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Expanded(
+                child: _progressBar(
+                  g.usedFraction,
+                  g.isExhausted ? CandelaColors.error : CandelaColors.accent,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '\$${g.spentUsd.toStringAsFixed(2)} / \$${g.amountUsd.toStringAsFixed(2)}',
+                style: const TextStyle(
+                    fontSize: 11,
+                    fontFamily: 'SF Mono, monospace',
+                    color: CandelaColors.textSecondary),
+              ),
+              if (expiringSoon) ...[
+                const SizedBox(width: 6),
+                Tooltip(
+                  message: g.expiresAt != null
+                      ? 'Expires ${_daysLabel(g.expiresAt!, now)}'
+                      : 'Expiring soon',
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: CandelaColors.warning.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                          color: CandelaColors.warning.withValues(alpha: 0.4)),
+                    ),
+                    child: const Text(
+                      '⚠ expiring',
+                      style: TextStyle(
+                          fontSize: 9,
+                          color: CandelaColors.warning,
+                          fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 2),
+          Padding(
+            padding:
+                const EdgeInsets.only(left: 80), // aligns with bar (16 + 64)
             child: Text(
-              g.displayLabel,
-              style: const TextStyle(
-                  fontSize: 11, color: CandelaColors.textSecondary),
+              g.grantedBy.isNotEmpty
+                  ? 'by ${g.grantedBy}${_expirySubtitle(g, now)}'
+                  : g.expiresAt != null
+                      ? 'expires ${_daysLabel(g.expiresAt!, now)}'
+                      : '',
+              style:
+                  const TextStyle(fontSize: 10, color: CandelaColors.textMuted),
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          Expanded(
-            child: _progressBar(
-              g.usedFraction,
-              g.isExhausted ? CandelaColors.error : CandelaColors.accent,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '\$${g.spentUsd.toStringAsFixed(2)} / \$${g.amountUsd.toStringAsFixed(2)}',
-            style: const TextStyle(
-                fontSize: 11,
-                fontFamily: 'SF Mono, monospace',
-                color: CandelaColors.textSecondary),
-          ),
-          if (expiringSoon) ...[
-            const SizedBox(width: 6),
-            Tooltip(
-              message: g.expiresAt != null
-                  ? 'Expires ${_daysLabel(g.expiresAt!, now)}'
-                  : 'Expiring soon',
-              child: const Text(
-                '⚠',
-                style: TextStyle(fontSize: 12, color: CandelaColors.warning),
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -319,6 +352,11 @@ class _BudgetWaterfallCardState extends State<BudgetWaterfallCard> {
         ),
       ),
     );
+  }
+
+  String _expirySubtitle(GrantInfo g, DateTime now) {
+    if (g.expiresAt == null) return '';
+    return ' · expires ${_daysLabel(g.expiresAt!, now)}';
   }
 
   String _daysLabel(DateTime dt, DateTime now) {

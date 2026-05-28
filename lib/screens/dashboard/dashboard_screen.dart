@@ -87,6 +87,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(dashboardProvider);
     final notifier = ref.read(dashboardProvider.notifier);
+    final config = ref.watch(configProvider).value;
 
     // Update filtered summary when notifier data changes.
     final summary = _selectedModel == null
@@ -125,6 +126,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               filteredSummary: summary,
               loading: state.loading,
               error: error,
+              cachingMode: config?.vertexAI?.cachingMode ?? 'off',
+              semanticCache: config?.optimizations?.semanticCache ?? false,
+              contextCompression:
+                  config?.optimizations?.contextCompression ?? false,
             ),
           ),
         ],
@@ -293,15 +298,24 @@ class _Body extends StatelessWidget {
   final UsageSummary? filteredSummary;
   final bool loading;
   final String? error;
+  final String cachingMode;
+  final bool semanticCache;
+  final bool contextCompression;
 
-  const _Body(
-      {required this.result,
-      required this.filteredSummary,
-      required this.loading,
-      required this.error});
+  const _Body({
+    required this.result,
+    required this.filteredSummary,
+    required this.loading,
+    required this.error,
+    this.cachingMode = 'off',
+    this.semanticCache = false,
+    this.contextCompression = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final hasOptimizations =
+        cachingMode != 'off' || semanticCache || contextCompression;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -320,6 +334,14 @@ class _Body extends StatelessWidget {
             const SizedBox(height: 20),
           ],
           _StatGrid(summary: filteredSummary, loading: loading),
+          if (hasOptimizations) ...[
+            const SizedBox(height: 12),
+            _OptimizationChips(
+              cachingMode: cachingMode,
+              semanticCache: semanticCache,
+              contextCompression: contextCompression,
+            ),
+          ],
           const SizedBox(height: 20),
           _ChartSection(summary: filteredSummary),
           const SizedBox(height: 20),
@@ -392,6 +414,77 @@ class _StatGrid extends StatelessWidget {
     if (v >= 1000000) return '${(v / 1000000).toStringAsFixed(2)}M';
     if (v >= 1000) return '${(v / 1000).toStringAsFixed(1)}k';
     return '$v';
+  }
+}
+// ── Optimization status chips ─────────────────────────────────────────────────
+
+class _OptimizationChips extends StatelessWidget {
+  final String cachingMode;
+  final bool semanticCache;
+  final bool contextCompression;
+
+  const _OptimizationChips({
+    required this.cachingMode,
+    required this.semanticCache,
+    required this.contextCompression,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 6,
+      children: [
+        if (cachingMode != 'off')
+          _chip(
+            icon: Icons.cached,
+            label: 'Prompt cache: $cachingMode',
+            color: const Color(0xFF4ADE80),
+          ),
+        if (semanticCache)
+          _chip(
+            icon: Icons.memory,
+            label: 'Semantic cache',
+            color: const Color(0xFF60A5FA),
+          ),
+        if (contextCompression)
+          _chip(
+            icon: Icons.compress,
+            label: 'Context compression',
+            color: const Color(0xFFA78BFA),
+          ),
+      ],
+    );
+  }
+
+  Widget _chip({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: color,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

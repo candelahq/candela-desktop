@@ -87,7 +87,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(dashboardProvider);
     final notifier = ref.read(dashboardProvider.notifier);
-    final config = ref.watch(configProvider).asData?.value;
+    final config = ref.watch(configProvider).value;
 
     // Update filtered summary when notifier data changes.
     final summary = _selectedModel == null

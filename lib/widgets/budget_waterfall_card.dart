@@ -302,9 +302,8 @@ class _BudgetWaterfallCardState extends State<BudgetWaterfallCard> {
             child: Text(
               g.grantedBy.isNotEmpty
                   ? 'by ${g.grantedBy}${_expirySubtitle(g, now)}'
-                  : _expirySubtitle(g, now).isNotEmpty
-                      ? _expirySubtitle(g, now)
-                          .substring(4) // trim leading ' · '
+                  : g.expiresAt != null
+                      ? 'expires ${_daysLabel(g.expiresAt!, now)}'
                       : '',
               style:
                   const TextStyle(fontSize: 10, color: CandelaColors.textMuted),

@@ -178,6 +178,7 @@ class _AppShellState extends ConsumerState<AppShell>
     // Detect already-running processes.
     final pm = ref.read(processManagerProvider);
     await pm.detectRunning();
+    if (!mounted) return;
 
     // Auto-start proxy if installed but not already running.
     final configService = ref.read(configServiceProvider);

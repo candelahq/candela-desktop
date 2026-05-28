@@ -199,6 +199,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _toggleAutoStartProxy(bool value) async {
     await ref.read(configServiceProvider).setAutoStartProxy(value);
+    if (!mounted) return;
     await _loadAll();
   }
 

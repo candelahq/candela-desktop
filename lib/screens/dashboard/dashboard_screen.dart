@@ -29,6 +29,30 @@ import '../../providers.dart';
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
+  /// Returns the user-facing error message for the current dashboard state,
+  /// or `null` if there is no error to display.
+  @visibleForTesting
+  static String? errorMessageFor(DashboardState state) {
+    final result = state.result;
+    if (result == null && !state.loading) {
+      return state.isTeamMode
+          ? 'Could not reach the Candela proxy \u2014 run: candela start'
+          : 'Could not reach the Candela proxy. Is it running?';
+    }
+    if (result == null) return state.errorMessage;
+    // TelemetryResult.empty() means connected but no calls yet \u2014 not an error.
+    if (!result.hasData && result.error == null) return null;
+    if (result.error == TelemetryErrorKind.authExpired) {
+      return 'Session expired \u2014 run: candela auth login';
+    }
+    if (result.error == TelemetryErrorKind.unreachable) {
+      return state.isTeamMode
+          ? 'Backend unreachable \u2014 check Candela proxy status'
+          : 'Candela proxy unreachable. Is it running?';
+    }
+    return null;
+  }
+
   @override
   ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
 }
@@ -59,27 +83,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     setState(() => _selectedModel = model);
   }
 
-  String? _errorMessage(DashboardState state) {
-    final result = state.result;
-    if (result == null && !state.loading) {
-      return state.isTeamMode
-          ? 'Could not reach the Candela proxy \u2014 run: candela start'
-          : 'Could not reach the Candela proxy. Is it running?';
-    }
-    if (result == null) return state.errorMessage;
-    // TelemetryResult.empty() means connected but no calls yet — not an error.
-    if (!result.hasData && result.error == null) return null;
-    if (result.error == TelemetryErrorKind.authExpired) {
-      return 'Session expired \u2014 run: candela auth login';
-    }
-    if (result.error == TelemetryErrorKind.unreachable) {
-      return state.isTeamMode
-          ? 'Backend unreachable \u2014 check Candela proxy status'
-          : 'Candela proxy unreachable. Is it running?';
-    }
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(dashboardProvider);
@@ -93,7 +96,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final uniqueModels =
         state.result?.models.map((m) => m.model).toSet().toList() ?? [];
 
-    final error = _errorMessage(state);
+    final error = DashboardScreen.errorMessageFor(state);
 
     // Fire threshold notifications when budget data is available.
     if (state.result?.budget != null) {

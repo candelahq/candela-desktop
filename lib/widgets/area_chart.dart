@@ -274,8 +274,10 @@ class _Tooltip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const w = 110.0, h = 46.0;
-    final left = (pos.dx - w / 2).clamp(0.0, containerWidth - w);
-    final top = (pos.dy - h - 10).clamp(0.0, containerHeight - h);
+    final left =
+        (pos.dx - w / 2).clamp(0.0, math.max<double>(0.0, containerWidth - w));
+    final top = (pos.dy - h - 10)
+        .clamp(0.0, math.max<double>(0.0, containerHeight - h));
 
     return Positioned(
       left: left,

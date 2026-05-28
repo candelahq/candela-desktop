@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:candela_desktop/models/span_stats.dart';
+import 'package:candela_desktop/screens/dashboard/dashboard_screen.dart';
+import 'package:candela_desktop/services/dashboard_notifier.dart';
 import 'package:candela_desktop/services/telemetry_service.dart';
 import 'package:candela_desktop/theme/colors.dart';
 import 'package:candela_desktop/widgets/area_chart.dart';
@@ -81,79 +83,81 @@ void main() {
     });
   });
 
-  // ── _ErrorBanner (exercise by building equivalent widget) ─────────────────
+  // ── DashboardScreen.errorMessageFor (production logic) ─────────────────────
 
-  group('Dashboard — error banner layout', () {
-    testWidgets('error message renders in a colored container', (tester) async {
-      // Build the same structure as _ErrorBanner
-      await tester.pumpWidget(_wrap(Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: const Color(0xFF7F1D1D).withAlpha(128),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFEF4444).withAlpha(100)),
-        ),
-        child: const Row(children: [
-          Icon(Icons.warning_amber_rounded, size: 16, color: Color(0xFFEF4444)),
-          SizedBox(width: 10),
-          Expanded(
-              child: Text('Session expired',
-                  style: TextStyle(fontSize: 12, color: Color(0xFFFCA5A5)))),
-        ]),
-      )));
-      expect(find.text('Session expired'), findsOneWidget);
-      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
-    });
-  });
-
-  // ── TelemetryResult error messages ────────────────────────────────────────
-
-  group('Dashboard — _errorMessage logic', () {
-    // Mirror of DashboardScreen._errorMessage, exercised directly.
-    String? errorMessage(TelemetryResult? result, bool isTeamMode) {
-      if (result == null) {
-        return isTeamMode
-            ? 'Could not reach the team backend. Check your network and auth.'
-            : 'Could not reach the Candela proxy. Is it running?';
-      }
-      if (result.error == TelemetryErrorKind.authExpired) {
-        return 'Session expired — run: candela auth login';
-      }
-      if (result.error == TelemetryErrorKind.unreachable) {
-        return isTeamMode
-            ? 'Team backend unreachable. Check your network.'
-            : 'Candela proxy unreachable. Is it running?';
-      }
-      return null;
-    }
-
-    test('null result in local mode → proxy error', () {
-      expect(errorMessage(null, false),
-          'Could not reach the Candela proxy. Is it running?');
+  group('Dashboard — errorMessageFor (production)', () {
+    test('null result, not loading, local mode → proxy error', () {
+      const state = DashboardState(
+        result: null,
+        loading: false,
+        range: TokenTimeRange.d7,
+      );
+      expect(
+        DashboardScreen.errorMessageFor(state),
+        'Could not reach the Candela proxy. Is it running?',
+      );
     });
 
-    test('null result in team mode → backend error', () {
-      expect(errorMessage(null, true),
-          'Could not reach the team backend. Check your network and auth.');
+    test('null result, not loading, team mode → proxy start message', () {
+      // isTeamMode is derived from result?.isTeamMode ?? false.
+      // With null result, isTeamMode is false — so to get the team message,
+      // we need a result that signals team mode but triggers the null-result
+      // path. The production code checks result == null first, so team mode
+      // requires a non-null result. With result == null, isTeamMode is always
+      // false. Verify the local-mode message is returned.
+      const state = DashboardState(
+        result: null,
+        loading: false,
+        range: TokenTimeRange.d7,
+      );
+      // With null result, isTeamMode defaults to false.
+      expect(state.isTeamMode, isFalse);
+      expect(
+        DashboardScreen.errorMessageFor(state),
+        'Could not reach the Candela proxy. Is it running?',
+      );
     });
 
-    test('authExpired result → candela auth login message', () {
+    test('authExpired error → candela auth login message', () {
       final result = const TelemetryResult.withError(
           isTeamMode: true, error: TelemetryErrorKind.authExpired);
-      expect(errorMessage(result, true), contains('candela auth login'));
+      final state = DashboardState(
+        result: result,
+        loading: false,
+        range: TokenTimeRange.d7,
+      );
+      expect(
+        DashboardScreen.errorMessageFor(state),
+        'Session expired \u2014 run: candela auth login',
+      );
     });
 
-    test('unreachable result in team mode → team-specific message', () {
+    test('unreachable in team mode → backend unreachable message', () {
       final result = const TelemetryResult.withError(
           isTeamMode: true, error: TelemetryErrorKind.unreachable);
-      expect(errorMessage(result, true), contains('Team backend unreachable'));
+      final state = DashboardState(
+        result: result,
+        loading: false,
+        range: TokenTimeRange.d7,
+      );
+      expect(
+        DashboardScreen.errorMessageFor(state),
+        'Backend unreachable \u2014 check Candela proxy status',
+      );
     });
 
-    test('unreachable result in local mode → proxy-specific message', () {
+    test('unreachable in local mode → proxy unreachable message', () {
       final result = const TelemetryResult.withError(
           isTeamMode: false, error: TelemetryErrorKind.unreachable);
+      final state = DashboardState(
+        result: result,
+        loading: false,
+        range: TokenTimeRange.d7,
+      );
       expect(
-          errorMessage(result, false), contains('Candela proxy unreachable'));
+        DashboardScreen.errorMessageFor(state),
+        'Candela proxy unreachable. Is it running?',
+      );
     });
 
     test('successful result → no error message', () {
@@ -164,7 +168,42 @@ void main() {
         spans: const [],
         isTeamMode: true,
       );
-      expect(errorMessage(result, true), isNull);
+      final state = DashboardState(
+        result: result,
+        loading: false,
+        range: TokenTimeRange.d7,
+      );
+      expect(DashboardScreen.errorMessageFor(state), isNull);
+    });
+
+    test('null result, loading=true → returns state.errorMessage', () {
+      const state = DashboardState(
+        result: null,
+        loading: true,
+        range: TokenTimeRange.d7,
+      );
+      // When loading with no result and no errorMessage, returns null.
+      expect(DashboardScreen.errorMessageFor(state), isNull);
+    });
+
+    test('null result, loading=true, with errorMessage → returns it', () {
+      const state = DashboardState(
+        result: null,
+        loading: true,
+        errorMessage: 'Something went wrong',
+        range: TokenTimeRange.d7,
+      );
+      expect(DashboardScreen.errorMessageFor(state), 'Something went wrong');
+    });
+
+    test('empty result (connected but no data) → no error', () {
+      final result = const TelemetryResult.empty(isTeamMode: false);
+      final state = DashboardState(
+        result: result,
+        loading: false,
+        range: TokenTimeRange.d7,
+      );
+      expect(DashboardScreen.errorMessageFor(state), isNull);
     });
   });
 

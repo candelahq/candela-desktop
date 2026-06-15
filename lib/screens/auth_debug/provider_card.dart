@@ -178,9 +178,8 @@ class _ProviderDetailDialogState extends State<_ProviderDetailDialog> {
   @override
   void initState() {
     super.initState();
-    if (widget.status.name == 'proxy' && widget.status.models.isNotEmpty) {
-      _verifyAll();
-    }
+    // Models from /v1/models are assumed reachable — skip the expensive
+    // per-model chat-completion ping until the user explicitly requests it.
   }
 
   Future<void> _verifyAll() async {
@@ -236,9 +235,9 @@ class _ProviderDetailDialogState extends State<_ProviderDetailDialog> {
         if (s.name == 'proxy')
           TextButton.icon(
             onPressed: _verifying ? null : _verifyAll,
-            icon: Icon(_verifying ? Icons.hourglass_top : Icons.verified,
-                size: 14),
-            label: Text(_verifying ? 'Verifying...' : 'Re-verify'),
+            icon:
+                Icon(_verifying ? Icons.hourglass_top : Icons.speed, size: 14),
+            label: Text(_verifying ? 'Testing...' : 'Test Models'),
           ),
       ]),
       content: SizedBox(
@@ -294,9 +293,8 @@ class _ProviderDetailDialogState extends State<_ProviderDetailDialog> {
       indicator = Container(
         width: 8,
         height: 8,
-        decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: CandelaColors.success.withValues(alpha: 0.4)),
+        decoration: const BoxDecoration(
+            shape: BoxShape.circle, color: CandelaColors.success),
       );
     }
 

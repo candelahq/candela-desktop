@@ -8,7 +8,17 @@ import '../../services/provider_test_service.dart';
 class ProviderCard extends StatelessWidget {
   final ProviderStatus status;
   final VoidCallback? onRemove;
-  const ProviderCard({super.key, required this.status, this.onRemove});
+
+  /// Optional factory for injecting a [ProviderTestService] in tests.
+  @visibleForTesting
+  final ProviderTestService Function()? testServiceFactory;
+
+  const ProviderCard({
+    super.key,
+    required this.status,
+    this.onRemove,
+    this.testServiceFactory,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +86,10 @@ class ProviderCard extends StatelessWidget {
   void _showDetailDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (ctx) => _ProviderDetailDialog(status: status),
+      builder: (ctx) => _ProviderDetailDialog(
+        status: status,
+        serviceFactory: testServiceFactory,
+      ),
     );
   }
 
@@ -165,26 +178,24 @@ class ProviderCard extends StatelessWidget {
 
 class _ProviderDetailDialog extends StatefulWidget {
   final ProviderStatus status;
-  const _ProviderDetailDialog({required this.status});
+  final ProviderTestService Function()? serviceFactory;
+  const _ProviderDetailDialog({required this.status, this.serviceFactory});
   @override
   State<_ProviderDetailDialog> createState() => _ProviderDetailDialogState();
 }
 
 class _ProviderDetailDialogState extends State<_ProviderDetailDialog> {
-  final _providerTest = ProviderTestService();
+  // Lazy-initialized — only created when the user clicks "Test Models".
+  // This avoids allocating an http.Client for non-proxy dialogs.
+  ProviderTestService? _providerTest;
   Map<String, ModelVerification?> _verifications = {};
   bool _verifying = false;
-
-  @override
-  void initState() {
-    super.initState();
-    // Models from /v1/models are assumed reachable — skip the expensive
-    // per-model chat-completion ping until the user explicitly requests it.
-  }
 
   Future<void> _verifyAll() async {
     final displayModels = widget.status.models;
     final rawModels = widget.status.rawModels;
+
+    _providerTest ??= widget.serviceFactory?.call() ?? ProviderTestService();
 
     setState(() {
       _verifying = true;
@@ -193,7 +204,7 @@ class _ProviderDetailDialogState extends State<_ProviderDetailDialog> {
 
     final raw = rawModels.isNotEmpty ? rawModels : displayModels;
 
-    final results = await _providerTest.verifyProxyModels(
+    final results = await _providerTest!.verifyProxyModels(
       raw,
       port: widget.status.port ?? 8181,
     );
@@ -218,7 +229,7 @@ class _ProviderDetailDialogState extends State<_ProviderDetailDialog> {
 
   @override
   void dispose() {
-    _providerTest.dispose();
+    _providerTest?.dispose();
     super.dispose();
   }
 

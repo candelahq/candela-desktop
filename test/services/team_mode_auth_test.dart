@@ -33,7 +33,7 @@ class MockConnectApi extends ConnectApiService {
     required DateTime start,
     required DateTime end,
     bool includeBudget = true,
-    UserScope? userScope,
+    String? environment,
   }) async {
     // Propagate summary/model errors so auth tests still work.
     if (throwOnSummary != null) throw throwOnSummary!;

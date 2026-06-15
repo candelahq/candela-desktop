@@ -1,4 +1,4 @@
-import 'package:candela_desktop/gen/candela/types/user.pbenum.dart';
+import 'package:candela_desktop/models/user_scope.dart';
 import 'package:candela_desktop/widgets/scope_toggle.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,7 +18,7 @@ void main() {
   group('ScopeToggle', () {
     testWidgets('renders My and All labels', (tester) async {
       await tester.pumpWidget(buildToggle(
-        scope: UserScope.USER_SCOPE_PERSONAL,
+        scope: UserScope.personal,
         onChanged: (_) {},
       ));
 
@@ -29,30 +29,30 @@ void main() {
     testWidgets('tapping All when in PERSONAL fires GLOBAL', (tester) async {
       UserScope? received;
       await tester.pumpWidget(buildToggle(
-        scope: UserScope.USER_SCOPE_PERSONAL,
+        scope: UserScope.personal,
         onChanged: (s) => received = s,
       ));
 
       await tester.tap(find.text('All'));
-      expect(received, UserScope.USER_SCOPE_GLOBAL);
+      expect(received, UserScope.global);
     });
 
     testWidgets('tapping My when in GLOBAL fires PERSONAL', (tester) async {
       UserScope? received;
       await tester.pumpWidget(buildToggle(
-        scope: UserScope.USER_SCOPE_GLOBAL,
+        scope: UserScope.global,
         onChanged: (s) => received = s,
       ));
 
       await tester.tap(find.text('My'));
-      expect(received, UserScope.USER_SCOPE_PERSONAL);
+      expect(received, UserScope.personal);
     });
 
     testWidgets('tapping already-active My does not fire callback',
         (tester) async {
       int callCount = 0;
       await tester.pumpWidget(buildToggle(
-        scope: UserScope.USER_SCOPE_PERSONAL,
+        scope: UserScope.personal,
         onChanged: (_) => callCount++,
       ));
 
@@ -64,7 +64,7 @@ void main() {
         (tester) async {
       int callCount = 0;
       await tester.pumpWidget(buildToggle(
-        scope: UserScope.USER_SCOPE_GLOBAL,
+        scope: UserScope.global,
         onChanged: (_) => callCount++,
       ));
 
@@ -74,7 +74,7 @@ void main() {
 
     testWidgets('active chip uses bold font weight', (tester) async {
       await tester.pumpWidget(buildToggle(
-        scope: UserScope.USER_SCOPE_PERSONAL,
+        scope: UserScope.personal,
         onChanged: (_) {},
       ));
 
@@ -86,7 +86,7 @@ void main() {
 
     testWidgets('switching scope flips font weights', (tester) async {
       await tester.pumpWidget(buildToggle(
-        scope: UserScope.USER_SCOPE_GLOBAL,
+        scope: UserScope.global,
         onChanged: (_) {},
       ));
 

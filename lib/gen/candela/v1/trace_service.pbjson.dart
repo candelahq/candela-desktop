@@ -88,14 +88,6 @@ const ListTracesRequest$json = {
     },
     {'1': 'order_by', '3': 30, '4': 1, '5': 9, '10': 'orderBy'},
     {'1': 'descending', '3': 31, '4': 1, '5': 8, '10': 'descending'},
-    {
-      '1': 'user_scope',
-      '3': 32,
-      '4': 1,
-      '5': 14,
-      '6': '.candela.types.UserScope',
-      '10': 'userScope'
-    },
   ],
 };
 
@@ -109,8 +101,7 @@ final $typed_data.Uint8List listTracesRequestDescriptor = $convert.base64Decode(
     'lkGA4gASgJUgh0ZW5hbnRJZBIVCgZqb2JfaWQYDyABKAlSBWpvYklkEh8KC3RyYWNlX2dyb3Vw'
     'GBAgASgJUgp0cmFjZUdyb3VwEkAKCnBhZ2luYXRpb24YFCABKAsyIC5jYW5kZWxhLnR5cGVzLl'
     'BhZ2luYXRpb25SZXF1ZXN0UgpwYWdpbmF0aW9uEhkKCG9yZGVyX2J5GB4gASgJUgdvcmRlckJ5'
-    'Eh4KCmRlc2NlbmRpbmcYHyABKAhSCmRlc2NlbmRpbmcSNwoKdXNlcl9zY29wZRggIAEoDjIYLm'
-    'NhbmRlbGEudHlwZXMuVXNlclNjb3BlUgl1c2VyU2NvcGU=');
+    'Eh4KCmRlc2NlbmRpbmcYHyABKAhSCmRlc2NlbmRpbmc=');
 
 @$core.Deprecated('Use listTracesResponseDescriptor instead')
 const ListTracesResponse$json = {
@@ -175,14 +166,6 @@ const SearchSpansRequest$json = {
       '6': '.candela.types.PaginationRequest',
       '10': 'pagination'
     },
-    {
-      '1': 'user_scope',
-      '3': 21,
-      '4': 1,
-      '5': 14,
-      '6': '.candela.types.UserScope',
-      '10': 'userScope'
-    },
   ],
 };
 
@@ -194,8 +177,7 @@ final $typed_data.Uint8List searchSpansRequestDescriptor = $convert.base64Decode
     'gJUgVtb2RlbBIjCg1uYW1lX2NvbnRhaW5zGAwgASgJUgxuYW1lQ29udGFpbnMSGwoJdGVuYW50'
     'X2lkGA0gASgJUgh0ZW5hbnRJZBIVCgZqb2JfaWQYDiABKAlSBWpvYklkEh8KC3RyYWNlX2dyb3'
     'VwGA8gASgJUgp0cmFjZUdyb3VwEkAKCnBhZ2luYXRpb24YFCABKAsyIC5jYW5kZWxhLnR5cGVz'
-    'LlBhZ2luYXRpb25SZXF1ZXN0UgpwYWdpbmF0aW9uEjcKCnVzZXJfc2NvcGUYFSABKA4yGC5jYW'
-    '5kZWxhLnR5cGVzLlVzZXJTY29wZVIJdXNlclNjb3Bl');
+    'LlBhZ2luYXRpb25SZXF1ZXN0UgpwYWdpbmF0aW9u');
 
 @$core.Deprecated('Use searchSpansResponseDescriptor instead')
 const SearchSpansResponse$json = {

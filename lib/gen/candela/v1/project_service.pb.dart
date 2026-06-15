@@ -15,7 +15,7 @@ import 'dart:core' as $core;
 import 'package:protobuf/protobuf.dart' as $pb;
 
 import '../types/common.pb.dart' as $4;
-import '../types/project.pb.dart' as $11;
+import '../types/project.pb.dart' as $13;
 
 export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
@@ -96,7 +96,7 @@ class CreateProjectRequest extends $pb.GeneratedMessage {
 
 class CreateProjectResponse extends $pb.GeneratedMessage {
   factory CreateProjectResponse({
-    $11.Project? project,
+    $13.Project? project,
   }) {
     final $result = create();
     if (project != null) {
@@ -116,8 +116,8 @@ class CreateProjectResponse extends $pb.GeneratedMessage {
       _omitMessageNames ? '' : 'CreateProjectResponse',
       package: const $pb.PackageName(_omitMessageNames ? '' : 'candela.v1'),
       createEmptyInstance: create)
-    ..aOM<$11.Project>(1, _omitFieldNames ? '' : 'project',
-        subBuilder: $11.Project.create)
+    ..aOM<$13.Project>(1, _omitFieldNames ? '' : 'project',
+        subBuilder: $13.Project.create)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -142,9 +142,9 @@ class CreateProjectResponse extends $pb.GeneratedMessage {
   static CreateProjectResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
-  $11.Project get project => $_getN(0);
+  $13.Project get project => $_getN(0);
   @$pb.TagNumber(1)
-  set project($11.Project v) {
+  set project($13.Project v) {
     $_setField(1, v);
   }
 
@@ -153,7 +153,7 @@ class CreateProjectResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearProject() => $_clearField(1);
   @$pb.TagNumber(1)
-  $11.Project ensureProject() => $_ensure(0);
+  $13.Project ensureProject() => $_ensure(0);
 }
 
 class GetProjectRequest extends $pb.GeneratedMessage {
@@ -215,7 +215,7 @@ class GetProjectRequest extends $pb.GeneratedMessage {
 
 class GetProjectResponse extends $pb.GeneratedMessage {
   factory GetProjectResponse({
-    $11.Project? project,
+    $13.Project? project,
   }) {
     final $result = create();
     if (project != null) {
@@ -235,8 +235,8 @@ class GetProjectResponse extends $pb.GeneratedMessage {
       _omitMessageNames ? '' : 'GetProjectResponse',
       package: const $pb.PackageName(_omitMessageNames ? '' : 'candela.v1'),
       createEmptyInstance: create)
-    ..aOM<$11.Project>(1, _omitFieldNames ? '' : 'project',
-        subBuilder: $11.Project.create)
+    ..aOM<$13.Project>(1, _omitFieldNames ? '' : 'project',
+        subBuilder: $13.Project.create)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -259,9 +259,9 @@ class GetProjectResponse extends $pb.GeneratedMessage {
   static GetProjectResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
-  $11.Project get project => $_getN(0);
+  $13.Project get project => $_getN(0);
   @$pb.TagNumber(1)
-  set project($11.Project v) {
+  set project($13.Project v) {
     $_setField(1, v);
   }
 
@@ -270,7 +270,7 @@ class GetProjectResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearProject() => $_clearField(1);
   @$pb.TagNumber(1)
-  $11.Project ensureProject() => $_ensure(0);
+  $13.Project ensureProject() => $_ensure(0);
 }
 
 class ListProjectsRequest extends $pb.GeneratedMessage {
@@ -335,7 +335,7 @@ class ListProjectsRequest extends $pb.GeneratedMessage {
 
 class ListProjectsResponse extends $pb.GeneratedMessage {
   factory ListProjectsResponse({
-    $core.Iterable<$11.Project>? projects,
+    $core.Iterable<$13.Project>? projects,
     $4.PaginationResponse? pagination,
   }) {
     final $result = create();
@@ -359,8 +359,8 @@ class ListProjectsResponse extends $pb.GeneratedMessage {
       _omitMessageNames ? '' : 'ListProjectsResponse',
       package: const $pb.PackageName(_omitMessageNames ? '' : 'candela.v1'),
       createEmptyInstance: create)
-    ..pc<$11.Project>(1, _omitFieldNames ? '' : 'projects', $pb.PbFieldType.PM,
-        subBuilder: $11.Project.create)
+    ..pc<$13.Project>(1, _omitFieldNames ? '' : 'projects', $pb.PbFieldType.PM,
+        subBuilder: $13.Project.create)
     ..aOM<$4.PaginationResponse>(2, _omitFieldNames ? '' : 'pagination',
         subBuilder: $4.PaginationResponse.create)
     ..hasRequiredFields = false;
@@ -386,7 +386,7 @@ class ListProjectsResponse extends $pb.GeneratedMessage {
   static ListProjectsResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
-  $pb.PbList<$11.Project> get projects => $_getList(0);
+  $pb.PbList<$13.Project> get projects => $_getList(0);
 
   @$pb.TagNumber(2)
   $4.PaginationResponse get pagination => $_getN(1);
@@ -575,7 +575,7 @@ class CreateAPIKeyRequest extends $pb.GeneratedMessage {
 
 class CreateAPIKeyResponse extends $pb.GeneratedMessage {
   factory CreateAPIKeyResponse({
-    $11.APIKey? apiKey,
+    $13.APIKey? apiKey,
     $core.String? fullKey,
   }) {
     final $result = create();
@@ -599,8 +599,8 @@ class CreateAPIKeyResponse extends $pb.GeneratedMessage {
       _omitMessageNames ? '' : 'CreateAPIKeyResponse',
       package: const $pb.PackageName(_omitMessageNames ? '' : 'candela.v1'),
       createEmptyInstance: create)
-    ..aOM<$11.APIKey>(1, _omitFieldNames ? '' : 'apiKey',
-        subBuilder: $11.APIKey.create)
+    ..aOM<$13.APIKey>(1, _omitFieldNames ? '' : 'apiKey',
+        subBuilder: $13.APIKey.create)
     ..aOS(2, _omitFieldNames ? '' : 'fullKey')
     ..hasRequiredFields = false;
 
@@ -625,9 +625,9 @@ class CreateAPIKeyResponse extends $pb.GeneratedMessage {
   static CreateAPIKeyResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
-  $11.APIKey get apiKey => $_getN(0);
+  $13.APIKey get apiKey => $_getN(0);
   @$pb.TagNumber(1)
-  set apiKey($11.APIKey v) {
+  set apiKey($13.APIKey v) {
     $_setField(1, v);
   }
 
@@ -636,7 +636,7 @@ class CreateAPIKeyResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearApiKey() => $_clearField(1);
   @$pb.TagNumber(1)
-  $11.APIKey ensureApiKey() => $_ensure(0);
+  $13.APIKey ensureApiKey() => $_ensure(0);
 
   @$pb.TagNumber(2)
   $core.String get fullKey => $_getSZ(1);
@@ -710,7 +710,7 @@ class ListAPIKeysRequest extends $pb.GeneratedMessage {
 
 class ListAPIKeysResponse extends $pb.GeneratedMessage {
   factory ListAPIKeysResponse({
-    $core.Iterable<$11.APIKey>? apiKeys,
+    $core.Iterable<$13.APIKey>? apiKeys,
   }) {
     final $result = create();
     if (apiKeys != null) {
@@ -730,8 +730,8 @@ class ListAPIKeysResponse extends $pb.GeneratedMessage {
       _omitMessageNames ? '' : 'ListAPIKeysResponse',
       package: const $pb.PackageName(_omitMessageNames ? '' : 'candela.v1'),
       createEmptyInstance: create)
-    ..pc<$11.APIKey>(1, _omitFieldNames ? '' : 'apiKeys', $pb.PbFieldType.PM,
-        subBuilder: $11.APIKey.create)
+    ..pc<$13.APIKey>(1, _omitFieldNames ? '' : 'apiKeys', $pb.PbFieldType.PM,
+        subBuilder: $13.APIKey.create)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -754,7 +754,7 @@ class ListAPIKeysResponse extends $pb.GeneratedMessage {
   static ListAPIKeysResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
-  $pb.PbList<$11.APIKey> get apiKeys => $_getList(0);
+  $pb.PbList<$13.APIKey> get apiKeys => $_getList(0);
 }
 
 class RevokeAPIKeyRequest extends $pb.GeneratedMessage {

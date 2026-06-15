@@ -240,9 +240,9 @@ class DiagnosticRunner {
           DiagnosticStatus.pass);
       passed++;
     } else {
-      _emit('Proxy: ${proxyStatus.statusMessage}', DiagnosticStatus.warn,
+      _emit('Proxy: ${proxyStatus.statusMessage}', DiagnosticStatus.fail,
           fixCommand: proxyStatus.fixCommand);
-      warned++;
+      failed++;
     }
 
     // Test configured cloud providers.

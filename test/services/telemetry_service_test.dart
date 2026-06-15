@@ -73,6 +73,7 @@ class MockConnectApi extends ConnectApiService {
   final ConnectException? throwOnUsage;
   final ConnectException? throwOnDashboardData;
   String? capturedAuthToken;
+  String? capturedEnvironment;
 
   MockConnectApi({
     this.summaryResponse,
@@ -92,6 +93,7 @@ class MockConnectApi extends ConnectApiService {
     bool includeBudget = true,
     String? environment,
   }) async {
+    capturedEnvironment = environment;
     // If an explicit error is configured for GetDashboardData, throw it.
     if (throwOnDashboardData != null) throw throwOnDashboardData!;
     // If any of the legacy error injectors are set, propagate the first one
@@ -940,44 +942,45 @@ void main() {
   // ── UserScope threading ──────────────────────────────────────────────────
 
   group('TelemetryService — UserScope parameter', () {
-    test('fetch without scope succeeds', () async {
+    test('global scope sends environment "global" to API', () async {
       final mock = MockConnectApi();
       final svc = _teamSvcWithMock(mock);
 
-      final result = await svc.fetch(TokenTimeRange.h24);
-      expect(result, isNotNull);
+      await svc.fetch(TokenTimeRange.h24, userScope: UserScope.global);
+      expect(mock.capturedEnvironment, equals('global'));
       svc.dispose();
     });
 
-    test('fetch with personal scope succeeds', () async {
-      final mock = MockConnectApi();
-      final svc = _teamSvcWithMock(mock);
-
-      final result =
-          await svc.fetch(TokenTimeRange.h24, userScope: UserScope.personal);
-      expect(result, isNotNull);
-      svc.dispose();
-    });
-
-    test('fetch with global scope succeeds', () async {
-      final mock = MockConnectApi();
-      final svc = _teamSvcWithMock(mock);
-
-      final result =
-          await svc.fetch(TokenTimeRange.h24, userScope: UserScope.global);
-      expect(result, isNotNull);
-      svc.dispose();
-    });
-
-    test('changing scope between fetches succeeds', () async {
+    test('personal scope sends null environment to API', () async {
       final mock = MockConnectApi();
       final svc = _teamSvcWithMock(mock);
 
       await svc.fetch(TokenTimeRange.h24, userScope: UserScope.personal);
+      expect(mock.capturedEnvironment, isNull);
+      svc.dispose();
+    });
 
-      final result =
-          await svc.fetch(TokenTimeRange.h24, userScope: UserScope.global);
-      expect(result, isNotNull);
+    test('no scope sends null environment to API', () async {
+      final mock = MockConnectApi();
+      final svc = _teamSvcWithMock(mock);
+
+      await svc.fetch(TokenTimeRange.h24);
+      expect(mock.capturedEnvironment, isNull);
+      svc.dispose();
+    });
+
+    test('scope toggle updates environment on subsequent fetch', () async {
+      final mock = MockConnectApi();
+      final svc = _teamSvcWithMock(mock);
+
+      await svc.fetch(TokenTimeRange.h24, userScope: UserScope.personal);
+      expect(mock.capturedEnvironment, isNull);
+
+      await svc.fetch(TokenTimeRange.h24, userScope: UserScope.global);
+      expect(mock.capturedEnvironment, equals('global'));
+
+      await svc.fetch(TokenTimeRange.h24, userScope: UserScope.personal);
+      expect(mock.capturedEnvironment, isNull);
       svc.dispose();
     });
   });

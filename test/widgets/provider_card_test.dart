@@ -227,5 +227,68 @@ void main() {
       expect(find.textContaining('my-proj'), findsAtLeast(1));
       expect(find.textContaining('us-east1'), findsAtLeast(1));
     });
+
+    testWidgets(
+        'proxy detail dialog does NOT auto-verify — no spinners on open',
+        (tester) async {
+      const status = ProviderStatus(
+        name: 'proxy',
+        displayName: 'Candela Proxy',
+        state: ProviderState.connected,
+        statusMessage: 'Running (:8181)',
+        models: ['claude-sonnet-4', 'gemini-2.0-flash', 'llama3'],
+        rawModels: [
+          'claude-sonnet-4-20250514',
+          'gemini-2.0-flash-001',
+          'llama3'
+        ],
+        icon: '🕯',
+        port: 8181,
+      );
+      await tester.pumpWidget(buildApp(status));
+      await tester.tap(find.byType(InkWell).first);
+      await tester.pumpAndSettle();
+
+      // Dialog should be open with model list.
+      expect(find.text('Available Models'), findsOneWidget);
+      // No verification spinners — models should show immediately without
+      // CircularProgressIndicator inside the dialog's model rows.
+      // The only CircularProgressIndicator should NOT be present (no auto-verify).
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+
+    testWidgets('proxy detail dialog shows Test Models button', (tester) async {
+      const status = ProviderStatus(
+        name: 'proxy',
+        displayName: 'Candela Proxy',
+        state: ProviderState.connected,
+        models: ['claude-sonnet-4'],
+        rawModels: ['claude-sonnet-4-20250514'],
+        icon: '🕯',
+        port: 8181,
+      );
+      await tester.pumpWidget(buildApp(status));
+      await tester.tap(find.byType(InkWell).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Test Models'), findsOneWidget);
+      expect(find.byIcon(Icons.speed), findsOneWidget);
+    });
+
+    testWidgets('non-proxy detail dialog does NOT show Test Models button',
+        (tester) async {
+      const status = ProviderStatus(
+        name: 'google',
+        displayName: 'Google / Vertex AI',
+        state: ProviderState.connected,
+        models: ['gemini-2.0-flash'],
+        icon: 'G',
+      );
+      await tester.pumpWidget(buildApp(status));
+      await tester.tap(find.byType(InkWell).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Test Models'), findsNothing);
+    });
   });
 }

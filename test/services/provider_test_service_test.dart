@@ -418,10 +418,10 @@ void main() {
       });
 
       test('rawModels defaults to empty when models endpoint fails', () async {
-        int callCount = 0;
         final mockClient = http_testing.MockClient((request) async {
-          callCount++;
-          if (callCount == 1) return http.Response('ok', 200);
+          if (request.url.path == '/healthz') {
+            return http.Response('ok', 200);
+          }
           return http.Response('Internal Error', 500);
         });
         final svc = ProviderTestService(client: mockClient);
@@ -473,7 +473,10 @@ void main() {
       });
 
       test('returns empty list for empty model list', () async {
-        final svc = ProviderTestService();
+        final mockClient = http_testing.MockClient((request) async {
+          return http.Response('Not found', 404);
+        });
+        final svc = ProviderTestService(client: mockClient);
         final results = await svc.verifyProxyModels([], port: 8181);
         expect(results, isEmpty);
         svc.dispose();

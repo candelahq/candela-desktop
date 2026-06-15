@@ -63,7 +63,7 @@ void main() {
       });
     });
 
-    group('cleanModelName (via verifyProxyCategories behavior)', () {
+    group('cleanModelName (via verifyProxyModels behavior)', () {
       // _cleanModelName is private — test indirectly via modelCategory on cleaned names.
       // The tests below verify the patterns that cleanModelName strips.
       test('date suffix regex matches 8-digit dates', () {
@@ -355,6 +355,151 @@ void main() {
         // Proxy is reachable even if models listing fails.
         expect(result.state, ProviderState.connected);
         svc.dispose();
+      });
+
+      test('populates rawModels with original IDs before name cleanup',
+          () async {
+        final mockClient = http_testing.MockClient((request) async {
+          if (request.url.path == '/v1/models') {
+            return http.Response(
+              jsonEncode({
+                'data': [
+                  {'id': 'claude-sonnet-4-20250514'},
+                  {'id': 'claude-opus-4-20250514'},
+                  {'id': 'gemini-2.5-flash-001'},
+                ]
+              }),
+              200,
+            );
+          }
+          return http.Response('ok', 200);
+        });
+        final svc = ProviderTestService(client: mockClient);
+        final result = await svc.testProxy(port: 8181);
+        expect(result.state, ProviderState.connected);
+        // models should have cleaned names (date/version suffixes stripped).
+        // rawModels should preserve the original IDs for proxy verification.
+        expect(result.rawModels, isNotEmpty);
+        expect(result.rawModels.length, result.models.length);
+        // Raw models preserve the original server IDs.
+        expect(result.rawModels, contains('claude-sonnet-4-20250514'));
+        expect(result.rawModels, contains('gemini-2.5-flash-001'));
+        svc.dispose();
+      });
+
+      test('deduplicates models by cleaned name, keeps first raw ID', () async {
+        final mockClient = http_testing.MockClient((request) async {
+          if (request.url.path == '/v1/models') {
+            return http.Response(
+              jsonEncode({
+                'data': [
+                  // Two variants that clean to the same name:
+                  {'id': 'claude-sonnet-4-20250514'},
+                  {'id': 'claude-sonnet-4-20250601'},
+                  {'id': 'gemini-2.5-flash'},
+                ]
+              }),
+              200,
+            );
+          }
+          return http.Response('ok', 200);
+        });
+        final svc = ProviderTestService(client: mockClient);
+        final result = await svc.testProxy(port: 8181);
+        // Should deduplicate: claude-sonnet-4 appears once.
+        final claudeCount =
+            result.models.where((m) => m.contains('claude-sonnet')).length;
+        expect(claudeCount, 1,
+            reason: 'Duplicate cleaned names should be deduplicated');
+        // The first raw ID wins the dedup.
+        expect(result.rawModels, contains('claude-sonnet-4-20250514'));
+        expect(result.rawModels, isNot(contains('claude-sonnet-4-20250601')));
+        svc.dispose();
+      });
+
+      test('rawModels defaults to empty when models endpoint fails', () async {
+        int callCount = 0;
+        final mockClient = http_testing.MockClient((request) async {
+          callCount++;
+          if (callCount == 1) return http.Response('ok', 200);
+          return http.Response('Internal Error', 500);
+        });
+        final svc = ProviderTestService(client: mockClient);
+        final result = await svc.testProxy(port: 8181);
+        expect(result.rawModels, isEmpty);
+        expect(result.models, isEmpty);
+        svc.dispose();
+      });
+    });
+
+    group('verifyProxyModels — parallel per-model verification', () {
+      test('verifies each model independently', () async {
+        // Simulate model1 succeeding, model2 failing.
+        final mockClient = http_testing.MockClient((request) async {
+          final body = jsonDecode(request.body) as Map<String, dynamic>;
+          final model = body['model'] as String;
+          if (model == 'gemini-2.5-flash') {
+            return http.Response(
+              jsonEncode({
+                'choices': [
+                  {
+                    'message': {'content': 'ok'}
+                  }
+                ]
+              }),
+              200,
+            );
+          }
+          return http.Response(
+            jsonEncode({
+              'error': {'message': 'Model not found'}
+            }),
+            404,
+          );
+        });
+        final svc = ProviderTestService(client: mockClient);
+        final results = await svc.verifyProxyModels(
+          ['gemini-2.5-flash', 'nonexistent-model'],
+          port: 8181,
+        );
+        expect(results.length, 2);
+        // Each model should have its own independent result.
+        final flash = results.firstWhere((r) => r.model == 'gemini-2.5-flash');
+        final missing =
+            results.firstWhere((r) => r.model == 'nonexistent-model');
+        expect(flash.reachable, isTrue);
+        expect(missing.reachable, isFalse);
+        svc.dispose();
+      });
+
+      test('returns empty list for empty model list', () async {
+        final svc = ProviderTestService();
+        final results = await svc.verifyProxyModels([], port: 8181);
+        expect(results, isEmpty);
+        svc.dispose();
+      });
+    });
+
+    group('ProviderStatus.rawModels', () {
+      test('defaults to empty list', () {
+        const status = ProviderStatus(
+          name: 'test',
+          displayName: 'Test',
+          state: ProviderState.connected,
+        );
+        expect(status.rawModels, isEmpty);
+      });
+
+      test('preserves provided rawModels', () {
+        const status = ProviderStatus(
+          name: 'test',
+          displayName: 'Test',
+          state: ProviderState.connected,
+          models: ['claude-sonnet-4'],
+          rawModels: ['claude-sonnet-4-20250514'],
+        );
+        expect(status.models, ['claude-sonnet-4']);
+        expect(status.rawModels, ['claude-sonnet-4-20250514']);
       });
     });
 

@@ -1,19 +1,32 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
+import 'package:http/testing.dart' as http_testing;
+import 'package:http/http.dart' as http;
 import 'package:candela_desktop/theme/candela_theme.dart';
 import 'package:candela_desktop/models/provider_status.dart';
 import 'package:candela_desktop/screens/auth_debug/provider_card.dart';
+import 'package:candela_desktop/services/provider_test_service.dart';
 
 void main() {
   group('ProviderCard', () {
-    Widget buildApp(ProviderStatus status, {VoidCallback? onRemove}) {
+    Widget buildApp(
+      ProviderStatus status, {
+      VoidCallback? onRemove,
+      ProviderTestService Function()? testServiceFactory,
+    }) {
       return MaterialApp(
         theme: CandelaTheme.dark,
         home: Scaffold(
           body: SizedBox(
             width: 400,
             height: 300,
-            child: ProviderCard(status: status, onRemove: onRemove),
+            child: ProviderCard(
+              status: status,
+              onRemove: onRemove,
+              testServiceFactory: testServiceFactory,
+            ),
           ),
         ),
       );
@@ -226,6 +239,130 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.textContaining('my-proj'), findsAtLeast(1));
       expect(find.textContaining('us-east1'), findsAtLeast(1));
+    });
+
+    testWidgets(
+        'proxy detail dialog does NOT auto-verify — no warning icons on open',
+        (tester) async {
+      const status = ProviderStatus(
+        name: 'proxy',
+        displayName: 'Candela Proxy',
+        state: ProviderState.connected,
+        statusMessage: 'Running (:8181)',
+        models: ['claude-sonnet-4', 'gemini-2.0-flash', 'llama3'],
+        rawModels: [
+          'claude-sonnet-4-20250514',
+          'gemini-2.0-flash-001',
+          'llama3'
+        ],
+        icon: '🕯',
+        port: 8181,
+      );
+      await tester.pumpWidget(buildApp(status));
+      await tester.tap(find.byType(InkWell).first);
+      await tester.pumpAndSettle();
+
+      // Dialog should be open.
+      expect(find.text('Available Models'), findsOneWidget);
+      // No warning icons — if auto-verify had run against no server, every
+      // model would have failed and shown warning_amber icons.
+      expect(find.byIcon(Icons.warning_amber), findsNothing);
+      // No spinners either.
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+
+    testWidgets('proxy detail dialog shows Test Models button', (tester) async {
+      const status = ProviderStatus(
+        name: 'proxy',
+        displayName: 'Candela Proxy',
+        state: ProviderState.connected,
+        models: ['claude-sonnet-4'],
+        rawModels: ['claude-sonnet-4-20250514'],
+        icon: '🕯',
+        port: 8181,
+      );
+      await tester.pumpWidget(buildApp(status));
+      await tester.tap(find.byType(InkWell).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Test Models'), findsOneWidget);
+      expect(find.byIcon(Icons.speed), findsOneWidget);
+    });
+
+    testWidgets('non-proxy detail dialog does NOT show Test Models button',
+        (tester) async {
+      const status = ProviderStatus(
+        name: 'google',
+        displayName: 'Google / Vertex AI',
+        state: ProviderState.connected,
+        models: ['gemini-2.0-flash'],
+        icon: 'G',
+      );
+      await tester.pumpWidget(buildApp(status));
+      await tester.tap(find.byType(InkWell).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Test Models'), findsNothing);
+    });
+
+    testWidgets('clicking Test Models triggers verification and shows results',
+        (tester) async {
+      const status = ProviderStatus(
+        name: 'proxy',
+        displayName: 'Candela Proxy',
+        state: ProviderState.connected,
+        models: ['claude-sonnet-4', 'gemini-2.0-flash'],
+        rawModels: ['claude-sonnet-4-20250514', 'gemini-2.0-flash-001'],
+        icon: '🕯',
+        port: 8181,
+      );
+
+      // Mock: claude succeeds, gemini fails.
+      final mockClient = http_testing.MockClient((req) async {
+        if (req.url.path == '/v1/chat/completions') {
+          final body = json.decode(req.body) as Map<String, dynamic>;
+          final model = body['model'] as String;
+          if (model.contains('claude')) {
+            return http.Response(
+              json.encode({
+                'choices': [
+                  {
+                    'message': {'content': 'pong'}
+                  }
+                ]
+              }),
+              200,
+            );
+          } else {
+            return http.Response(
+              json.encode({
+                'error': {'message': 'Model not found'}
+              }),
+              404,
+            );
+          }
+        }
+        return http.Response('Not found', 404);
+      });
+
+      await tester.pumpWidget(buildApp(
+        status,
+        testServiceFactory: () => ProviderTestService(client: mockClient),
+      ));
+
+      // Open dialog.
+      await tester.tap(find.byType(InkWell).first);
+      await tester.pumpAndSettle();
+
+      // Before clicking — no latency values shown.
+      expect(find.textContaining('ms'), findsNothing);
+
+      // Click Test Models.
+      await tester.tap(find.text('Test Models'));
+      await tester.pumpAndSettle();
+
+      // After verification — claude shows latency, gemini shows warning.
+      expect(find.byIcon(Icons.warning_amber), findsOneWidget);
     });
   });
 }

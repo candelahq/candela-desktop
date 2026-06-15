@@ -1,11 +1,16 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 import '../../data/model_pricing.dart';
 import '../../models/span_stats.dart';
 import '../../services/telemetry_service.dart';
 import '../../theme/colors.dart';
 import '../../providers.dart';
+
+/// Filter mode for the model catalog.
+enum _ModelFilter { all, used }
 
 /// Model catalog screen — shows per-model stats, cost, latency, volume.
 class ModelsScreen extends ConsumerStatefulWidget {
@@ -18,6 +23,7 @@ class ModelsScreen extends ConsumerStatefulWidget {
 class _ModelsScreenState extends ConsumerState<ModelsScreen> {
   TokenTimeRange _range = TokenTimeRange.d7;
   List<ModelBreakdown> _models = [];
+  List<ModelBreakdown> _allModels = []; // available + used, merged
   bool _loading = true;
   String? _error;
   Timer? _autoRefresh;
@@ -27,6 +33,8 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
   _ModelSortCol _sortCol = _ModelSortCol.cost;
   bool _ascending = false;
   double _maxCost = 0;
+  int _port = 8181;
+  _ModelFilter _filter = _ModelFilter.all;
 
   @override
   void initState() {
@@ -39,21 +47,64 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
     _initialized = true;
     final config = await ref.read(configServiceProvider).load();
     if (!mounted) return;
-    _svc = TelemetryService(port: config.port);
+    _port = config.port;
+    _svc = TelemetryService(port: _port);
     await _fetch();
     if (!mounted) return;
     _autoRefresh = Timer.periodic(const Duration(seconds: 30), (_) => _fetch());
+  }
+
+  /// Fetch available models from the proxy's /v1/models endpoint.
+  Future<List<String>> _fetchAvailableModels() async {
+    try {
+      final resp = await http
+          .get(Uri.parse('http://localhost:$_port/v1/models'))
+          .timeout(const Duration(seconds: 5));
+      if (resp.statusCode == 200) {
+        final body = json.decode(resp.body) as Map<String, dynamic>;
+        return (body['data'] as List?)
+                ?.map((m) => (m as Map)['id']?.toString() ?? '')
+                .where((n) => n.isNotEmpty)
+                .toList() ??
+            [];
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  /// Infer provider from model name.
+  static String _inferProvider(String model) {
+    if (model.contains('gemini')) return 'google';
+    if (model.contains('claude')) return 'anthropic';
+    if (model.contains('gpt') ||
+        model.startsWith('o3') ||
+        model.startsWith('o4')) {
+      return 'openai';
+    }
+    if (model.contains('mistral') || model.contains('codestral')) {
+      return 'mistral';
+    }
+    if (model.contains('deepseek')) return 'deepseek';
+    if (model.contains('qwen')) return 'qwen';
+    return 'other';
   }
 
   Future<void> _fetch() async {
     if (!mounted || _svc == null) return;
     setState(() => _loading = true);
     try {
-      final result = await _svc!.fetch(_range);
+      // Fetch usage data and available models in parallel.
+      final results = await Future.wait([
+        _svc!.fetch(_range),
+        _fetchAvailableModels(),
+      ]);
+      final result = results[0] as TelemetryResult?;
+      final availableIds = results[1] as List<String>;
+
       if (!mounted) return;
       setState(() {
-        // Enrich with static pricing data
-        _models = (result?.models ?? []).map((m) {
+        // Enrich used models with static pricing data.
+        final usedModels = (result?.models ?? []).map((m) {
           final pricing = lookupPricing(m.model);
           if (pricing != null) {
             return m.withPricing(
@@ -63,10 +114,36 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
           }
           return m;
         }).toList();
+
+        // Build a set of used model names for quick lookup.
+        final usedNames = {for (final m in usedModels) m.model};
+
+        // Create placeholder entries for available but unused models.
+        final unusedModels =
+            availableIds.where((id) => !usedNames.contains(id)).map((id) {
+          final pricing = lookupPricing(id);
+          return ModelBreakdown(
+            model: id,
+            provider: _inferProvider(id),
+            callCount: 0,
+            inputTokens: 0,
+            outputTokens: 0,
+            costUsd: 0,
+            avgLatencyMs: 0,
+            inputPricePerMillion: pricing?.inputPerMillion,
+            outputPricePerMillion: pricing?.outputPerMillion,
+          );
+        }).toList();
+
+        _models = usedModels;
+        _allModels = [...usedModels, ...unusedModels];
         _sortModels();
-        _maxCost = _models.isEmpty
+        final displayModels = _displayModels;
+        _maxCost = displayModels.isEmpty
             ? 0
-            : _models.map((m) => m.costUsd).reduce((a, b) => a > b ? a : b);
+            : displayModels
+                .map((m) => m.costUsd)
+                .reduce((a, b) => a > b ? a : b);
         _loading = false;
         _error = result == null ? 'Could not reach the proxy' : null;
       });
@@ -79,23 +156,30 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
     }
   }
 
+  /// The currently visible model list based on the active filter.
+  List<ModelBreakdown> get _displayModels =>
+      _filter == _ModelFilter.used ? _models : _allModels;
+
+  int _compare(ModelBreakdown a, ModelBreakdown b) {
+    int cmp;
+    switch (_sortCol) {
+      case _ModelSortCol.cost:
+        cmp = a.costUsd.compareTo(b.costUsd);
+      case _ModelSortCol.calls:
+        cmp = a.callCount.compareTo(b.callCount);
+      case _ModelSortCol.tokens:
+        cmp = a.totalTokens.compareTo(b.totalTokens);
+      case _ModelSortCol.latency:
+        cmp = a.avgLatencyMs.compareTo(b.avgLatencyMs);
+      case _ModelSortCol.name:
+        cmp = a.model.compareTo(b.model);
+    }
+    return _ascending ? cmp : -cmp;
+  }
+
   void _sortModels() {
-    _models.sort((a, b) {
-      int cmp;
-      switch (_sortCol) {
-        case _ModelSortCol.cost:
-          cmp = a.costUsd.compareTo(b.costUsd);
-        case _ModelSortCol.calls:
-          cmp = a.callCount.compareTo(b.callCount);
-        case _ModelSortCol.tokens:
-          cmp = a.totalTokens.compareTo(b.totalTokens);
-        case _ModelSortCol.latency:
-          cmp = a.avgLatencyMs.compareTo(b.avgLatencyMs);
-        case _ModelSortCol.name:
-          cmp = a.model.compareTo(b.model);
-      }
-      return _ascending ? cmp : -cmp;
-    });
+    _models.sort(_compare);
+    _allModels.sort(_compare);
   }
 
   void _setSort(_ModelSortCol col) {
@@ -119,8 +203,9 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final display = _displayModels;
     final selected = _selectedModel != null
-        ? _models.where((m) => m.model == _selectedModel).firstOrNull
+        ? display.where((m) => m.model == _selectedModel).firstOrNull
         : null;
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -132,7 +217,7 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
                     child: Text(_error!,
                         style: const TextStyle(
                             color: CandelaColors.error, fontSize: 13)))
-                : _models.isEmpty && !_loading
+                : display.isEmpty && !_loading
                     ? _buildEmpty()
                     : Row(children: [
                         Expanded(flex: 3, child: _buildModelList()),
@@ -158,11 +243,16 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
                   fontWeight: FontWeight.w700,
                   color: CandelaColors.textPrimary)),
           const SizedBox(height: 2),
-          Text('${_models.length} model${_models.length != 1 ? 's' : ''} seen',
+          Text(
+              _filter == _ModelFilter.all
+                  ? '${_allModels.length} available · ${_models.length} used'
+                  : '${_models.length} model${_models.length != 1 ? 's' : ''} used',
               style: const TextStyle(
                   fontSize: 11, color: CandelaColors.textMuted)),
         ]),
         const Spacer(),
+        _buildFilterChips(),
+        const SizedBox(width: 10),
         _buildTimeChips(),
         const SizedBox(width: 10),
         _buildRefreshBtn(),
@@ -202,6 +292,38 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
               ),
             );
           }).toList()),
+    );
+  }
+
+  Widget _buildFilterChips() {
+    return Container(
+      decoration: BoxDecoration(
+          color: CandelaColors.bgSecondary,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: CandelaColors.border)),
+      padding: const EdgeInsets.all(3),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        for (final f in _ModelFilter.values)
+          GestureDetector(
+            onTap: () => setState(() => _filter = f),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+              decoration: BoxDecoration(
+                  color:
+                      f == _filter ? CandelaColors.accent : Colors.transparent,
+                  borderRadius: BorderRadius.circular(5)),
+              child: Text(f == _ModelFilter.all ? 'All Available' : 'Used',
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight:
+                          f == _filter ? FontWeight.w600 : FontWeight.w400,
+                      color: f == _filter
+                          ? Colors.white
+                          : CandelaColors.textMuted)),
+            ),
+          ),
+      ]),
     );
   }
 
@@ -275,16 +397,19 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
       const Divider(height: 1, color: CandelaColors.border),
       Expanded(
           child: ListView.builder(
-        itemCount: _models.length,
-        itemBuilder: (_, i) => _ModelRow(
-          model: _models[i],
-          isSelected: _models[i].model == _selectedModel,
-          maxCost: _maxCost,
-          onTap: () => setState(() {
-            _selectedModel =
-                _models[i].model == _selectedModel ? null : _models[i].model;
-          }),
-        ),
+        itemCount: _displayModels.length,
+        itemBuilder: (_, i) {
+          final display = _displayModels;
+          return _ModelRow(
+            model: display[i],
+            isSelected: display[i].model == _selectedModel,
+            maxCost: _maxCost,
+            onTap: () => setState(() {
+              _selectedModel =
+                  display[i].model == _selectedModel ? null : display[i].model;
+            }),
+          );
+        },
       )),
     ]);
   }
@@ -335,6 +460,7 @@ class _ModelRowState extends State<_ModelRow> {
   Widget build(BuildContext context) {
     final m = widget.model;
     final barPct = widget.maxCost > 0 ? (m.costUsd / widget.maxCost) : 0.0;
+    final isUnused = m.callCount == 0;
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
@@ -355,15 +481,35 @@ class _ModelRowState extends State<_ModelRow> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(m.model,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontFamily: 'monospace',
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
-                                color: Colors.white),
+                                color: isUnused
+                                    ? CandelaColors.textMuted
+                                    : Colors.white),
                             overflow: TextOverflow.ellipsis),
-                        Text(m.provider,
-                            style: const TextStyle(
-                                fontSize: 10, color: CandelaColors.textMuted)),
+                        Row(children: [
+                          Text(m.provider,
+                              style: const TextStyle(
+                                  fontSize: 10,
+                                  color: CandelaColors.textMuted)),
+                          if (isUnused) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 5, vertical: 1),
+                              decoration: BoxDecoration(
+                                  color: CandelaColors.border.withAlpha(80),
+                                  borderRadius: BorderRadius.circular(4)),
+                              child: const Text('available',
+                                  style: TextStyle(
+                                      fontSize: 9,
+                                      color: CandelaColors.textMuted,
+                                      fontWeight: FontWeight.w500)),
+                            ),
+                          ],
+                        ]),
                       ])),
               Expanded(
                   child: Text(

@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../models/budget_info.dart';
 import '../models/candela_config.dart';
 import '../models/span_stats.dart';
-import '../gen/candela/types/user.pbenum.dart' as user_types;
+import '../models/user_scope.dart';
 import '../services/candela_auth_service.dart';
 import '../services/telemetry_service.dart';
 
@@ -16,14 +16,14 @@ class DashboardState {
   final bool loading;
   final String? errorMessage;
   final TokenTimeRange range;
-  final user_types.UserScope userScope;
+  final UserScope userScope;
 
   const DashboardState({
     this.result,
     this.loading = false,
     this.errorMessage,
     this.range = TokenTimeRange.d7,
-    this.userScope = user_types.UserScope.USER_SCOPE_PERSONAL,
+    this.userScope = UserScope.personal,
   });
 
   DashboardState copyWith({
@@ -31,7 +31,7 @@ class DashboardState {
     bool? loading,
     String? errorMessage,
     TokenTimeRange? range,
-    user_types.UserScope? userScope,
+    UserScope? userScope,
     bool clearError = false,
   }) {
     return DashboardState(
@@ -224,7 +224,7 @@ class DashboardController {
   }
 
   /// Switch user scope (Personal / Global), invalidate cache, and re-fetch.
-  Future<void> setUserScope(user_types.UserScope scope) async {
+  Future<void> setUserScope(UserScope scope) async {
     state = state.copyWith(userScope: scope);
     _lastFetchAt = null;
     await fetch();

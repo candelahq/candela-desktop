@@ -15,7 +15,7 @@ import 'dart:typed_data' as $typed_data;
 
 import '../../google/protobuf/timestamp.pbjson.dart' as $2;
 import '../types/common.pbjson.dart' as $4;
-import '../types/project.pbjson.dart' as $11;
+import '../types/project.pbjson.dart' as $13;
 
 @$core.Deprecated('Use createProjectRequestDescriptor instead')
 const CreateProjectRequest$json = {
@@ -290,7 +290,7 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
     ProjectServiceBase$messageJson = {
   '.candela.v1.CreateProjectRequest': CreateProjectRequest$json,
   '.candela.v1.CreateProjectResponse': CreateProjectResponse$json,
-  '.candela.types.Project': $11.Project$json,
+  '.candela.types.Project': $13.Project$json,
   '.google.protobuf.Timestamp': $2.Timestamp$json,
   '.candela.v1.GetProjectRequest': GetProjectRequest$json,
   '.candela.v1.GetProjectResponse': GetProjectResponse$json,
@@ -302,7 +302,7 @@ const $core.Map<$core.String, $core.Map<$core.String, $core.dynamic>>
   '.candela.v1.DeleteProjectResponse': DeleteProjectResponse$json,
   '.candela.v1.CreateAPIKeyRequest': CreateAPIKeyRequest$json,
   '.candela.v1.CreateAPIKeyResponse': CreateAPIKeyResponse$json,
-  '.candela.types.APIKey': $11.APIKey$json,
+  '.candela.types.APIKey': $13.APIKey$json,
   '.candela.v1.ListAPIKeysRequest': ListAPIKeysRequest$json,
   '.candela.v1.ListAPIKeysResponse': ListAPIKeysResponse$json,
   '.candela.v1.RevokeAPIKeyRequest': RevokeAPIKeyRequest$json,

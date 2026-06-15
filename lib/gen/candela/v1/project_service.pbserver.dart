@@ -15,43 +15,43 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
-import 'project_service.pb.dart' as $12;
+import 'project_service.pb.dart' as $14;
 import 'project_service.pbjson.dart';
 
 export 'project_service.pb.dart';
 
 abstract class ProjectServiceBase extends $pb.GeneratedService {
-  $async.Future<$12.CreateProjectResponse> createProject(
-      $pb.ServerContext ctx, $12.CreateProjectRequest request);
-  $async.Future<$12.GetProjectResponse> getProject(
-      $pb.ServerContext ctx, $12.GetProjectRequest request);
-  $async.Future<$12.ListProjectsResponse> listProjects(
-      $pb.ServerContext ctx, $12.ListProjectsRequest request);
-  $async.Future<$12.DeleteProjectResponse> deleteProject(
-      $pb.ServerContext ctx, $12.DeleteProjectRequest request);
-  $async.Future<$12.CreateAPIKeyResponse> createAPIKey(
-      $pb.ServerContext ctx, $12.CreateAPIKeyRequest request);
-  $async.Future<$12.ListAPIKeysResponse> listAPIKeys(
-      $pb.ServerContext ctx, $12.ListAPIKeysRequest request);
-  $async.Future<$12.RevokeAPIKeyResponse> revokeAPIKey(
-      $pb.ServerContext ctx, $12.RevokeAPIKeyRequest request);
+  $async.Future<$14.CreateProjectResponse> createProject(
+      $pb.ServerContext ctx, $14.CreateProjectRequest request);
+  $async.Future<$14.GetProjectResponse> getProject(
+      $pb.ServerContext ctx, $14.GetProjectRequest request);
+  $async.Future<$14.ListProjectsResponse> listProjects(
+      $pb.ServerContext ctx, $14.ListProjectsRequest request);
+  $async.Future<$14.DeleteProjectResponse> deleteProject(
+      $pb.ServerContext ctx, $14.DeleteProjectRequest request);
+  $async.Future<$14.CreateAPIKeyResponse> createAPIKey(
+      $pb.ServerContext ctx, $14.CreateAPIKeyRequest request);
+  $async.Future<$14.ListAPIKeysResponse> listAPIKeys(
+      $pb.ServerContext ctx, $14.ListAPIKeysRequest request);
+  $async.Future<$14.RevokeAPIKeyResponse> revokeAPIKey(
+      $pb.ServerContext ctx, $14.RevokeAPIKeyRequest request);
 
   $pb.GeneratedMessage createRequest($core.String methodName) {
     switch (methodName) {
       case 'CreateProject':
-        return $12.CreateProjectRequest();
+        return $14.CreateProjectRequest();
       case 'GetProject':
-        return $12.GetProjectRequest();
+        return $14.GetProjectRequest();
       case 'ListProjects':
-        return $12.ListProjectsRequest();
+        return $14.ListProjectsRequest();
       case 'DeleteProject':
-        return $12.DeleteProjectRequest();
+        return $14.DeleteProjectRequest();
       case 'CreateAPIKey':
-        return $12.CreateAPIKeyRequest();
+        return $14.CreateAPIKeyRequest();
       case 'ListAPIKeys':
-        return $12.ListAPIKeysRequest();
+        return $14.ListAPIKeysRequest();
       case 'RevokeAPIKey':
-        return $12.RevokeAPIKeyRequest();
+        return $14.RevokeAPIKeyRequest();
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }
@@ -61,19 +61,19 @@ abstract class ProjectServiceBase extends $pb.GeneratedService {
       $core.String methodName, $pb.GeneratedMessage request) {
     switch (methodName) {
       case 'CreateProject':
-        return this.createProject(ctx, request as $12.CreateProjectRequest);
+        return this.createProject(ctx, request as $14.CreateProjectRequest);
       case 'GetProject':
-        return this.getProject(ctx, request as $12.GetProjectRequest);
+        return this.getProject(ctx, request as $14.GetProjectRequest);
       case 'ListProjects':
-        return this.listProjects(ctx, request as $12.ListProjectsRequest);
+        return this.listProjects(ctx, request as $14.ListProjectsRequest);
       case 'DeleteProject':
-        return this.deleteProject(ctx, request as $12.DeleteProjectRequest);
+        return this.deleteProject(ctx, request as $14.DeleteProjectRequest);
       case 'CreateAPIKey':
-        return this.createAPIKey(ctx, request as $12.CreateAPIKeyRequest);
+        return this.createAPIKey(ctx, request as $14.CreateAPIKeyRequest);
       case 'ListAPIKeys':
-        return this.listAPIKeys(ctx, request as $12.ListAPIKeysRequest);
+        return this.listAPIKeys(ctx, request as $14.ListAPIKeysRequest);
       case 'RevokeAPIKey':
-        return this.revokeAPIKey(ctx, request as $12.RevokeAPIKeyRequest);
+        return this.revokeAPIKey(ctx, request as $14.RevokeAPIKeyRequest);
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }

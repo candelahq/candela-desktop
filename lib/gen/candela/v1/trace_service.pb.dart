@@ -17,7 +17,6 @@ import 'package:protobuf/protobuf.dart' as $pb;
 import '../types/common.pb.dart' as $4;
 import '../types/trace.pb.dart' as $9;
 import '../types/trace.pbenum.dart' as $9;
-import '../types/user.pbenum.dart' as $7;
 
 export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
@@ -153,7 +152,6 @@ class ListTracesRequest extends $pb.GeneratedMessage {
     $4.PaginationRequest? pagination,
     $core.String? orderBy,
     $core.bool? descending,
-    $7.UserScope? userScope,
   }) {
     final $result = create();
     if (projectId != null) {
@@ -195,9 +193,6 @@ class ListTracesRequest extends $pb.GeneratedMessage {
     if (descending != null) {
       $result.descending = descending;
     }
-    if (userScope != null) {
-      $result.userScope = userScope;
-    }
     return $result;
   }
   ListTracesRequest._() : super();
@@ -230,11 +225,6 @@ class ListTracesRequest extends $pb.GeneratedMessage {
         subBuilder: $4.PaginationRequest.create)
     ..aOS(30, _omitFieldNames ? '' : 'orderBy')
     ..aOB(31, _omitFieldNames ? '' : 'descending')
-    ..e<$7.UserScope>(
-        32, _omitFieldNames ? '' : 'userScope', $pb.PbFieldType.OE,
-        defaultOrMaker: $7.UserScope.USER_SCOPE_UNSPECIFIED,
-        valueOf: $7.UserScope.valueOf,
-        enumValues: $7.UserScope.values)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -419,18 +409,6 @@ class ListTracesRequest extends $pb.GeneratedMessage {
   $core.bool hasDescending() => $_has(12);
   @$pb.TagNumber(31)
   void clearDescending() => $_clearField(31);
-
-  @$pb.TagNumber(32)
-  $7.UserScope get userScope => $_getN(13);
-  @$pb.TagNumber(32)
-  set userScope($7.UserScope v) {
-    $_setField(32, v);
-  }
-
-  @$pb.TagNumber(32)
-  $core.bool hasUserScope() => $_has(13);
-  @$pb.TagNumber(32)
-  void clearUserScope() => $_clearField(32);
 }
 
 class ListTracesResponse extends $pb.GeneratedMessage {
@@ -514,7 +492,6 @@ class SearchSpansRequest extends $pb.GeneratedMessage {
     $core.String? jobId,
     $core.String? traceGroup,
     $4.PaginationRequest? pagination,
-    $7.UserScope? userScope,
   }) {
     final $result = create();
     if (projectId != null) {
@@ -544,9 +521,6 @@ class SearchSpansRequest extends $pb.GeneratedMessage {
     if (pagination != null) {
       $result.pagination = pagination;
     }
-    if (userScope != null) {
-      $result.userScope = userScope;
-    }
     return $result;
   }
   SearchSpansRequest._() : super();
@@ -575,11 +549,6 @@ class SearchSpansRequest extends $pb.GeneratedMessage {
     ..aOS(15, _omitFieldNames ? '' : 'traceGroup')
     ..aOM<$4.PaginationRequest>(20, _omitFieldNames ? '' : 'pagination',
         subBuilder: $4.PaginationRequest.create)
-    ..e<$7.UserScope>(
-        21, _omitFieldNames ? '' : 'userScope', $pb.PbFieldType.OE,
-        defaultOrMaker: $7.UserScope.USER_SCOPE_UNSPECIFIED,
-        valueOf: $7.UserScope.valueOf,
-        enumValues: $7.UserScope.values)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -713,18 +682,6 @@ class SearchSpansRequest extends $pb.GeneratedMessage {
   void clearPagination() => $_clearField(20);
   @$pb.TagNumber(20)
   $4.PaginationRequest ensurePagination() => $_ensure(8);
-
-  @$pb.TagNumber(21)
-  $7.UserScope get userScope => $_getN(9);
-  @$pb.TagNumber(21)
-  set userScope($7.UserScope v) {
-    $_setField(21, v);
-  }
-
-  @$pb.TagNumber(21)
-  $core.bool hasUserScope() => $_has(9);
-  @$pb.TagNumber(21)
-  void clearUserScope() => $_clearField(21);
 }
 
 class SearchSpansResponse extends $pb.GeneratedMessage {

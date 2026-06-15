@@ -7,7 +7,7 @@ import 'package:candela_desktop/services/telemetry_service.dart';
 import 'package:candela_desktop/models/candela_config.dart';
 import 'package:candela_desktop/models/span_stats.dart';
 import 'package:candela_desktop/models/identity_state.dart';
-import 'package:candela_desktop/gen/candela/types/user.pbenum.dart';
+import 'package:candela_desktop/models/user_scope.dart';
 
 void main() {
   group('DashboardState', () {
@@ -97,27 +97,27 @@ void main() {
 
     test('default userScope is PERSONAL', () {
       const state = DashboardState();
-      expect(state.userScope, UserScope.USER_SCOPE_PERSONAL);
+      expect(state.userScope, UserScope.personal);
     });
 
     test('copyWith preserves userScope when not specified', () {
       final state = const DashboardState(
-        userScope: UserScope.USER_SCOPE_GLOBAL,
+        userScope: UserScope.global,
       ).copyWith(loading: true);
-      expect(state.userScope, UserScope.USER_SCOPE_GLOBAL);
+      expect(state.userScope, UserScope.global);
     });
 
     test('copyWith updates userScope', () {
-      final state = const DashboardState()
-          .copyWith(userScope: UserScope.USER_SCOPE_PERSONAL);
-      expect(state.userScope, UserScope.USER_SCOPE_PERSONAL);
+      final state =
+          const DashboardState().copyWith(userScope: UserScope.personal);
+      expect(state.userScope, UserScope.personal);
     });
 
     test('copyWith can switch scope from PERSONAL to GLOBAL', () {
       final state = const DashboardState(
-        userScope: UserScope.USER_SCOPE_PERSONAL,
-      ).copyWith(userScope: UserScope.USER_SCOPE_GLOBAL);
-      expect(state.userScope, UserScope.USER_SCOPE_GLOBAL);
+        userScope: UserScope.personal,
+      ).copyWith(userScope: UserScope.global);
+      expect(state.userScope, UserScope.global);
     });
   });
 
@@ -688,14 +688,14 @@ void main() {
 
     test('setUserScope updates state and fires callback', () async {
       final notifier = DashboardController();
-      expect(notifier.state.userScope, UserScope.USER_SCOPE_PERSONAL);
+      expect(notifier.state.userScope, UserScope.personal);
 
       final scopes = <UserScope>[];
       notifier.onStateChanged = (s) => scopes.add(s.userScope);
 
-      await notifier.setUserScope(UserScope.USER_SCOPE_GLOBAL);
-      expect(notifier.state.userScope, UserScope.USER_SCOPE_GLOBAL);
-      expect(scopes, contains(UserScope.USER_SCOPE_GLOBAL));
+      await notifier.setUserScope(UserScope.global);
+      expect(notifier.state.userScope, UserScope.global);
+      expect(scopes, contains(UserScope.global));
       notifier.dispose();
     });
 
@@ -714,21 +714,21 @@ void main() {
       // Switching scope should invalidate cache and trigger re-fetch.
       final states = <DashboardState>[];
       notifier.onStateChanged = (s) => states.add(s);
-      await notifier.setUserScope(UserScope.USER_SCOPE_PERSONAL);
+      await notifier.setUserScope(UserScope.personal);
       // At least one callback from setUserScope + fetch.
       expect(states, isNotEmpty);
-      expect(notifier.state.userScope, UserScope.USER_SCOPE_PERSONAL);
+      expect(notifier.state.userScope, UserScope.personal);
       notifier.dispose();
     });
 
     test('setUserScope from PERSONAL to GLOBAL toggles correctly', () async {
       final notifier = DashboardController();
 
-      await notifier.setUserScope(UserScope.USER_SCOPE_PERSONAL);
-      expect(notifier.state.userScope, UserScope.USER_SCOPE_PERSONAL);
+      await notifier.setUserScope(UserScope.personal);
+      expect(notifier.state.userScope, UserScope.personal);
 
-      await notifier.setUserScope(UserScope.USER_SCOPE_GLOBAL);
-      expect(notifier.state.userScope, UserScope.USER_SCOPE_GLOBAL);
+      await notifier.setUserScope(UserScope.global);
+      expect(notifier.state.userScope, UserScope.global);
       notifier.dispose();
     });
   });

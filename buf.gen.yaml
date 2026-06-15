@@ -9,4 +9,4 @@ plugins:
   - remote: buf.build/connectrpc/dart:v1.0.0
     out: lib/gen
 inputs:
-  - module: buf.build/candelahq/protos:v0.5.0
+  - module: buf.build/candelahq/protos:v0.6.0

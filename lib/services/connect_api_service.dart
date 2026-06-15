@@ -11,7 +11,7 @@ import '../gen/candela/types/user.pb.dart';
 import '../gen/candela/v1/dashboard_service.connect.client.dart';
 import '../gen/candela/v1/dashboard_service.pb.dart';
 import '../gen/candela/types/common.pb.dart' as common;
-import '../gen/candela/types/user.pbenum.dart' as user_types;
+
 import '../gen/google/protobuf/timestamp.pb.dart' as ts;
 import '../models/budget_info.dart';
 import '../models/span_stats.dart';
@@ -125,13 +125,13 @@ class ConnectApiService {
     required DateTime start,
     required DateTime end,
     bool includeBudget = true,
-    user_types.UserScope? userScope,
+    String? environment,
   }) {
     final req = GetDashboardDataRequest()
       ..timeRange = _makeTimeRange(start, end)
       ..includeBudget = includeBudget;
-    if (userScope != null) {
-      req.userScope = userScope;
+    if (environment != null) {
+      req.environment = environment;
     }
     return _dashboard.getDashboardData(req, headers: _headers);
   }

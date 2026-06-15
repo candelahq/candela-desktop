@@ -438,6 +438,7 @@ class ProviderTestService {
       if (modelsResp == null) return _disposedStatus('proxy', 'Candela Proxy');
 
       List<String> models = [];
+      List<String> rawModels = [];
       if (modelsResp.statusCode == 200) {
         try {
           final body = json.decode(modelsResp.body) as Map<String, dynamic>;
@@ -459,12 +460,16 @@ class ProviderTestService {
                   !n.contains('claude') &&
                   !n.contains('llama'))
               .toList();
-          // Clean up names: strip date suffixes (e.g. -20250514), deduplicate.
-          models = [...priority, ...others]
-              .map(_cleanModelName)
-              .toSet() // deduplicate
-              .take(8)
-              .toList();
+          final ordered = [...priority, ...others];
+          // Deduplicate by cleaned name, keeping the first raw name per clean
+          // name so we can send the original ID to the proxy for verification.
+          final seen = <String, String>{}; // cleaned → raw
+          for (final raw in ordered) {
+            final clean = _cleanModelName(raw);
+            seen.putIfAbsent(clean, () => raw);
+          }
+          models = seen.keys.take(8).toList();
+          rawModels = seen.values.take(8).toList();
         } catch (_) {}
       }
 
@@ -474,6 +479,7 @@ class ProviderTestService {
         state: ProviderState.connected,
         statusMessage: 'Running (:$port)',
         models: models,
+        rawModels: rawModels,
         latency: sw.elapsed,
         icon: '🕯',
         port: port,
@@ -536,18 +542,11 @@ class ProviderTestService {
     }
   }
 
-  /// Verify one representative model per provider category through the proxy.
-  Future<List<ModelVerification>> verifyProxyCategories(List<String> models,
+  /// Verify all models through the proxy in parallel.
+  Future<List<ModelVerification>> verifyProxyModels(List<String> models,
       {int port = 8181}) async {
-    // Pick one model per category to test.
-    final categories = <String, String>{}; // category → model name
-    for (final m in models) {
-      final cat = modelCategory(m);
-      categories.putIfAbsent(cat, () => m);
-    }
-    // Test all categories in parallel.
     return Future.wait(
-      categories.values.map((m) => verifyProxyModel(m, port: port)),
+      models.map((m) => verifyProxyModel(m, port: port)),
     );
   }
 

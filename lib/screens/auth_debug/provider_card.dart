@@ -184,31 +184,35 @@ class _ProviderDetailDialogState extends State<_ProviderDetailDialog> {
   }
 
   Future<void> _verifyAll() async {
+    final displayModels = widget.status.models;
+    final rawModels = widget.status.rawModels;
+
     setState(() {
       _verifying = true;
-      _verifications = {for (final m in widget.status.models) m: null};
+      _verifications = {for (final m in displayModels) m: null};
     });
 
-    final results = await _providerTest.verifyProxyCategories(
-      widget.status.models,
+    final raw = rawModels.isNotEmpty ? rawModels : displayModels;
+
+    final results = await _providerTest.verifyProxyModels(
+      raw,
       port: widget.status.port ?? 8181,
     );
 
     if (!mounted) return;
+
+    final rawResults = {for (final r in results) r.model: r};
+
     setState(() {
       _verifying = false;
-      for (final r in results) {
-        _verifications[r.model] = r;
-        final cat = ProviderTestService.modelCategory(r.model);
-        for (final m in widget.status.models) {
-          if (ProviderTestService.modelCategory(m) == cat) {
-            _verifications[m] = ModelVerification(
-                model: m,
-                reachable: r.reachable,
-                latency: r.latency,
-                error: r.error);
-          }
-        }
+      for (var i = 0; i < displayModels.length; i++) {
+        final rawName = i < raw.length ? raw[i] : displayModels[i];
+        final r = rawResults[rawName];
+        _verifications[displayModels[i]] = ModelVerification(
+            model: displayModels[i],
+            reachable: r?.reachable ?? false,
+            latency: r?.latency,
+            error: r == null ? 'No verification result' : r.error);
       }
     });
   }

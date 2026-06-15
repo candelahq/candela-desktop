@@ -8,6 +8,9 @@ class ProviderStatus {
   final String? project;
   final String? region;
   final List<String> models;
+
+  /// Original model IDs before name cleanup — used for proxy verification.
+  final List<String> rawModels;
   final Duration? latency;
   final String? fixCommand;
   final String? fixUrl;
@@ -24,6 +27,7 @@ class ProviderStatus {
     this.project,
     this.region,
     this.models = const [],
+    this.rawModels = const [],
     this.latency,
     this.fixCommand,
     this.fixUrl,

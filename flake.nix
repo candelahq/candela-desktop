@@ -96,6 +96,7 @@
             lefthook
             jq                   # handy for JSON config inspection
             lcov                 # coverage reporting (includes genhtml)
+            rsync                # modern rsync to handle permissions/--chmod correctly
           ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
             # ── macOS native build tooling ─────────────────────
             cocoapods            # CocoaPods for macOS Runner dependencies

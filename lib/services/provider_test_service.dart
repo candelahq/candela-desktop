@@ -469,7 +469,7 @@ class ProviderTestService {
             seen.putIfAbsent(clean, () => raw);
           }
           models = seen.keys.take(8).toList();
-          rawModels = models.map((c) => seen[c]!).toList();
+          rawModels = seen.values.take(8).toList();
         } catch (_) {}
       }
 

@@ -212,7 +212,7 @@ class _ProviderDetailDialogState extends State<_ProviderDetailDialog> {
             model: displayModels[i],
             reachable: r?.reachable ?? false,
             latency: r?.latency,
-            error: r?.error ?? (r == null ? 'No verification result' : null));
+            error: r == null ? 'No verification result' : r.error);
       }
     });
   }

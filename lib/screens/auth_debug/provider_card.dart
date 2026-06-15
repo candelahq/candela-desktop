@@ -208,13 +208,11 @@ class _ProviderDetailDialogState extends State<_ProviderDetailDialog> {
       for (var i = 0; i < displayModels.length; i++) {
         final rawName = i < raw.length ? raw[i] : displayModels[i];
         final r = rawResults[rawName];
-        if (r != null) {
-          _verifications[displayModels[i]] = ModelVerification(
-              model: displayModels[i],
-              reachable: r.reachable,
-              latency: r.latency,
-              error: r.error);
-        }
+        _verifications[displayModels[i]] = ModelVerification(
+            model: displayModels[i],
+            reachable: r?.reachable ?? false,
+            latency: r?.latency,
+            error: r?.error ?? (r == null ? 'No verification result' : null));
       }
     });
   }

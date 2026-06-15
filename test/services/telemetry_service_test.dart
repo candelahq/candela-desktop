@@ -8,6 +8,7 @@ import 'package:http/testing.dart';
 import 'package:candela_desktop/gen/candela/v1/dashboard_service.pb.dart'
     hide TimeSeriesPoint;
 import 'package:candela_desktop/gen/candela/types/user.pb.dart';
+import 'package:candela_desktop/models/user_scope.dart';
 import 'package:candela_desktop/gen/google/protobuf/timestamp.pb.dart';
 import 'package:candela_desktop/models/span_stats.dart';
 import 'package:candela_desktop/services/connect_api_service.dart';
@@ -72,7 +73,7 @@ class MockConnectApi extends ConnectApiService {
   final ConnectException? throwOnUsage;
   final ConnectException? throwOnDashboardData;
   String? capturedAuthToken;
-  UserScope? capturedUserScope;
+  String? capturedEnvironment;
 
   MockConnectApi({
     this.summaryResponse,
@@ -90,9 +91,9 @@ class MockConnectApi extends ConnectApiService {
     required DateTime start,
     required DateTime end,
     bool includeBudget = true,
-    UserScope? userScope,
+    String? environment,
   }) async {
-    capturedUserScope = userScope;
+    capturedEnvironment = environment;
     // If an explicit error is configured for GetDashboardData, throw it.
     if (throwOnDashboardData != null) throw throwOnDashboardData!;
     // If any of the legacy error injectors are set, propagate the first one
@@ -940,58 +941,46 @@ void main() {
 
   // ── UserScope threading ──────────────────────────────────────────────────
 
-  group('TelemetryService — UserScope propagation', () {
-    test('fetch without scope sends null to ConnectApiService', () async {
+  group('TelemetryService — UserScope parameter', () {
+    test('global scope sends environment "global" to API', () async {
+      final mock = MockConnectApi();
+      final svc = _teamSvcWithMock(mock);
+
+      await svc.fetch(TokenTimeRange.h24, userScope: UserScope.global);
+      expect(mock.capturedEnvironment, equals('global'));
+      svc.dispose();
+    });
+
+    test('personal scope sends null environment to API', () async {
+      final mock = MockConnectApi();
+      final svc = _teamSvcWithMock(mock);
+
+      await svc.fetch(TokenTimeRange.h24, userScope: UserScope.personal);
+      expect(mock.capturedEnvironment, isNull);
+      svc.dispose();
+    });
+
+    test('no scope sends null environment to API', () async {
       final mock = MockConnectApi();
       final svc = _teamSvcWithMock(mock);
 
       await svc.fetch(TokenTimeRange.h24);
-      expect(mock.capturedUserScope, isNull);
+      expect(mock.capturedEnvironment, isNull);
       svc.dispose();
     });
 
-    test('fetch with PERSONAL scope threads it to ConnectApiService', () async {
+    test('scope toggle updates environment on subsequent fetch', () async {
       final mock = MockConnectApi();
       final svc = _teamSvcWithMock(mock);
 
-      await svc.fetch(TokenTimeRange.h24,
-          userScope: UserScope.USER_SCOPE_PERSONAL);
-      expect(mock.capturedUserScope, UserScope.USER_SCOPE_PERSONAL);
-      svc.dispose();
-    });
+      await svc.fetch(TokenTimeRange.h24, userScope: UserScope.personal);
+      expect(mock.capturedEnvironment, isNull);
 
-    test('fetch with GLOBAL scope threads it to ConnectApiService', () async {
-      final mock = MockConnectApi();
-      final svc = _teamSvcWithMock(mock);
+      await svc.fetch(TokenTimeRange.h24, userScope: UserScope.global);
+      expect(mock.capturedEnvironment, equals('global'));
 
-      await svc.fetch(TokenTimeRange.h24,
-          userScope: UserScope.USER_SCOPE_GLOBAL);
-      expect(mock.capturedUserScope, UserScope.USER_SCOPE_GLOBAL);
-      svc.dispose();
-    });
-
-    test('fetch with UNSPECIFIED scope threads it to ConnectApiService',
-        () async {
-      final mock = MockConnectApi();
-      final svc = _teamSvcWithMock(mock);
-
-      await svc.fetch(TokenTimeRange.d7,
-          userScope: UserScope.USER_SCOPE_UNSPECIFIED);
-      expect(mock.capturedUserScope, UserScope.USER_SCOPE_UNSPECIFIED);
-      svc.dispose();
-    });
-
-    test('changing scope between fetches updates captured value', () async {
-      final mock = MockConnectApi();
-      final svc = _teamSvcWithMock(mock);
-
-      await svc.fetch(TokenTimeRange.h24,
-          userScope: UserScope.USER_SCOPE_PERSONAL);
-      expect(mock.capturedUserScope, UserScope.USER_SCOPE_PERSONAL);
-
-      await svc.fetch(TokenTimeRange.h24,
-          userScope: UserScope.USER_SCOPE_GLOBAL);
-      expect(mock.capturedUserScope, UserScope.USER_SCOPE_GLOBAL);
+      await svc.fetch(TokenTimeRange.h24, userScope: UserScope.personal);
+      expect(mock.capturedEnvironment, isNull);
       svc.dispose();
     });
   });

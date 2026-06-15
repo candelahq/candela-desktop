@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../gen/candela/types/user.pbenum.dart' as user_types;
+import '../models/user_scope.dart';
 import '../theme/colors.dart';
 
 /// Compact segmented toggle for switching between personal ("My") and
@@ -8,11 +8,11 @@ import '../theme/colors.dart';
 /// Used across Dashboard, Today, and Traces screens when the app is
 /// running in team mode.
 class ScopeToggle extends StatelessWidget {
-  final user_types.UserScope scope;
-  final ValueChanged<user_types.UserScope> onChanged;
+  final UserScope scope;
+  final ValueChanged<UserScope> onChanged;
   const ScopeToggle({super.key, required this.scope, required this.onChanged});
 
-  bool get _isGlobal => scope == user_types.UserScope.USER_SCOPE_GLOBAL;
+  bool get _isGlobal => scope == UserScope.global;
 
   @override
   Widget build(BuildContext context) {
@@ -27,12 +27,12 @@ class ScopeToggle extends StatelessWidget {
         children: [
           _scopeChip('My', !_isGlobal, () {
             if (_isGlobal) {
-              onChanged(user_types.UserScope.USER_SCOPE_PERSONAL);
+              onChanged(UserScope.personal);
             }
           }),
           _scopeChip('All', _isGlobal, () {
             if (!_isGlobal) {
-              onChanged(user_types.UserScope.USER_SCOPE_GLOBAL);
+              onChanged(UserScope.global);
             }
           }),
         ],

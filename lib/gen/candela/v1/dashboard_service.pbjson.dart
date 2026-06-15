@@ -546,14 +546,6 @@ const GetDashboardDataRequest$json = {
     },
     {'1': 'environment', '3': 3, '4': 1, '5': 9, '10': 'environment'},
     {'1': 'include_budget', '3': 4, '4': 1, '5': 8, '10': 'includeBudget'},
-    {
-      '1': 'user_scope',
-      '3': 5,
-      '4': 1,
-      '5': 14,
-      '6': '.candela.types.UserScope',
-      '10': 'userScope'
-    },
   ],
 };
 
@@ -562,8 +554,7 @@ final $typed_data.Uint8List getDashboardDataRequestDescriptor = $convert.base64D
     'ChdHZXREYXNoYm9hcmREYXRhUmVxdWVzdBIdCgpwcm9qZWN0X2lkGAEgASgJUglwcm9qZWN0SW'
     'QSNwoKdGltZV9yYW5nZRgCIAEoCzIYLmNhbmRlbGEudHlwZXMuVGltZVJhbmdlUgl0aW1lUmFu'
     'Z2USIAoLZW52aXJvbm1lbnQYAyABKAlSC2Vudmlyb25tZW50EiUKDmluY2x1ZGVfYnVkZ2V0GA'
-    'QgASgIUg1pbmNsdWRlQnVkZ2V0EjcKCnVzZXJfc2NvcGUYBSABKA4yGC5jYW5kZWxhLnR5cGVz'
-    'LlVzZXJTY29wZVIJdXNlclNjb3Bl');
+    'QgASgIUg1pbmNsdWRlQnVkZ2V0');
 
 @$core.Deprecated('Use getDashboardDataResponseDescriptor instead')
 const GetDashboardDataResponse$json = {

@@ -11,7 +11,7 @@ import '../services/dashboard_notifier.dart' as dashboard_notifier;
 import '../services/dashboard_notifier.dart' show DashboardState;
 import '../services/process_manager.dart';
 import '../services/tray_service.dart';
-import '../gen/candela/types/user.pbenum.dart' as user_types;
+import '../models/user_scope.dart';
 
 part 'providers.g.dart';
 
@@ -107,8 +107,7 @@ class DashboardNotifier extends _$DashboardNotifier {
   Future<void> configure(CandelaConfig config) => _inner.configure(config);
   Future<void> fetch() => _inner.fetch();
   Future<void> setRange(TokenTimeRange range) => _inner.setRange(range);
-  Future<void> setUserScope(user_types.UserScope scope) =>
-      _inner.setUserScope(scope);
+  Future<void> setUserScope(UserScope scope) => _inner.setUserScope(scope);
   void startPolling({Duration interval = const Duration(seconds: 60)}) =>
       _inner.startPolling(interval: interval);
   void onAppLifecycleChanged(AppLifecycleState lifecycleState) =>

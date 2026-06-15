@@ -1,7 +1,7 @@
 name: candela_desktop
 description: Candela — LLM Observability for your machine
 publish_to: 'none'
-version: 0.5.8
+version: 0.6.0
 
 environment:
   sdk: ^3.6.0

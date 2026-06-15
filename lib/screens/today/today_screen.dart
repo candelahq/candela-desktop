@@ -209,7 +209,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         _HeroCard(
           budget: budget,
           totalRemainingUsd: remaining,
-          todaySpend: summary?.totalCostUsd,
+          // Prefer the server's authoritative budget spend over the
+          // synthetic-span estimate, which divides costs evenly across
+          // the dashboard's time range and under-reports today's total.
+          todaySpend: budget?.spentUsd ?? summary?.totalCostUsd,
         ),
         const SizedBox(height: 16),
         // ── Quick Stats Row ──

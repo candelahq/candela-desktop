@@ -7,7 +7,7 @@ import 'package:http/http.dart' as http;
 import '../models/budget_info.dart';
 import '../models/span_stats.dart';
 import '../gen/candela/v1/dashboard_service.pb.dart' hide TimeSeriesPoint;
-import '../gen/candela/types/user.pbenum.dart' as user_types;
+import '../models/user_scope.dart';
 import 'connect_api_service.dart';
 
 // ── Error kinds ───────────────────────────────────────────────────────────────
@@ -96,7 +96,7 @@ class TelemetryService {
   /// The returned [TelemetryResult] may carry a [TelemetryErrorKind] to let
   /// the UI show actionable error messages (e.g. "token expired").
   Future<TelemetryResult?> fetch(TokenTimeRange range,
-      {user_types.UserScope? userScope}) async {
+      {UserScope? userScope}) async {
     // C2: reject unsafe remote URLs before making any request.
     if (remoteUrl != null && !isSafeUrl(remoteUrl!)) {
       return const TelemetryResult.withError(
@@ -209,7 +209,7 @@ class TelemetryService {
             List<ModelBreakdown>?,
           )>
       _fetchRemote(TokenTimeRange range, DateTime now,
-          {user_types.UserScope? userScope}) async {
+          {UserScope? userScope}) async {
     final base = remoteUrl!.replaceAll(RegExp(r'/$'), '');
     final start = range.startFrom(now);
 
@@ -217,7 +217,8 @@ class TelemetryService {
 
     try {
       // ── Consolidated path: single RPC (GetDashboardData) ─────────────────
-      return await _fetchDashboardData(api, start, now, userScope: userScope);
+      return await _fetchDashboardData(api, start, now,
+          environment: userScope == UserScope.global ? 'global' : null);
     } on ConnectException catch (e) {
       // Graceful rollback: if the server hasn't been updated yet, the new RPC
       // returns Unimplemented. Fall back to the legacy 3-RPC fan-out so the
@@ -303,13 +304,13 @@ class TelemetryService {
     ConnectApiService api,
     DateTime start,
     DateTime now, {
-    user_types.UserScope? userScope,
+    String? environment,
   }) async {
     final resp = await api.getDashboardData(
       start: start,
       end: now,
       includeBudget: true,
-      userScope: userScope,
+      environment: environment,
     );
 
     // Parse budget/grant data (non-fatal if missing).

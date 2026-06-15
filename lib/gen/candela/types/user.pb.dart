@@ -33,6 +33,7 @@ class User extends $pb.GeneratedMessage {
     $2.Timestamp? createdAt,
     $2.Timestamp? lastSeenAt,
     $core.int? rateLimit,
+    $2.Timestamp? lastActiveAt,
   }) {
     final $result = create();
     if (id != null) {
@@ -58,6 +59,9 @@ class User extends $pb.GeneratedMessage {
     }
     if (rateLimit != null) {
       $result.rateLimit = rateLimit;
+    }
+    if (lastActiveAt != null) {
+      $result.lastActiveAt = lastActiveAt;
     }
     return $result;
   }
@@ -89,6 +93,8 @@ class User extends $pb.GeneratedMessage {
     ..aOM<$2.Timestamp>(7, _omitFieldNames ? '' : 'lastSeenAt',
         subBuilder: $2.Timestamp.create)
     ..a<$core.int>(8, _omitFieldNames ? '' : 'rateLimit', $pb.PbFieldType.O3)
+    ..aOM<$2.Timestamp>(9, _omitFieldNames ? '' : 'lastActiveAt',
+        subBuilder: $2.Timestamp.create)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -207,6 +213,20 @@ class User extends $pb.GeneratedMessage {
   $core.bool hasRateLimit() => $_has(7);
   @$pb.TagNumber(8)
   void clearRateLimit() => $_clearField(8);
+
+  @$pb.TagNumber(9)
+  $2.Timestamp get lastActiveAt => $_getN(8);
+  @$pb.TagNumber(9)
+  set lastActiveAt($2.Timestamp v) {
+    $_setField(9, v);
+  }
+
+  @$pb.TagNumber(9)
+  $core.bool hasLastActiveAt() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearLastActiveAt() => $_clearField(9);
+  @$pb.TagNumber(9)
+  $2.Timestamp ensureLastActiveAt() => $_ensure(8);
 }
 
 /// UserBudget tracks a user's recurring spend for a budget period.

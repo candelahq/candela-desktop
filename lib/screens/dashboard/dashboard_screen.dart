@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../gen/candela/types/user.pbenum.dart' as user_types;
+import '../../models/user_scope.dart';
 import '../../models/span_stats.dart';
 import '../../services/budget_notification_service.dart';
 import '../../services/dashboard_notifier.dart';
@@ -146,8 +146,8 @@ class _Header extends StatelessWidget {
   final VoidCallback onRefresh;
   final bool loading;
   final bool isTeamMode;
-  final user_types.UserScope userScope;
-  final ValueChanged<user_types.UserScope> onScopeChanged;
+  final UserScope userScope;
+  final ValueChanged<UserScope> onScopeChanged;
   final List<String> models;
   final String? selectedModel;
   final ValueChanged<String?> onModelChanged;

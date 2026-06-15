@@ -113,8 +113,8 @@ String _$configHash() => r'1dc24e74f7dee07e7658c47f6de79ed8fb4ac5e0';
 /// then re-configured automatically when the config file changes.
 ///
 /// Usage:
-///   final state = ref.watch(dashboardNotifierProvider);  // DashboardState
-///   ref.read(dashboardNotifierProvider.notifier).fetch(); // methods
+///   final state = ref.watch(dashboardProvider);  // DashboardState
+///   ref.read(dashboardProvider.notifier).fetch(); // methods
 
 @ProviderFor(DashboardNotifier)
 final dashboardProvider = DashboardNotifierProvider._();
@@ -130,8 +130,8 @@ final dashboardProvider = DashboardNotifierProvider._();
 /// then re-configured automatically when the config file changes.
 ///
 /// Usage:
-///   final state = ref.watch(dashboardNotifierProvider);  // DashboardState
-///   ref.read(dashboardNotifierProvider.notifier).fetch(); // methods
+///   final state = ref.watch(dashboardProvider);  // DashboardState
+///   ref.read(dashboardProvider.notifier).fetch(); // methods
 final class DashboardNotifierProvider extends $NotifierProvider<
     DashboardNotifier, dashboard_notifier.DashboardState> {
   /// Shared dashboard state — the single source of truth for telemetry data.
@@ -145,8 +145,8 @@ final class DashboardNotifierProvider extends $NotifierProvider<
   /// then re-configured automatically when the config file changes.
   ///
   /// Usage:
-  ///   final state = ref.watch(dashboardNotifierProvider);  // DashboardState
-  ///   ref.read(dashboardNotifierProvider.notifier).fetch(); // methods
+  ///   final state = ref.watch(dashboardProvider);  // DashboardState
+  ///   ref.read(dashboardProvider.notifier).fetch(); // methods
   DashboardNotifierProvider._()
       : super(
           from: null,
@@ -175,7 +175,7 @@ final class DashboardNotifierProvider extends $NotifierProvider<
   }
 }
 
-String _$dashboardNotifierHash() => r'55c069f11b713f3c5440074a421f26df4e7fc4e5';
+String _$dashboardNotifierHash() => r'ac01071e376c4692b3f07741661f93469fca8642';
 
 /// Shared dashboard state — the single source of truth for telemetry data.
 ///
@@ -188,8 +188,8 @@ String _$dashboardNotifierHash() => r'55c069f11b713f3c5440074a421f26df4e7fc4e5';
 /// then re-configured automatically when the config file changes.
 ///
 /// Usage:
-///   final state = ref.watch(dashboardNotifierProvider);  // DashboardState
-///   ref.read(dashboardNotifierProvider.notifier).fetch(); // methods
+///   final state = ref.watch(dashboardProvider);  // DashboardState
+///   ref.read(dashboardProvider.notifier).fetch(); // methods
 
 abstract class _$DashboardNotifier
     extends $Notifier<dashboard_notifier.DashboardState> {

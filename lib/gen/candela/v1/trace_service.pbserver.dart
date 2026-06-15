@@ -15,27 +15,27 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
-import 'trace_service.pb.dart' as $14;
+import 'trace_service.pb.dart' as $16;
 import 'trace_service.pbjson.dart';
 
 export 'trace_service.pb.dart';
 
 abstract class TraceServiceBase extends $pb.GeneratedService {
-  $async.Future<$14.GetTraceResponse> getTrace(
-      $pb.ServerContext ctx, $14.GetTraceRequest request);
-  $async.Future<$14.ListTracesResponse> listTraces(
-      $pb.ServerContext ctx, $14.ListTracesRequest request);
-  $async.Future<$14.SearchSpansResponse> searchSpans(
-      $pb.ServerContext ctx, $14.SearchSpansRequest request);
+  $async.Future<$16.GetTraceResponse> getTrace(
+      $pb.ServerContext ctx, $16.GetTraceRequest request);
+  $async.Future<$16.ListTracesResponse> listTraces(
+      $pb.ServerContext ctx, $16.ListTracesRequest request);
+  $async.Future<$16.SearchSpansResponse> searchSpans(
+      $pb.ServerContext ctx, $16.SearchSpansRequest request);
 
   $pb.GeneratedMessage createRequest($core.String methodName) {
     switch (methodName) {
       case 'GetTrace':
-        return $14.GetTraceRequest();
+        return $16.GetTraceRequest();
       case 'ListTraces':
-        return $14.ListTracesRequest();
+        return $16.ListTracesRequest();
       case 'SearchSpans':
-        return $14.SearchSpansRequest();
+        return $16.SearchSpansRequest();
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }
@@ -45,11 +45,11 @@ abstract class TraceServiceBase extends $pb.GeneratedService {
       $core.String methodName, $pb.GeneratedMessage request) {
     switch (methodName) {
       case 'GetTrace':
-        return this.getTrace(ctx, request as $14.GetTraceRequest);
+        return this.getTrace(ctx, request as $16.GetTraceRequest);
       case 'ListTraces':
-        return this.listTraces(ctx, request as $14.ListTracesRequest);
+        return this.listTraces(ctx, request as $16.ListTracesRequest);
       case 'SearchSpans':
-        return this.searchSpans(ctx, request as $14.SearchSpansRequest);
+        return this.searchSpans(ctx, request as $16.SearchSpansRequest);
       default:
         throw $core.ArgumentError('Unknown method: $methodName');
     }

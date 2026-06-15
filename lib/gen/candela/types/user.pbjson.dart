@@ -28,21 +28,6 @@ final $typed_data.Uint8List userRoleDescriptor = $convert.base64Decode(
     'CghVc2VyUm9sZRIZChVVU0VSX1JPTEVfVU5TUEVDSUZJRUQQABIXChNVU0VSX1JPTEVfREVWRU'
     'xPUEVSEAESEwoPVVNFUl9ST0xFX0FETUlOEAI=');
 
-@$core.Deprecated('Use userScopeDescriptor instead')
-const UserScope$json = {
-  '1': 'UserScope',
-  '2': [
-    {'1': 'USER_SCOPE_UNSPECIFIED', '2': 0},
-    {'1': 'USER_SCOPE_PERSONAL', '2': 1},
-    {'1': 'USER_SCOPE_GLOBAL', '2': 2},
-  ],
-};
-
-/// Descriptor for `UserScope`. Decode as a `google.protobuf.EnumDescriptorProto`.
-final $typed_data.Uint8List userScopeDescriptor = $convert.base64Decode(
-    'CglVc2VyU2NvcGUSGgoWVVNFUl9TQ09QRV9VTlNQRUNJRklFRBAAEhcKE1VTRVJfU0NPUEVfUE'
-    'VSU09OQUwQARIVChFVU0VSX1NDT1BFX0dMT0JBTBAC');
-
 @$core.Deprecated('Use userStatusDescriptor instead')
 const UserStatus$json = {
   '1': 'UserStatus',
@@ -128,6 +113,14 @@ const User$json = {
       '10': 'lastSeenAt'
     },
     {'1': 'rate_limit', '3': 8, '4': 1, '5': 5, '10': 'rateLimit'},
+    {
+      '1': 'last_active_at',
+      '3': 9,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'lastActiveAt'
+    },
   ],
 };
 
@@ -138,7 +131,9 @@ final $typed_data.Uint8List userDescriptor = $convert.base64Decode(
     'c2VyUm9sZVIEcm9sZRIxCgZzdGF0dXMYBSABKA4yGS5jYW5kZWxhLnR5cGVzLlVzZXJTdGF0dX'
     'NSBnN0YXR1cxI5CgpjcmVhdGVkX2F0GAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFt'
     'cFIJY3JlYXRlZEF0EjwKDGxhc3Rfc2Vlbl9hdBgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW'
-    '1lc3RhbXBSCmxhc3RTZWVuQXQSHQoKcmF0ZV9saW1pdBgIIAEoBVIJcmF0ZUxpbWl0');
+    '1lc3RhbXBSCmxhc3RTZWVuQXQSHQoKcmF0ZV9saW1pdBgIIAEoBVIJcmF0ZUxpbWl0EkAKDmxh'
+    'c3RfYWN0aXZlX2F0GAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIMbGFzdEFjdG'
+    'l2ZUF0');
 
 @$core.Deprecated('Use userBudgetDescriptor instead')
 const UserBudget$json = {

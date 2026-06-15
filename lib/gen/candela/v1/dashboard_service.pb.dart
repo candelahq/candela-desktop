@@ -17,7 +17,6 @@ import 'package:protobuf/protobuf.dart' as $pb;
 
 import '../types/common.pb.dart' as $4;
 import '../types/user.pb.dart' as $7;
-import '../types/user.pbenum.dart' as $7;
 
 export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
@@ -1940,7 +1939,6 @@ class GetDashboardDataRequest extends $pb.GeneratedMessage {
     $4.TimeRange? timeRange,
     $core.String? environment,
     $core.bool? includeBudget,
-    $7.UserScope? userScope,
   }) {
     final $result = create();
     if (projectId != null) {
@@ -1954,9 +1952,6 @@ class GetDashboardDataRequest extends $pb.GeneratedMessage {
     }
     if (includeBudget != null) {
       $result.includeBudget = includeBudget;
-    }
-    if (userScope != null) {
-      $result.userScope = userScope;
     }
     return $result;
   }
@@ -1977,10 +1972,6 @@ class GetDashboardDataRequest extends $pb.GeneratedMessage {
         subBuilder: $4.TimeRange.create)
     ..aOS(3, _omitFieldNames ? '' : 'environment')
     ..aOB(4, _omitFieldNames ? '' : 'includeBudget')
-    ..e<$7.UserScope>(5, _omitFieldNames ? '' : 'userScope', $pb.PbFieldType.OE,
-        defaultOrMaker: $7.UserScope.USER_SCOPE_UNSPECIFIED,
-        valueOf: $7.UserScope.valueOf,
-        enumValues: $7.UserScope.values)
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -2055,18 +2046,6 @@ class GetDashboardDataRequest extends $pb.GeneratedMessage {
   $core.bool hasIncludeBudget() => $_has(3);
   @$pb.TagNumber(4)
   void clearIncludeBudget() => $_clearField(4);
-
-  @$pb.TagNumber(5)
-  $7.UserScope get userScope => $_getN(4);
-  @$pb.TagNumber(5)
-  set userScope($7.UserScope v) {
-    $_setField(5, v);
-  }
-
-  @$pb.TagNumber(5)
-  $core.bool hasUserScope() => $_has(4);
-  @$pb.TagNumber(5)
-  void clearUserScope() => $_clearField(5);
 }
 
 /// Per-user budget context (populated when include_budget=true + auth).

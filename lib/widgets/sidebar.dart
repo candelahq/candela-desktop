@@ -45,6 +45,10 @@ class _CandelaSidebarState extends State<CandelaSidebar> {
     _NavItem(
         icon: Icons.memory_outlined, activeIcon: Icons.memory, label: 'Models'),
     _NavItem(
+        icon: Icons.menu_book_outlined,
+        activeIcon: Icons.menu_book,
+        label: 'Catalog'),
+    _NavItem(
         icon: Icons.settings_outlined,
         activeIcon: Icons.settings,
         label: 'Settings'),

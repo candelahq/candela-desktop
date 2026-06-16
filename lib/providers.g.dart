@@ -209,6 +209,93 @@ abstract class _$DashboardNotifier
   }
 }
 
+/// Shared catalog state — the single source of truth for the model catalog.
+///
+/// Lazily configured from the config stream, auto-fetches on init.
+///
+/// Usage:
+///   final state = ref.watch(catalogProvider);          // CatalogState
+///   ref.read(catalogProvider.notifier).fetch();        // methods
+///   ref.read(catalogProvider.notifier).toggleEnabled(…);
+
+@ProviderFor(CatalogNotifier)
+final catalogProvider = CatalogNotifierProvider._();
+
+/// Shared catalog state — the single source of truth for the model catalog.
+///
+/// Lazily configured from the config stream, auto-fetches on init.
+///
+/// Usage:
+///   final state = ref.watch(catalogProvider);          // CatalogState
+///   ref.read(catalogProvider.notifier).fetch();        // methods
+///   ref.read(catalogProvider.notifier).toggleEnabled(…);
+final class CatalogNotifierProvider
+    extends $NotifierProvider<CatalogNotifier, catalog_notifier.CatalogState> {
+  /// Shared catalog state — the single source of truth for the model catalog.
+  ///
+  /// Lazily configured from the config stream, auto-fetches on init.
+  ///
+  /// Usage:
+  ///   final state = ref.watch(catalogProvider);          // CatalogState
+  ///   ref.read(catalogProvider.notifier).fetch();        // methods
+  ///   ref.read(catalogProvider.notifier).toggleEnabled(…);
+  CatalogNotifierProvider._()
+      : super(
+          from: null,
+          argument: null,
+          retry: null,
+          name: r'catalogProvider',
+          isAutoDispose: false,
+          dependencies: null,
+          $allTransitiveDependencies: null,
+        );
+
+  @override
+  String debugGetCreateSourceHash() => _$catalogNotifierHash();
+
+  @$internal
+  @override
+  CatalogNotifier create() => CatalogNotifier();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(catalog_notifier.CatalogState value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride:
+          $SyncValueProvider<catalog_notifier.CatalogState>(value),
+    );
+  }
+}
+
+String _$catalogNotifierHash() => r'c7e85585d2b00eb34c2f85a600baea1e34d37772';
+
+/// Shared catalog state — the single source of truth for the model catalog.
+///
+/// Lazily configured from the config stream, auto-fetches on init.
+///
+/// Usage:
+///   final state = ref.watch(catalogProvider);          // CatalogState
+///   ref.read(catalogProvider.notifier).fetch();        // methods
+///   ref.read(catalogProvider.notifier).toggleEnabled(…);
+
+abstract class _$CatalogNotifier
+    extends $Notifier<catalog_notifier.CatalogState> {
+  catalog_notifier.CatalogState build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref
+        as $Ref<catalog_notifier.CatalogState, catalog_notifier.CatalogState>;
+    final element = ref.element as $ClassProviderElement<
+        AnyNotifier<catalog_notifier.CatalogState,
+            catalog_notifier.CatalogState>,
+        catalog_notifier.CatalogState,
+        Object?,
+        Object?>;
+    element.handleCreate(ref, build);
+  }
+}
+
 /// The singleton ProcessManager, auto-configured when config changes.
 
 @ProviderFor(processManager)

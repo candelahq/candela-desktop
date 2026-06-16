@@ -13,6 +13,7 @@ import 'screens/dashboard/dashboard_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/today/today_screen.dart';
 import 'screens/traces/traces_screen.dart';
+import 'screens/catalog/catalog_screen.dart';
 import 'screens/models/models_screen.dart';
 import 'screens/settings/settings_screen.dart';
 
@@ -244,6 +245,7 @@ class _AppShellState extends ConsumerState<AppShell>
         const DashboardScreen(),
         const TracesScreen(),
         const ModelsScreen(),
+        const CatalogScreen(),
         SettingsScreen(
           currentThemeMode: widget.themeMode,
           onThemeModeChanged: widget.onThemeModeChanged,

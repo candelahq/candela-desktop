@@ -88,6 +88,27 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
     final catalogState = ref.watch(catalogProvider);
     final models = _filterModels(catalogState.models);
 
+    // Show a SnackBar whenever an error occurs, regardless of model list state.
+    ref.listen<CatalogState>(catalogProvider, (prev, next) {
+      if (next.error != null && next.error != prev?.error) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(next.error!),
+              backgroundColor: CandelaColors.error,
+              behavior: SnackBarBehavior.floating,
+              action: SnackBarAction(
+                label: 'Dismiss',
+                textColor: CandelaColors.textPrimary,
+                onPressed: () =>
+                    ref.read(catalogProvider.notifier).clearError(),
+              ),
+            ),
+          );
+      }
+    });
+
     return Scaffold(
       backgroundColor: CandelaColors.bgPrimary,
       body: Column(
@@ -583,9 +604,26 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
             style: FilledButton.styleFrom(
               backgroundColor: CandelaColors.error,
             ),
-            onPressed: () {
+            onPressed: () async {
               Navigator.of(ctx).pop();
-              ref.read(catalogProvider.notifier).deleteEntry(provider, modelId);
+              final notifier = ref.read(catalogProvider.notifier);
+              final modelsBefore = ref.read(catalogProvider).models.length;
+              await notifier.deleteEntry(provider, modelId);
+              if (!mounted) return;
+              final modelsAfter = ref.read(catalogProvider).models.length;
+              // Show success SnackBar only if the model was actually removed
+              // (no error was set — error SnackBar is handled by ref.listen).
+              if (modelsAfter < modelsBefore) {
+                ScaffoldMessenger.of(context)
+                  ..hideCurrentSnackBar()
+                  ..showSnackBar(
+                    SnackBar(
+                      content: Text('"$modelId" deleted successfully'),
+                      backgroundColor: CandelaColors.success,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+              }
             },
             child: const Text('Delete'),
           ),

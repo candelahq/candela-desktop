@@ -167,6 +167,7 @@ class CatalogNotifier extends _$CatalogNotifier {
       _inner.toggleEnabled(provider, modelId, enabled);
   Future<void> deleteEntry(String provider, String modelId) =>
       _inner.deleteEntry(provider, modelId);
+  void clearError() => _inner.clearError();
 }
 
 // ── Process Manager ─────────────────────────────────────────────────────────

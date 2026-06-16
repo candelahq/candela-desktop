@@ -78,13 +78,10 @@ class CatalogController {
   /// In team mode the transport routes through the local proxy
   /// (`localhost:{port}`) which handles IAP auth automatically.
   void configure(CandelaConfig config) {
-    final isTeam = config.mode == CandelaMode.team &&
-        config.remote != null &&
-        config.remote!.isNotEmpty;
-
-    final baseUrl = isTeam
-        ? 'http://localhost:${config.port}'
-        : 'http://localhost:${config.port}';
+    // In both team and solo mode, requests route through the local proxy.
+    // In team mode the proxy's catch-all forwards to the remote backend
+    // with IAP + auth headers injected automatically.
+    final baseUrl = 'http://localhost:${config.port}';
 
     _client = ModelCatalogServiceClient(
       createCandelaTransport(baseUrl: baseUrl),
@@ -152,7 +149,7 @@ class CatalogController {
       }
       return m;
     }).toList();
-    state = state.copyWith(models: updatedModels);
+    state = state.copyWith(models: updatedModels, clearError: true);
 
     try {
       await _client!.updateModelCatalogEntry(
@@ -183,15 +180,20 @@ class CatalogController {
           modelId: modelId,
         ),
       );
-      // Remove from local state.
+      // Remove from local state and clear any previous error.
       final updated = state.models
           .where((m) => !(m.provider == provider && m.modelId == modelId))
           .toList();
-      state = state.copyWith(models: updated);
+      state = state.copyWith(models: updated, clearError: true);
     } catch (e) {
       debugPrint('[CatalogController] deleteEntry error: $e');
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(error: 'Failed to delete $modelId: $e');
     }
+  }
+
+  /// Clear any pending error. Called by the UI after displaying the error.
+  void clearError() {
+    state = state.copyWith(clearError: true);
   }
 
   /// Release resources.

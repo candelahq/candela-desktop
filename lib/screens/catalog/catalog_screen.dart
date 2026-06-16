@@ -17,8 +17,13 @@ const _providerColors = <String, Color>{
   'qwen': Color(0xFFF87171), // red
 };
 
-Color _colorForProvider(String provider) =>
-    _providerColors[provider.toLowerCase()] ?? CandelaColors.textMuted;
+Color _colorForProvider(String provider) {
+  final p = provider.toLowerCase();
+  for (final e in _providerColors.entries) {
+    if (p.startsWith(e.key)) return e.value;
+  }
+  return CandelaColors.textMuted;
+}
 
 // ── Category badge colors ────────────────────────────────────────────────────
 
@@ -639,8 +644,9 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
 
     if (_selectedProvider != 'All') {
       final provLower = _selectedProvider.toLowerCase();
-      filtered =
-          filtered.where((m) => m.provider.toLowerCase() == provLower).toList();
+      filtered = filtered
+          .where((m) => m.provider.toLowerCase().startsWith(provLower))
+          .toList();
     }
 
     if (_searchQuery.isNotEmpty) {

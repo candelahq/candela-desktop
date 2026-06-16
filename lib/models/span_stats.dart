@@ -165,3 +165,68 @@ enum TokenTimeRange {
     return now.subtract(duration);
   }
 }
+
+// ── Span aggregation helpers ────────────────────────────────────────────────
+
+/// Aggregate a list of spans into a [UsageSummary].
+///
+/// This is the pure-logic equivalent of TodayScreen._buildSummaryFromSpans,
+/// extracted here so it can be unit tested.
+UsageSummary buildSummaryFromSpans(List<SpanRecord> spans) {
+  int totalIn = 0, totalOut = 0;
+  double totalCost = 0, totalMs = 0;
+  for (final s in spans) {
+    totalIn += s.inputTokens;
+    totalOut += s.outputTokens;
+    totalCost += s.costUsd;
+    totalMs += s.durationMs;
+  }
+  return UsageSummary(
+    totalCalls: spans.length,
+    totalInputTokens: totalIn,
+    totalOutputTokens: totalOut,
+    totalCostUsd: totalCost,
+    avgLatencyMs: spans.isEmpty ? 0.0 : totalMs / spans.length,
+    costOverTime: const [],
+    tokensOverTime: const [],
+    callsOverTime: const [],
+  );
+}
+
+/// Aggregate a list of spans into per-model [ModelBreakdown] entries,
+/// sorted by cost descending.
+///
+/// This is the pure-logic equivalent of TodayScreen._buildTodayModels,
+/// extracted here so it can be unit tested.
+List<ModelBreakdown> buildModelBreakdownFromSpans(List<SpanRecord> spans) {
+  if (spans.isEmpty) return [];
+
+  final byModel = <String, List<SpanRecord>>{};
+  for (final s in spans) {
+    byModel.putIfAbsent(s.model, () => []).add(s);
+  }
+
+  final models = byModel.entries.map((e) {
+    final group = e.value;
+    int inTok = 0, outTok = 0;
+    double cost = 0, ms = 0;
+    for (final s in group) {
+      inTok += s.inputTokens;
+      outTok += s.outputTokens;
+      cost += s.costUsd;
+      ms += s.durationMs;
+    }
+    return ModelBreakdown(
+      model: e.key,
+      provider: group.first.provider,
+      callCount: group.length,
+      inputTokens: inTok,
+      outputTokens: outTok,
+      costUsd: cost,
+      avgLatencyMs: group.isEmpty ? 0.0 : ms / group.length,
+    );
+  }).toList();
+
+  models.sort((a, b) => b.costUsd.compareTo(a.costUsd));
+  return models;
+}

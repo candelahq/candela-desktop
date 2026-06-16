@@ -35,8 +35,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
   /// Build a today-scoped summary by filtering the shared notifier's spans
   /// to today's UTC window.
-  UsageSummary? _buildTodaySummary(
-      DashboardState state, DashboardNotifier notifier) {
+  UsageSummary? _buildTodaySummary(DashboardState state) {
     final result = state.result;
     if (result == null || !result.hasData) return null;
 
@@ -51,9 +50,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     }
 
     if (spans.isEmpty) return null;
-    return notifier.buildFilteredSummary(_selectedModel) != null
-        ? _buildSummaryFromSpans(spans)
-        : null;
+    return _buildSummaryFromSpans(spans);
   }
 
   /// Simple local aggregation for today's filtered spans.
@@ -76,6 +73,51 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       tokensOverTime: const [],
       callsOverTime: const [],
     );
+  }
+
+  /// Build today-scoped model breakdowns from today-filtered spans.
+  /// This ensures "Top Models Today" actually shows today's data,
+  /// not the 7-day window from the shared DashboardNotifier.
+  List<ModelBreakdown> _buildTodayModels(DashboardState state) {
+    final result = state.result;
+    if (result == null || !result.hasData) return [];
+
+    final todayRange = TokenTimeRange.todayUtc;
+    final cutoff = todayRange.startFrom(DateTime.now());
+    final spans =
+        result.spans.where((s) => s.timestamp.isAfter(cutoff)).toList();
+    if (spans.isEmpty) return [];
+
+    // Group by model and aggregate.
+    final byModel = <String, List<SpanRecord>>{};
+    for (final s in spans) {
+      byModel.putIfAbsent(s.model, () => []).add(s);
+    }
+
+    final models = byModel.entries.map((e) {
+      final spans = e.value;
+      int inTok = 0, outTok = 0;
+      double cost = 0, ms = 0;
+      for (final s in spans) {
+        inTok += s.inputTokens;
+        outTok += s.outputTokens;
+        cost += s.costUsd;
+        ms += s.durationMs;
+      }
+      return ModelBreakdown(
+        model: e.key,
+        provider: spans.first.provider,
+        callCount: spans.length,
+        inputTokens: inTok,
+        outputTokens: outTok,
+        costUsd: cost,
+        avgLatencyMs: spans.isEmpty ? 0.0 : ms / spans.length,
+      );
+    }).toList();
+
+    // Sort by cost descending.
+    models.sort((a, b) => b.costUsd.compareTo(a.costUsd));
+    return models;
   }
 
   String? _errorMessage(DashboardState state) {
@@ -101,8 +143,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(dashboardProvider);
     final notifier = ref.read(dashboardProvider.notifier);
-    final summary = _buildTodaySummary(state, notifier);
+    final summary = _buildTodaySummary(state);
     final error = _errorMessage(state);
+    final todayModels = _buildTodayModels(state);
     final uniqueModels =
         state.result?.models.map((m) => m.model).toSet().toList() ?? [];
 
@@ -118,7 +161,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                         CircularProgressIndicator(color: CandelaColors.accent))
                 : SingleChildScrollView(
                     padding: const EdgeInsets.all(24),
-                    child: _buildBody(summary, state, error),
+                    child: _buildBody(summary, state, error, todayModels),
                   ),
           ),
         ],
@@ -183,8 +226,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     );
   }
 
-  Widget _buildBody(
-      UsageSummary? summary, DashboardState state, String? error) {
+  Widget _buildBody(UsageSummary? summary, DashboardState state, String? error,
+      List<ModelBreakdown> todayModels) {
     if (error != null && state.result == null) {
       return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         _ErrorCard(message: error),
@@ -196,7 +239,6 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     final budget = state.result?.budget;
     final grants = state.result?.activeGrants ?? [];
     final remaining = state.result?.totalRemainingUsd;
-    final models = state.result?.models ?? [];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -224,8 +266,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           const SizedBox(height: 16),
         ],
         // ── Top models today ──
-        if (models.isNotEmpty) ...[
-          _TopModelsCard(models: models),
+        if (todayModels.isNotEmpty) ...[
+          _TopModelsCard(models: todayModels),
         ],
         // ── Local Services ──
         if (!state.isTeamMode) ...[

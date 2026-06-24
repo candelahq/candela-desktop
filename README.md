@@ -14,7 +14,7 @@ brew install --cask candelahq/tap/candela-desktop
 
 Or download the latest `.dmg` from [GitHub Releases](https://github.com/candelahq/candela-desktop/releases).
 
-> **Requires `candela` CLI v0.3.3+** for the consolidated dashboard RPC. Install with:
+> **Requires `candela` CLI v0.5.7+** — the desktop app uses the `ModelCatalogService` and consolidated `GetDashboardData` RPCs introduced in v0.5.7. Install with:
 > ```bash
 > brew install candelahq/tap/candela
 > ```
@@ -27,11 +27,13 @@ Or download the latest `.dmg` from [GitHub Releases](https://github.com/candelah
 - **Consolidated data fetch** — a single `GetDashboardData` RPC retrieves usage, budget, grants, and cache telemetry atomically
 - **Today view** — real-time spend vs. daily budget with grant-first waterfall display
 - **Time-series charts** — token and cost trends with model breakdown
+- **Dynamic user scope** — toggle between personal and team-wide views in team mode
 - **Visibility-aware polling** — pauses background refreshes when app is backgrounded (60s interval, 50s client-side TTL cache)
 
 ### 💰 Budget & Grants
 - Daily budget progress with color-coded urgency (green → yellow → red)
 - Active grant list with individual remaining amounts and reset countdowns
+- **Native budget notifications** — macOS alerts at 80% and 100% spend thresholds (fires once per crossing)
 - Team-mode: per-user usage attribution and leaderboard
 
 ### 🔍 Traces
@@ -41,7 +43,20 @@ Or download the latest `.dmg` from [GitHub Releases](https://github.com/candelah
 
 ### 📊 Models
 - Per-model stats: cost/call, tokens/call, output ratio, efficiency metrics
+- Model pricing columns and cache efficiency badges
 - Cache hit rates and cache cost breakdown (Anthropic write vs. read pricing)
+
+### 📚 Model Catalog
+- Browse the full model catalog with search and provider/category filters
+- View per-model pricing (input/output per 1M tokens) and context window sizes
+- **Admin mode** — enable/disable models and delete catalog entries (database-backed catalogs)
+- Source badge shows catalog origin (config file vs. database)
+
+### 🩺 Diagnostics
+- Comprehensive auth, config, provider connectivity, and runtime health checks
+- Streaming diagnostic log with pass/fail/warn results
+- Tests team backend ID token exchange and remote connectivity
+- Identity card with ADC credential status and token expiry
 
 ### ⚙️ Settings
 - **Prompt caching controls** — toggle Anthropic cache TTL (5m default, 1h for long coding sessions)
@@ -59,9 +74,23 @@ Or download the latest `.dmg` from [GitHub Releases](https://github.com/candelah
 - Shows upgrade banners when a newer CLI version is available
 - Self-update via `brew upgrade --cask` from system tray menu
 
+### 🚀 Local Service Management
+- Start/stop local model runtimes (Ollama, vLLM, LM Studio) from the UI
+- Auto-detect running processes and health-check polling
+- Process log viewer with recent output ring buffer
+
+### 🔧 IDE Integration
+- Auto-configure proxy endpoint for Continue (VS Code/JetBrains), Zed, and Open Design
+- Merges config entries non-destructively (in-place update or prepend)
+
+### 🎓 Onboarding
+- Guided first-run setup — detects missing config and walks through initial configuration
+- Auto-starts proxy on boot when configured
+
 ### 🎨 UX
 - Full dark and light themes with system preference detection
 - API keys stored in macOS Keychain
+- Minimize-to-tray with menu bar icon (right-click to quit)
 
 ---
 

@@ -61,12 +61,16 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
           .get(Uri.parse('http://localhost:$_port/v1/models'))
           .timeout(const Duration(seconds: 5));
       if (resp.statusCode == 200) {
-        final body = json.decode(resp.body) as Map<String, dynamic>;
-        return (body['data'] as List?)
-                ?.map((m) => (m as Map)['id']?.toString() ?? '')
+        final body = json.decode(resp.body);
+        if (body is Map<String, dynamic>) {
+          final data = body['data'];
+          if (data is List) {
+            return data
+                .map((m) => m is Map ? m['id']?.toString() ?? '' : '')
                 .where((n) => n.isNotEmpty)
-                .toList() ??
-            [];
+                .toList();
+          }
+        }
       }
     } catch (_) {}
     return [];
@@ -74,18 +78,19 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
 
   /// Infer provider from model name.
   static String _inferProvider(String model) {
-    if (model.contains('gemini')) return 'google';
-    if (model.contains('claude')) return 'anthropic';
-    if (model.contains('gpt') ||
-        model.startsWith('o3') ||
-        model.startsWith('o4')) {
+    final name = model.toLowerCase();
+    if (name.contains('gemini')) return 'google';
+    if (name.contains('claude')) return 'anthropic';
+    if (name.contains('gpt') ||
+        name.startsWith('o3') ||
+        name.startsWith('o4')) {
       return 'openai';
     }
-    if (model.contains('mistral') || model.contains('codestral')) {
+    if (name.contains('mistral') || name.contains('codestral')) {
       return 'mistral';
     }
-    if (model.contains('deepseek')) return 'deepseek';
-    if (model.contains('qwen')) return 'qwen';
+    if (name.contains('deepseek')) return 'deepseek';
+    if (name.contains('qwen')) return 'qwen';
     return 'other';
   }
 
@@ -94,9 +99,10 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
     setState(() => _loading = true);
     try {
       // Fetch usage data and available models in parallel.
+      // Skip local model fetching in team mode to avoid unnecessary timeouts.
       final results = await Future.wait([
         _svc!.fetch(_range),
-        _fetchAvailableModels(),
+        _svc!.isTeamMode ? Future.value(<String>[]) : _fetchAvailableModels(),
       ]);
       final result = results[0] as TelemetryResult?;
       final availableIds = results[1] as List<String>;
@@ -173,6 +179,10 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
         cmp = a.avgLatencyMs.compareTo(b.avgLatencyMs);
       case _ModelSortCol.name:
         cmp = a.model.compareTo(b.model);
+    }
+    // Stable secondary sort by model name when primary keys are equal.
+    if (cmp == 0 && _sortCol != _ModelSortCol.name) {
+      return a.model.compareTo(b.model);
     }
     return _ascending ? cmp : -cmp;
   }

@@ -27,7 +27,7 @@ Or download the latest `.dmg` from [GitHub Releases](https://github.com/candelah
 - **Consolidated data fetch** — a single `GetDashboardData` RPC retrieves usage, budget, grants, and cache telemetry atomically
 - **Today view** — real-time spend vs. daily budget with grant-first waterfall display
 - **Time-series charts** — token and cost trends with model breakdown
-- **Dynamic user scope** — toggle between personal and team-wide views in admin mode
+- **Dynamic user scope** — toggle between personal and team-wide views in team mode
 - **Visibility-aware polling** — pauses background refreshes when app is backgrounded (60s interval, 50s client-side TTL cache)
 
 ### 💰 Budget & Grants

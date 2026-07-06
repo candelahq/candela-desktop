@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as p;
 import '../models/provider_status.dart';
+import '../utils/platform_paths.dart' as platform_paths;
 
 /// Tests connectivity to each LLM provider.
 class ProviderTestService {
@@ -252,10 +254,13 @@ class ProviderTestService {
       // AWS CLI not installed, fall back to checking credential files
       final hasEnv = Platform.environment['AWS_ACCESS_KEY_ID'] != null &&
           Platform.environment['AWS_ACCESS_KEY_ID']!.isNotEmpty;
-      final home =
-          Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'];
-      final hasFile =
-          home != null && File('$home/.aws/credentials').existsSync();
+      var hasFile = false;
+      try {
+        final home = platform_paths.homeDir();
+        hasFile = File(p.join(home, '.aws', 'credentials')).existsSync();
+      } catch (_) {
+        // homeDir() throws if HOME/USERPROFILE is unset — treat as no file.
+      }
 
       if (!hasEnv && !hasFile) {
         return const ProviderStatus(
@@ -308,7 +313,8 @@ class ProviderTestService {
           icon: '🦙');
     } catch (_) {
       try {
-        final which = await Process.run('which', ['ollama']);
+        final cmd = Platform.isWindows ? 'where.exe' : 'which';
+        final which = await Process.run(cmd, ['ollama']);
         if (which.exitCode == 0) {
           return const ProviderStatus(
               name: 'ollama',

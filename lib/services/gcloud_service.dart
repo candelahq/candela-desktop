@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import '../models/identity_state.dart';
+import '../utils/platform_paths.dart' as platform_paths;
 import 'adc_service.dart';
 
 /// Interacts with the gcloud CLI for operations that still require it,
@@ -21,21 +22,8 @@ class GCloudService {
   /// Cached to avoid recreating on every call.
   late final Map<String, String> augmentedEnv = _buildAugmentedEnv();
 
-  Map<String, String> _buildAugmentedEnv() {
-    final env = Map<String, String>.from(Platform.environment);
-    final home = env['HOME'] ?? '/Users/${env['USER'] ?? 'unknown'}';
-    final extraPaths = [
-      '$home/google-cloud-sdk/bin',
-      '/usr/local/google-cloud-sdk/bin',
-      '/opt/homebrew/bin',
-      '/usr/local/bin',
-      '/opt/homebrew/share/google-cloud-sdk/bin',
-      '$home/.local/bin',
-    ];
-    final currentPath = env['PATH'] ?? '';
-    env['PATH'] = '${extraPaths.join(':')}:$currentPath';
-    return env;
-  }
+  Map<String, String> _buildAugmentedEnv() =>
+      platform_paths.buildAugmentedEnv();
 
   /// Run gcloud with augmented PATH.
   Future<ProcessResult> _run(List<String> args) {

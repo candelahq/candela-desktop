@@ -1,7 +1,10 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as path;
+
+import '../utils/platform_paths.dart' as platform_paths;
+import 'dart:io';
 
 import '../models/identity_state.dart';
 import 'adc_service.dart';
@@ -186,17 +189,11 @@ class CandelaAuthService {
   /// macOS GUI apps don't inherit shell PATH, so we search explicitly for
   /// common candela/homebrew install locations.
   Map<String, String> _augmentedEnv() {
-    final env = Map<String, String>.from(Platform.environment);
-    final home = env['HOME'] ?? '/Users/${env['USER'] ?? 'unknown'}';
-    final extraPaths = [
-      '/opt/homebrew/bin',
-      '/usr/local/bin',
-      '$home/.local/bin',
-      '$home/go/bin',
-    ];
-    final currentPath = env['PATH'] ?? '';
-    env['PATH'] = '${extraPaths.join(':')}:$currentPath';
-    return env;
+    final home = platform_paths.homeDir();
+    final goPath = Platform.environment['GOPATH'] ?? path.join(home, 'go');
+    return platform_paths.buildAugmentedEnv(
+      additionalPaths: [path.join(goPath, 'bin')],
+    );
   }
 
   /// Expose augmented env for login subprocess spawning (used by

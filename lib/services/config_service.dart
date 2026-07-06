@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
+
+import '../utils/platform_paths.dart' as platform_paths;
 import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
@@ -123,17 +125,14 @@ class ConfigService {
     return controller.stream;
   }
 
-  /// The default config path using XDG convention.
-  static String defaultConfigPath() {
-    final home = Platform.environment['HOME'] ?? '';
-    return path.join(home, '.config', 'candela', 'config.yaml');
-  }
+  /// The default config path, platform-aware.
+  ///
+  /// - Unix/macOS: `~/.config/candela/config.yaml`
+  /// - Windows: `%APPDATA%\candela\config.yaml`
+  static String defaultConfigPath() => platform_paths.candelaConfigPath();
 
-  /// The legacy config path (~/.candela.yaml).
-  static String legacyConfigPath() {
-    final home = Platform.environment['HOME'] ?? '';
-    return path.join(home, '.candela.yaml');
-  }
+  /// The legacy config path (`~/.candela.yaml`).
+  static String legacyConfigPath() => platform_paths.candelaLegacyConfigPath();
 
   String _resolveConfigPath() {
     if (configPath != null) return configPath!;

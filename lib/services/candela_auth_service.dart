@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
 
 import '../utils/platform_paths.dart' as platform_paths;
+import '../utils/process_runner.dart';
 import 'dart:io';
 
 import '../models/identity_state.dart';
@@ -21,14 +22,16 @@ import 'adc_service.dart';
 /// for status queries.
 class CandelaAuthService {
   final AdcService _adcService;
+  final ProcessRunner _runner;
 
   /// Cached token from the most recent refresh — avoids redundant network
   /// round-trips when multiple callers request a token in quick succession
   /// (e.g., [isApiEnabled] followed by [getAccessToken]).
   TokenInfo? _cachedToken;
 
-  CandelaAuthService({AdcService? adcService})
-      : _adcService = adcService ?? AdcService();
+  CandelaAuthService({AdcService? adcService, ProcessRunner? runner})
+      : _adcService = adcService ?? AdcService(),
+        _runner = runner ?? const SystemProcessRunner();
 
   // ── Status ──────────────────────────────────────────────────────────────
 
@@ -143,7 +146,7 @@ class CandelaAuthService {
   /// OAuth2 flow) and `candela proxy start`.
   Future<bool> isCandelaInstalled() async {
     try {
-      final result = await Process.run('candela', ['--version'],
+      final result = await _runner.run('candela', ['--version'],
           environment: _augmentedEnv());
       return result.exitCode == 0;
     } catch (_) {

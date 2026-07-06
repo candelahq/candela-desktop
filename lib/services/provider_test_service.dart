@@ -4,15 +4,18 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import '../models/provider_status.dart';
 import '../utils/platform_paths.dart' as platform_paths;
+import '../utils/process_runner.dart';
 
 /// Tests connectivity to each LLM provider.
 class ProviderTestService {
   final http.Client _client;
+  final ProcessRunner _runner;
   bool _disposed = false;
   static const _timeout = Duration(seconds: 10);
 
-  ProviderTestService({http.Client? client})
-      : _client = client ?? http.Client();
+  ProviderTestService({http.Client? client, ProcessRunner? runner})
+      : _client = client ?? http.Client(),
+        _runner = runner ?? const SystemProcessRunner();
 
   // Pre-compiled regex patterns for sanitizeError.
   static final _bearerRe =
@@ -228,7 +231,7 @@ class ProviderTestService {
   Future<ProviderStatus> testAws() async {
     final sw = Stopwatch()..start();
     try {
-      final result = await Process.run('aws', ['sts', 'get-caller-identity']);
+      final result = await _runner.run('aws', ['sts', 'get-caller-identity']);
       sw.stop();
       if (result.exitCode == 0) {
         return ProviderStatus(
@@ -314,7 +317,7 @@ class ProviderTestService {
     } catch (_) {
       try {
         final cmd = Platform.isWindows ? 'where.exe' : 'which';
-        final which = await Process.run(cmd, ['ollama']);
+        final which = await _runner.run(cmd, ['ollama']);
         if (which.exitCode == 0) {
           return const ProviderStatus(
               name: 'ollama',

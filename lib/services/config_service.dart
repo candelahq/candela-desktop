@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 
 import '../utils/platform_paths.dart' as platform_paths;
+import '../utils/process_runner.dart';
 import 'package:yaml/yaml.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
@@ -15,9 +16,11 @@ import '../models/candela_config.dart';
 /// Uses [yaml_edit] for all modifications to preserve comments and formatting.
 class ConfigService {
   final String? configPath;
+  final ProcessRunner _runner;
   Future<void>? _writeLock;
 
-  ConfigService({this.configPath});
+  ConfigService({this.configPath, ProcessRunner? runner})
+      : _runner = runner ?? const SystemProcessRunner();
 
   /// Load and validate the candela config file.
   ///
@@ -479,7 +482,7 @@ class ConfigService {
       await file.writeAsString(yamlContent);
       if (!Platform.isWindows) {
         try {
-          await Process.run('chmod', ['600', file.path]);
+          await _runner.run('chmod', ['600', file.path]);
         } catch (_) {}
       }
     } finally {
@@ -796,7 +799,7 @@ class ConfigService {
       await file.writeAsString(content);
       if (!Platform.isWindows) {
         try {
-          await Process.run('chmod', ['600', file.path]);
+          await _runner.run('chmod', ['600', file.path]);
         } catch (_) {}
       }
     } finally {

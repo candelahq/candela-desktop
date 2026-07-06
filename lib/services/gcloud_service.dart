@@ -3,6 +3,7 @@ import 'dart:io';
 
 import '../models/identity_state.dart';
 import '../utils/platform_paths.dart' as platform_paths;
+import '../utils/process_runner.dart';
 import 'adc_service.dart';
 
 /// Interacts with the gcloud CLI for operations that still require it,
@@ -15,7 +16,12 @@ import 'adc_service.dart';
 class GCloudService {
   static const _timeout = Duration(seconds: 10);
 
-  final AdcService _adcService = AdcService();
+  final AdcService _adcService;
+  final ProcessRunner _runner;
+
+  GCloudService({AdcService? adcService, ProcessRunner? runner})
+      : _adcService = adcService ?? AdcService(),
+        _runner = runner ?? const SystemProcessRunner();
 
   /// Augmented PATH that includes common gcloud install locations.
   /// macOS GUI apps don't inherit shell PATH, so we search explicitly.
@@ -27,7 +33,8 @@ class GCloudService {
 
   /// Run gcloud with augmented PATH.
   Future<ProcessResult> _run(List<String> args) {
-    return Process.run('gcloud', args, environment: augmentedEnv)
+    return _runner
+        .run('gcloud', args, environment: augmentedEnv)
         .timeout(_timeout);
   }
 

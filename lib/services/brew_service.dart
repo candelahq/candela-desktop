@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
 
+import '../utils/process_runner.dart';
+
 /// Result of a Homebrew command.
 class BrewResult {
   final bool success;
@@ -22,28 +24,38 @@ class BrewResult {
 /// The caller is responsible for running these off the main isolate if
 /// the UI needs to remain responsive during long-running installs.
 class BrewService {
+  final ProcessRunner _runner;
   String _brewPath = 'brew';
   Future<void>? _resolveFuture;
 
+  BrewService({ProcessRunner? runner})
+      : _runner = runner ?? const SystemProcessRunner();
+
   Future<void> _resolveBrewPath() {
-    return _resolveFuture ??= () async {
+    if (_resolveFuture != null) return _resolveFuture!;
+    return _resolveFuture = () async {
       try {
-        if ((await Process.run('which', ['brew'])).exitCode == 0) {
+        if ((await _runner.run('which', ['brew'])).exitCode == 0) {
           _brewPath = 'brew';
         } else if (File('/opt/homebrew/bin/brew').existsSync()) {
           _brewPath = '/opt/homebrew/bin/brew';
         } else if (File('/usr/local/bin/brew').existsSync()) {
           _brewPath = '/usr/local/bin/brew';
+        } else {
+          _resolveFuture = null; // brew not found — allow retry later
         }
-      } catch (_) {}
+      } catch (_) {
+        _resolveFuture = null; // transient failure — allow retry later
+      }
     }();
   }
 
   /// Check if Homebrew is installed.
   Future<bool> isBrewInstalled() async {
+    if (!Platform.isMacOS) return false;
     await _resolveBrewPath();
     try {
-      final result = await Process.run(_brewPath, ['--version']);
+      final result = await _runner.run(_brewPath, ['--version']);
       return result.exitCode == 0;
     } catch (_) {
       return false;
@@ -55,7 +67,7 @@ class BrewService {
     await _resolveBrewPath();
     try {
       final result =
-          await Process.run(_brewPath, ['list', '--formula', formula]);
+          await _runner.run(_brewPath, ['list', '--formula', formula]);
       return result.exitCode == 0;
     } catch (_) {
       return false;
@@ -66,7 +78,7 @@ class BrewService {
   Future<String?> installedVersion(String formula) async {
     await _resolveBrewPath();
     try {
-      final result = await Process.run(
+      final result = await _runner.run(
         _brewPath,
         ['info', '--json=v2', formula],
       );
@@ -97,7 +109,7 @@ class BrewService {
   Future<String?> latestVersion(String formula) async {
     await _resolveBrewPath();
     try {
-      final result = await Process.run(
+      final result = await _runner.run(
         _brewPath,
         ['info', '--json=v2', formula],
       );
@@ -154,7 +166,7 @@ class BrewService {
   Future<(String?, String?)> formulaVersions(String formula) async {
     await _resolveBrewPath();
     try {
-      final result = await Process.run(
+      final result = await _runner.run(
         _brewPath,
         ['info', '--json=v2', formula],
       );
@@ -190,7 +202,7 @@ class BrewService {
   Future<BrewResult> _runBrew(List<String> args) async {
     await _resolveBrewPath();
     try {
-      final result = await Process.run(_brewPath, args);
+      final result = await _runner.run(_brewPath, args);
       final stdout = (result.stdout as String).trim();
       final stderr = (result.stderr as String).trim();
 

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
 import '../models/diagnostic_entry.dart';
 import '../models/provider_status.dart';
@@ -83,7 +84,9 @@ class DiagnosticRunner {
       passed++;
     } else {
       _emit(
-          'Candela CLI not found — install via: brew install candelahq/tap/candela',
+          Platform.isMacOS
+              ? 'Candela CLI not found — install via: brew install candelahq/tap/candela'
+              : 'Candela CLI not found — download from github.com/candelahq/candela/releases',
           DiagnosticStatus.warn);
       warned++;
       // NOT a gate — diagnostics continue regardless.

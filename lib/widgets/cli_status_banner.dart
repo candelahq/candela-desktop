@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import '../theme/colors.dart';
 
@@ -59,7 +61,7 @@ class CliStatusBanner extends StatelessWidget {
       icon = Icons.error_outline;
       message = error!;
       buttonLabel = 'Dismiss';
-    } else if (!isBrewAvailable) {
+    } else if (!isBrewAvailable && Platform.isMacOS) {
       bannerColor = CandelaColors.warning;
       icon = Icons.warning_amber_rounded;
       message = 'Homebrew is required to install the Candela CLI. '
@@ -69,7 +71,7 @@ class CliStatusBanner extends StatelessWidget {
       bannerColor = CandelaColors.warning;
       icon = Icons.download_rounded;
       message = 'Candela CLI is required for the proxy.';
-      buttonLabel = 'Install via Homebrew';
+      buttonLabel = Platform.isMacOS ? 'Install via Homebrew' : null;
     } else if (_hasUpgrade) {
       bannerColor = CandelaColors.accent;
       icon = Icons.upgrade_rounded;

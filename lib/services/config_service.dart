@@ -421,7 +421,7 @@ class ConfigService {
       }
       // Leave a breadcrumb in the old file.
       await legacy.writeAsString(
-        '# Candela config has moved to ~/.config/candela/config.yaml\n'
+        '# Candela config has moved to ${_resolveConfigPath()}\n'
         '# This file is no longer used and can be safely deleted.\n',
       );
     }
@@ -483,6 +483,15 @@ class ConfigService {
       if (!Platform.isWindows) {
         try {
           await _runner.run('chmod', ['600', file.path]);
+        } catch (_) {}
+      } else {
+        // Windows equivalent: restrict to owner-only access.
+        try {
+          await _runner.run(
+            'icacls',
+            [file.path, '/inheritance:r', '/grant:r', '%USERNAME%:F'],
+            runInShell: true,
+          );
         } catch (_) {}
       }
     } finally {
@@ -800,6 +809,15 @@ class ConfigService {
       if (!Platform.isWindows) {
         try {
           await _runner.run('chmod', ['600', file.path]);
+        } catch (_) {}
+      } else {
+        // Windows equivalent: restrict to owner-only access.
+        try {
+          await _runner.run(
+            'icacls',
+            [file.path, '/inheritance:r', '/grant:r', '%USERNAME%:F'],
+            runInShell: true,
+          );
         } catch (_) {}
       }
     } finally {

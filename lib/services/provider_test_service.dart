@@ -42,12 +42,13 @@ class ProviderTestService {
   Future<ProviderStatus> testGoogle(
       {String? project, String? accessToken}) async {
     if (project == null) {
-      return const ProviderStatus(
+      return ProviderStatus(
           name: 'google',
           displayName: 'Google / Vertex AI',
           state: ProviderState.error,
           statusMessage: 'No GCP project configured',
-          fixCommand: 'Set vertex_ai.project in ~/.config/candela/config.yaml',
+          fixCommand:
+              'Set vertex_ai.project in ${platform_paths.candelaConfigPath()}',
           icon: 'G');
     }
     if (accessToken == null) {

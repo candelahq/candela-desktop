@@ -219,7 +219,10 @@ class UpdateService extends ChangeNotifier {
   }
 
   /// Perform a Homebrew cask upgrade and relaunch the app.
+  ///
+  /// This is macOS-only — Homebrew is not available on Windows/Linux.
   Future<bool> performBrewUpgrade() async {
+    if (!Platform.isMacOS) return false;
     _setStatus(UpdateStatus.checking);
     try {
       final result = await Process.run(

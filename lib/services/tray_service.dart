@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:path/path.dart' as path;
 import 'package:flutter/services.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
@@ -43,6 +44,9 @@ class TrayService with TrayListener {
   }
 
   String? _trayIconPath() {
+    final devPng = File(
+        '${Directory.current.path}/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_32.png');
+
     if (Platform.isMacOS) {
       // In production .app bundles, resolve relative to the executable.
       final exePath = Platform.resolvedExecutable;
@@ -56,10 +60,27 @@ class TrayService with TrayListener {
         if (resourceIcon.existsSync()) return resourceIcon.path;
       }
 
-      // Fallback: dev mode — use source tree icon.
+      // Fallback: dev mode.
+      if (devPng.existsSync()) return devPng.path;
+    } else if (Platform.isWindows) {
+      // Production: CMake copies app_icon.ico next to the executable.
+      final exeDir = File(Platform.resolvedExecutable).parent.path;
+      final icoFile = File(path.join(exeDir, 'app_icon.ico'));
+      if (icoFile.existsSync()) return icoFile.path;
+
+      // Fallback: dev mode — use Windows runner resources.
       final devIcon = File(
-          '${Directory.current.path}/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_32.png');
+          '${Directory.current.path}/windows/runner/resources/app_icon.ico');
       if (devIcon.existsSync()) return devIcon.path;
+    } else if (Platform.isLinux) {
+      // Production: resolve relative to the executable directory.
+      final exeDir = File(Platform.resolvedExecutable).parent.path;
+      final bundledIcon =
+          File('$exeDir/data/flutter_assets/assets/app_icon.png');
+      if (bundledIcon.existsSync()) return bundledIcon.path;
+
+      // Fallback: dev mode.
+      if (devPng.existsSync()) return devPng.path;
     }
     return null;
   }

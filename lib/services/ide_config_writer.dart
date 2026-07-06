@@ -96,6 +96,12 @@ class IdeConfigWriter {
   }
 
   static String _zedPath() {
+    // Zed on Windows: %APPDATA%\Zed\settings.json
+    // Zed on macOS/Linux: ~/.config/zed/settings.json
+    if (Platform.isWindows) {
+      final appData = Platform.environment['APPDATA'] ?? '';
+      return p.join(appData, 'Zed', 'settings.json');
+    }
     final home = platform_paths.homeDir();
     return p.join(home, '.config', 'zed', 'settings.json');
   }

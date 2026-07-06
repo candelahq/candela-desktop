@@ -1,9 +1,10 @@
 import 'dart:convert';
 
+import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as path;
+
 import '../utils/platform_paths.dart' as platform_paths;
 import 'dart:io';
-
-import 'package:http/http.dart' as http;
 
 import '../models/identity_state.dart';
 import 'adc_service.dart';
@@ -189,12 +190,9 @@ class CandelaAuthService {
   /// common candela/homebrew install locations.
   Map<String, String> _augmentedEnv() {
     final home = platform_paths.homeDir();
+    final goPath = Platform.environment['GOPATH'] ?? path.join(home, 'go');
     return platform_paths.buildAugmentedEnv(
-      additionalPaths: [
-        Platform.isWindows
-            ? '${Platform.environment['GOPATH'] ?? '$home\\go'}\\bin'
-            : '$home/go/bin',
-      ],
+      additionalPaths: [path.join(goPath, 'bin')],
     );
   }
 

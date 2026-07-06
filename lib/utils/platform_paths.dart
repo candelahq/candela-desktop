@@ -12,21 +12,33 @@ import 'package:path/path.dart' as path;
 ///
 /// - Unix/macOS: `$HOME`
 /// - Windows: `%USERPROFILE%` (falls back to `%HOMEDRIVE%%HOMEPATH%`)
+///
+/// Throws [StateError] if the home directory cannot be determined.
 String homeDir() {
   if (Platform.isWindows) {
     return Platform.environment['USERPROFILE'] ??
         '${Platform.environment['HOMEDRIVE'] ?? 'C:'}${Platform.environment['HOMEPATH'] ?? r'\Users\unknown'}';
   }
-  return Platform.environment['HOME'] ?? '/tmp';
+  final home = Platform.environment['HOME'];
+  if (home == null || home.isEmpty) {
+    throw StateError('Unable to determine home directory: \$HOME is not set');
+  }
+  return home;
 }
 
 /// Returns the Candela config directory.
 ///
 /// - Unix/macOS: `~/.config/candela`
 /// - Windows: `%APPDATA%\candela`
+///
+/// Throws [StateError] on Windows if `%APPDATA%` is not set.
 String candelaConfigDir() {
   if (Platform.isWindows) {
-    final appData = Platform.environment['APPDATA'] ?? '';
+    final appData = Platform.environment['APPDATA'];
+    if (appData == null || appData.isEmpty) {
+      throw StateError(
+          'Unable to determine config directory: %APPDATA% is not set');
+    }
     return path.join(appData, 'candela');
   }
   return path.join(homeDir(), '.config', 'candela');
@@ -44,6 +56,9 @@ String candelaLegacyConfigPath() => path.join(homeDir(), '.candela.yaml');
 ///   1. `$CLOUDSDK_CONFIG/application_default_credentials.json`
 ///   2. Windows: `%APPDATA%\gcloud\application_default_credentials.json`
 ///   3. Unix:    `~/.config/gcloud/application_default_credentials.json`
+///
+/// Throws [StateError] on Windows if `%APPDATA%` is not set (and
+/// `$CLOUDSDK_CONFIG` is not set either).
 String adcCredentialPath() {
   const adcFile = 'application_default_credentials.json';
 
@@ -53,7 +68,10 @@ String adcCredentialPath() {
   }
 
   if (Platform.isWindows) {
-    final appData = Platform.environment['APPDATA'] ?? '';
+    final appData = Platform.environment['APPDATA'];
+    if (appData == null || appData.isEmpty) {
+      throw StateError('Unable to determine ADC path: %APPDATA% is not set');
+    }
     return path.join(appData, 'gcloud', adcFile);
   }
 
@@ -75,17 +93,15 @@ List<String> extraCliPaths() {
       path.join(localAppData, 'Google', 'Cloud SDK', 'google-cloud-sdk', 'bin'),
       path.join(programFiles, 'Google', 'Cloud SDK', 'google-cloud-sdk', 'bin'),
       path.join(home, 'google-cloud-sdk', 'bin'),
-      path.join(home, 'AppData', 'Local', 'Google', 'Cloud SDK',
-          'google-cloud-sdk', 'bin'),
     ];
   }
   return [
-    '$home/google-cloud-sdk/bin',
+    path.join(home, 'google-cloud-sdk', 'bin'),
     '/usr/local/google-cloud-sdk/bin',
     '/opt/homebrew/bin',
     '/usr/local/bin',
     '/opt/homebrew/share/google-cloud-sdk/bin',
-    '$home/.local/bin',
+    path.join(home, '.local', 'bin'),
   ];
 }
 
@@ -93,10 +109,22 @@ List<String> extraCliPaths() {
 String get pathSeparator => Platform.isWindows ? ';' : ':';
 
 /// Build an augmented environment map with extra CLI paths prepended to PATH.
+///
+/// On Windows, normalises the `PATH` key to handle case-insensitive env var
+/// names (Windows uses `Path`, Dart's Map.from is case-sensitive).
 Map<String, String> buildAugmentedEnv({List<String>? additionalPaths}) {
   final env = Map<String, String>.from(Platform.environment);
   final extras = [...extraCliPaths(), ...?additionalPaths];
-  final currentPath = env['PATH'] ?? '';
+
+  // Windows env var names are case-insensitive, but Dart's Map is
+  // case-sensitive. Find the actual key used for PATH.
+  final pathKey = env.keys.firstWhere(
+    (k) => k.toUpperCase() == 'PATH',
+    orElse: () => 'PATH',
+  );
+  final currentPath = env[pathKey] ?? '';
+  // Remove the original key (might be 'Path') and set the canonical 'PATH'.
+  env.remove(pathKey);
   env['PATH'] = '${extras.join(pathSeparator)}$pathSeparator$currentPath';
   return env;
 }

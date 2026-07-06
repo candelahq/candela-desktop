@@ -189,11 +189,15 @@ class CandelaAuthService {
   /// macOS GUI apps don't inherit shell PATH, so we search explicitly for
   /// common candela/homebrew install locations.
   Map<String, String> _augmentedEnv() {
-    final home = platform_paths.homeDir();
-    final goPath = Platform.environment['GOPATH'] ?? path.join(home, 'go');
-    return platform_paths.buildAugmentedEnv(
-      additionalPaths: [path.join(goPath, 'bin')],
-    );
+    try {
+      final home = platform_paths.homeDir();
+      final goPath = Platform.environment['GOPATH'] ?? path.join(home, 'go');
+      return platform_paths.buildAugmentedEnv(
+        additionalPaths: [path.join(goPath, 'bin')],
+      );
+    } on StateError {
+      return Map<String, String>.from(Platform.environment);
+    }
   }
 
   /// Expose augmented env for login subprocess spawning (used by

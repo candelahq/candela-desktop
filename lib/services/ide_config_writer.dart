@@ -22,7 +22,13 @@ class IdeConfigWriter {
   /// Merges by entry title — if an entry titled "Candela (local proxy)" already
   /// exists it is replaced in-place; otherwise it is prepended to the models list.
   static Future<void> writeContinueConfig(String endpointUrl) async {
-    final file = File(_continuePath());
+    final String configPath;
+    try {
+      configPath = _continuePath();
+    } on StateError {
+      return; // Can't determine home directory — skip Continue config.
+    }
+    final file = File(configPath);
     Map<String, dynamic> config = {};
     if (await file.exists()) {
       try {
@@ -64,7 +70,13 @@ class IdeConfigWriter {
   ///
   /// Merges the `language_models.openai` block, preserving all other Zed settings.
   static Future<void> writeZedConfig(String endpointUrl) async {
-    final file = File(_zedPath());
+    final String zedPath;
+    try {
+      zedPath = _zedPath();
+    } on StateError {
+      return; // Can't determine Zed config path — skip.
+    }
+    final file = File(zedPath);
     Map<String, dynamic> settings = {};
     if (await file.exists()) {
       try {
@@ -164,7 +176,16 @@ class IdeConfigWriter {
     int maxDepth = 3,
     @visibleForTesting Directory? startDir,
   }) async {
-    final root = startDir ?? Directory(platform_paths.homeDir());
+    final Directory root;
+    if (startDir != null) {
+      root = startDir;
+    } else {
+      try {
+        root = Directory(platform_paths.homeDir());
+      } on StateError {
+        return [];
+      }
+    }
     if (!root.existsSync()) return [];
 
     final results = <String>[];

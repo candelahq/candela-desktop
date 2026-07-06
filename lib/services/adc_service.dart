@@ -14,7 +14,12 @@ class AdcService {
 
   /// Read the ADC credentials file and return its info.
   Future<AdcInfo?> readAdcFile() async {
-    final adcPath = _adcPath();
+    final String adcPath;
+    try {
+      adcPath = _adcPath();
+    } on StateError {
+      return null;
+    }
     final file = File(adcPath);
 
     if (!await file.exists()) return null;

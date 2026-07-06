@@ -23,7 +23,20 @@ class ConfigService {
   ///
   /// Search order: configPath → $CANDELA_CONFIG → ~/.config/candela/config.yaml
   Future<CandelaConfig> load() async {
-    final resolvedPath = _resolveConfigPath();
+    final resolvedPath = _tryResolveConfigPath();
+    if (resolvedPath == null) {
+      return const CandelaConfig(
+        path: '',
+        issues: [
+          ConfigIssue(
+            severity: IssueSeverity.error,
+            message: 'Cannot resolve config path: '
+                'required environment variables are not set',
+            field: 'file',
+          ),
+        ],
+      );
+    }
     final file = File(resolvedPath);
 
     if (!await file.exists()) {
@@ -94,7 +107,8 @@ class ConfigService {
   /// Editors often write to temp files then rename, causing multiple events —
   /// the 500ms debounce collapses these into a single reload.
   Stream<void>? watchForChanges() {
-    final configPath = _resolveConfigPath();
+    final configPath = _tryResolveConfigPath();
+    if (configPath == null) return null;
     final dir = File(configPath).parent;
     if (!dir.existsSync()) return null;
 
@@ -134,6 +148,8 @@ class ConfigService {
   /// The legacy config path (`~/.candela.yaml`).
   static String legacyConfigPath() => platform_paths.candelaLegacyConfigPath();
 
+  /// Resolve the config path. May throw [StateError] if platform env vars
+  /// (e.g. `%APPDATA%`, `$HOME`) are not set.
   String _resolveConfigPath() {
     if (configPath != null) return configPath!;
     final envPath = Platform.environment['CANDELA_CONFIG'];
@@ -141,9 +157,19 @@ class ConfigService {
     return defaultConfigPath();
   }
 
+  /// Like [_resolveConfigPath] but returns `null` instead of throwing.
+  String? _tryResolveConfigPath() {
+    try {
+      return _resolveConfigPath();
+    } on StateError {
+      return null;
+    }
+  }
+
   /// Whether a config file exists at the resolved path.
   Future<bool> configExists() async {
-    final configPath = _resolveConfigPath();
+    final configPath = _tryResolveConfigPath();
+    if (configPath == null) return false;
     return File(configPath).exists();
   }
 

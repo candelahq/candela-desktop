@@ -421,7 +421,7 @@ class ConfigService {
       }
       // Leave a breadcrumb in the old file.
       await legacy.writeAsString(
-        '# Candela config has moved to ${_resolveConfigPath()}\n'
+        '# Candela config has moved to ${_tryResolveConfigPath() ?? 'the new config location'}\n'
         '# This file is no longer used and can be safely deleted.\n',
       );
     }
@@ -486,13 +486,15 @@ class ConfigService {
         } catch (_) {}
       } else {
         // Windows equivalent: restrict to owner-only access.
-        try {
-          await _runner.run(
-            'icacls',
-            [file.path, '/inheritance:r', '/grant:r', '%USERNAME%:F'],
-            runInShell: true,
-          );
-        } catch (_) {}
+        final username = Platform.environment['USERNAME'];
+        if (username != null && username.isNotEmpty) {
+          try {
+            await _runner.run(
+              'icacls',
+              [file.path, '/inheritance:r', '/grant:r', '$username:F'],
+            );
+          } catch (_) {}
+        }
       }
     } finally {
       completer.complete();
@@ -812,13 +814,15 @@ class ConfigService {
         } catch (_) {}
       } else {
         // Windows equivalent: restrict to owner-only access.
-        try {
-          await _runner.run(
-            'icacls',
-            [file.path, '/inheritance:r', '/grant:r', '%USERNAME%:F'],
-            runInShell: true,
-          );
-        } catch (_) {}
+        final username = Platform.environment['USERNAME'];
+        if (username != null && username.isNotEmpty) {
+          try {
+            await _runner.run(
+              'icacls',
+              [file.path, '/inheritance:r', '/grant:r', '$username:F'],
+            );
+          } catch (_) {}
+        }
       }
     } finally {
       completer.complete();

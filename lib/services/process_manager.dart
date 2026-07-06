@@ -486,8 +486,7 @@ class ProcessManager extends ChangeNotifier {
       final result = await _runner.run(
         'netstat',
         ['-ano'],
-        runInShell: true,
-      );
+      ).timeout(const Duration(seconds: 3));
       if (result.exitCode != 0) return null;
 
       final portSuffix = ':$port';

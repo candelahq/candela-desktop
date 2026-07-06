@@ -12,6 +12,10 @@ import '../models/identity_state.dart';
 class AdcService {
   static const _tokenEndpoint = 'https://oauth2.googleapis.com/token';
 
+  final http.Client _client;
+
+  AdcService({http.Client? client}) : _client = client ?? http.Client();
+
   /// Read the ADC credentials file and return its info.
   Future<AdcInfo?> readAdcFile() async {
     final String adcPath;
@@ -51,7 +55,7 @@ class AdcService {
     if (adc == null || !adc.canDirectRefresh) return null;
 
     try {
-      final response = await http.post(
+      final response = await _client.post(
         Uri.parse(_tokenEndpoint),
         body: {
           'client_id': adc.clientId!,

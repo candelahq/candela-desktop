@@ -97,10 +97,11 @@ void main() {
     });
 
     test('buildAugmentedEnv includes additional paths when specified', () {
+      // Use /tmp because the top-level shim filters non-existent dirs.
       final env = platform_paths.buildAugmentedEnv(
-        additionalPaths: ['/custom/test/path'],
+        additionalPaths: ['/tmp'],
       );
-      expect(env['PATH'], contains('/custom/test/path'));
+      expect(env['PATH'], contains('/tmp'));
     });
 
     test('buildAugmentedEnv preserves existing PATH entries', () {

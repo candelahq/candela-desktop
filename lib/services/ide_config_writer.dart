@@ -228,7 +228,7 @@ class IdeConfigWriter {
     }
   }
 
-  static const _skipDirs = {
+  static final Set<String> _skipDirs = {
     'node_modules',
     '.git',
     'vendor',
@@ -239,11 +239,20 @@ class IdeConfigWriter {
     '__pycache__',
     'venv',
     '.venv',
+    // macOS-specific directories.
     'Library',
     'Applications',
     'Music',
     'Pictures',
     'Movies',
+    // Windows-specific directories.
+    if (Platform.isWindows) ...[
+      'AppData',
+      'Program Files',
+      'Program Files (x86)',
+      'Windows',
+      'ProgramData',
+    ],
   };
 
   // ── Snippet generators (for copy-only IDEs) ───────────────────────────────

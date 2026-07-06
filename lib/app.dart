@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,6 +9,7 @@ import 'providers.dart';
 import 'services/process_manager.dart';
 import 'services/update_service.dart';
 import 'widgets/sidebar.dart';
+import 'widgets/window_title_bar.dart';
 import 'screens/auth_debug/auth_debug_screen.dart';
 import 'screens/dashboard/dashboard_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
@@ -215,9 +217,12 @@ class _AppShellState extends ConsumerState<AppShell>
       _hasShownTrayTooltip = true;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text(
-            '🕯️ Candela is still running in your menu bar. '
-            'Right-click the tray icon to quit.',
+          content: Text(
+            Platform.isMacOS
+                ? '🕯️ Candela is still running in your menu bar. '
+                    'Right-click the tray icon to quit.'
+                : '🕯️ Candela is still running in the system tray. '
+                    'Right-click the tray icon to quit.',
           ),
           duration: const Duration(seconds: 4),
           behavior: SnackBarBehavior.floating,
@@ -255,20 +260,28 @@ class _AppShellState extends ConsumerState<AppShell>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Row(
+      body: Column(
         children: [
-          CandelaSidebar(
-            selectedIndex: _selectedIndex,
-            onItemSelected: (i) => setState(() => _selectedIndex = i),
-            updateService: _updateService,
-          ),
+          // Custom title bar for Windows/Linux (no-op on macOS).
+          const WindowTitleBar(),
           Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: KeyedSubtree(
-                key: ValueKey(_selectedIndex),
-                child: _pages[_selectedIndex],
-              ),
+            child: Row(
+              children: [
+                CandelaSidebar(
+                  selectedIndex: _selectedIndex,
+                  onItemSelected: (i) => setState(() => _selectedIndex = i),
+                  updateService: _updateService,
+                ),
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: KeyedSubtree(
+                      key: ValueKey(_selectedIndex),
+                      child: _pages[_selectedIndex],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

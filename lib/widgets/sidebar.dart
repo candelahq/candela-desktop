@@ -165,7 +165,8 @@ class _CandelaSidebarState extends State<CandelaSidebar> {
       ),
       child: Column(
         children: [
-          // Empty draggable area for macOS traffic lights.
+          // On macOS, reserve space for native traffic lights.
+          // On Windows/Linux, the WindowTitleBar widget handles drag + controls.
           SizedBox(height: Platform.isMacOS ? 36 : 8),
           // Logo row — below traffic lights.
           Padding(

@@ -254,8 +254,13 @@ class ProviderTestService {
       // AWS CLI not installed, fall back to checking credential files
       final hasEnv = Platform.environment['AWS_ACCESS_KEY_ID'] != null &&
           Platform.environment['AWS_ACCESS_KEY_ID']!.isNotEmpty;
-      final home = platform_paths.homeDir();
-      final hasFile = File(p.join(home, '.aws', 'credentials')).existsSync();
+      var hasFile = false;
+      try {
+        final home = platform_paths.homeDir();
+        hasFile = File(p.join(home, '.aws', 'credentials')).existsSync();
+      } catch (_) {
+        // homeDir() throws if HOME/USERPROFILE is unset — treat as no file.
+      }
 
       if (!hasEnv && !hasFile) {
         return const ProviderStatus(

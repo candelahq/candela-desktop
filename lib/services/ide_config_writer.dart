@@ -99,7 +99,11 @@ class IdeConfigWriter {
     // Zed on Windows: %APPDATA%\Zed\settings.json
     // Zed on macOS/Linux: ~/.config/zed/settings.json
     if (Platform.isWindows) {
-      final appData = Platform.environment['APPDATA'] ?? '';
+      final appData = Platform.environment['APPDATA'];
+      if (appData == null || appData.isEmpty) {
+        throw StateError(
+            'Unable to determine Zed config path: %APPDATA% is not set');
+      }
       return p.join(appData, 'Zed', 'settings.json');
     }
     final home = platform_paths.homeDir();

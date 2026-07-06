@@ -16,8 +16,13 @@ import 'package:path/path.dart' as path;
 /// Throws [StateError] if the home directory cannot be determined.
 String homeDir() {
   if (Platform.isWindows) {
-    return Platform.environment['USERPROFILE'] ??
-        '${Platform.environment['HOMEDRIVE'] ?? 'C:'}${Platform.environment['HOMEPATH'] ?? r'\Users\unknown'}';
+    final userProfile = Platform.environment['USERPROFILE'];
+    if (userProfile != null && userProfile.isNotEmpty) return userProfile;
+    final homeDrive = Platform.environment['HOMEDRIVE'];
+    final homePath = Platform.environment['HOMEPATH'];
+    if (homeDrive != null && homePath != null) return '$homeDrive$homePath';
+    throw StateError(
+        'Unable to determine home directory: %USERPROFILE% is not set');
   }
   final home = Platform.environment['HOME'];
   if (home == null || home.isEmpty) {
@@ -110,21 +115,12 @@ String get pathSeparator => Platform.isWindows ? ';' : ':';
 
 /// Build an augmented environment map with extra CLI paths prepended to PATH.
 ///
-/// On Windows, normalises the `PATH` key to handle case-insensitive env var
-/// names (Windows uses `Path`, Dart's Map.from is case-sensitive).
+/// Note: Dart's `Platform.environment` on Windows already normalises keys to
+/// upper case, so `'PATH'` is the canonical key on all platforms.
 Map<String, String> buildAugmentedEnv({List<String>? additionalPaths}) {
   final env = Map<String, String>.from(Platform.environment);
   final extras = [...extraCliPaths(), ...?additionalPaths];
-
-  // Windows env var names are case-insensitive, but Dart's Map is
-  // case-sensitive. Find the actual key used for PATH.
-  final pathKey = env.keys.firstWhere(
-    (k) => k.toUpperCase() == 'PATH',
-    orElse: () => 'PATH',
-  );
-  final currentPath = env[pathKey] ?? '';
-  // Remove the original key (might be 'Path') and set the canonical 'PATH'.
-  env.remove(pathKey);
+  final currentPath = env['PATH'] ?? '';
   env['PATH'] = '${extras.join(pathSeparator)}$pathSeparator$currentPath';
   return env;
 }

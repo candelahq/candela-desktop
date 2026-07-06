@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:candela_desktop/utils/platform_paths.dart' as platform_paths;
 
@@ -10,7 +12,9 @@ void main() {
       // $HOME is always set in CI and dev environments.
       final home = platform_paths.homeDir();
       expect(home, isNotEmpty);
-      expect(home, isNot(contains('/tmp')));
+      // Must be an absolute path.
+      expect(home.startsWith('/'), isTrue,
+          reason: 'homeDir should return an absolute path, got: $home');
     });
 
     // ── candelaConfigDir ─────────────────────────────────────────────────
@@ -61,15 +65,23 @@ void main() {
 
     // ── extraCliPaths ────────────────────────────────────────────────────
 
-    test('extraCliPaths returns non-empty list', () {
+    test('extraCliPaths contains google-cloud-sdk path', () {
       final paths = platform_paths.extraCliPaths();
       expect(paths, isNotEmpty);
-      expect(paths.length, greaterThanOrEqualTo(3));
+      expect(
+        paths.any((p) => p.contains('google-cloud-sdk')),
+        isTrue,
+        reason: 'Should contain a google-cloud-sdk path entry',
+      );
     });
 
-    test('extraCliPaths contains google-cloud-sdk/bin', () {
-      final paths = platform_paths.extraCliPaths();
-      expect(paths.any((p) => p.contains('google-cloud-sdk')), isTrue);
+    test('extraCliPaths contains common binary paths on macOS/Linux', () {
+      // These tests only apply on non-Windows.
+      if (!Platform.isWindows) {
+        final paths = platform_paths.extraCliPaths();
+        expect(paths, contains('/opt/homebrew/bin'));
+        expect(paths, contains('/usr/local/bin'));
+      }
     });
 
     // ── pathSeparator ────────────────────────────────────────────────────
@@ -89,8 +101,8 @@ void main() {
 
     test('buildAugmentedEnv prepends extra CLI paths', () {
       final env = platform_paths.buildAugmentedEnv();
-      final path = env['PATH']!;
-      expect(path, contains('google-cloud-sdk'));
+      final augmentedPath = env['PATH']!;
+      expect(augmentedPath, contains('google-cloud-sdk'));
     });
 
     test('buildAugmentedEnv includes additional paths when specified', () {
@@ -101,22 +113,21 @@ void main() {
     });
 
     test('buildAugmentedEnv preserves existing PATH entries', () {
-      final originalPath = platform_paths.buildAugmentedEnv()['PATH']!;
-      // The original PATH from the environment should be present as a suffix.
-      expect(originalPath.length, greaterThan(50),
-          reason: 'Augmented PATH should contain original PATH entries');
+      final systemPath = Platform.environment['PATH'] ?? '';
+      final augmentedPath = platform_paths.buildAugmentedEnv()['PATH']!;
+      expect(augmentedPath, contains(systemPath),
+          reason: 'Augmented PATH should contain original system PATH');
     });
 
     test('buildAugmentedEnv uses correct separator', () {
       final env = platform_paths.buildAugmentedEnv();
-      final path = env['PATH']!;
+      final augmentedPath = env['PATH']!;
       final sep = platform_paths.pathSeparator;
-      expect(path.contains(sep), isTrue);
+      expect(augmentedPath.contains(sep), isTrue);
     });
 
-    test('buildAugmentedEnv does not duplicate PATH keys', () {
+    test('buildAugmentedEnv has exactly one PATH key', () {
       final env = platform_paths.buildAugmentedEnv();
-      // Should have exactly one PATH key (case-insensitive check).
       final pathKeys =
           env.keys.where((k) => k.toUpperCase() == 'PATH').toList();
       expect(pathKeys.length, equals(1),

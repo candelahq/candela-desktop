@@ -26,6 +26,10 @@ class FakeProcessRunner implements ProcessRunner {
     return nextRunResult;
   }
 
+  /// Optional callback for [start]. When set, returns the process from this
+  /// callback instead of spawning a real subprocess.
+  Future<Process> Function(String, List<String>)? onStart;
+
   @override
   Future<Process> start(
     String executable,
@@ -36,8 +40,9 @@ class FakeProcessRunner implements ProcessRunner {
     ProcessStartMode mode = ProcessStartMode.normal,
   }) async {
     startCalls.add((executable: executable, args: arguments));
-    // Return a real process for start() — tests needing full control
-    // should mock at a higher level.
+    if (onStart != null) return onStart!(executable, arguments);
+    // Fallback: return a real no-op process. Tests that need full control
+    // should set [onStart].
     return Process.start('echo', ['fake']);
   }
 }
@@ -51,14 +56,16 @@ void main() {
 
     test('SystemProcessRunner.run delegates to Process.run', () async {
       const runner = SystemProcessRunner();
-      final result = await runner.run('echo', ['hello']);
+      // runInShell: true for Windows where echo is a shell built-in.
+      final result = await runner.run('echo', ['hello'], runInShell: true);
       expect(result.exitCode, 0);
       expect((result.stdout as String).trim(), 'hello');
     });
 
     test('SystemProcessRunner.start delegates to Process.start', () async {
       const runner = SystemProcessRunner();
-      final process = await runner.start('echo', ['hello']);
+      // runInShell: true for Windows where echo is a shell built-in.
+      final process = await runner.start('echo', ['hello'], runInShell: true);
       final exitCode = await process.exitCode;
       expect(exitCode, 0);
     });
@@ -98,6 +105,16 @@ void main() {
       await fake.start('ollama', ['serve']);
       expect(fake.startCalls, hasLength(1));
       expect(fake.startCalls[0].executable, 'ollama');
+    });
+
+    test('onStart callback overrides default', () async {
+      final fake = FakeProcessRunner();
+      fake.onStart = (exe, args) => Process.start('echo', ['controlled']);
+      final process = await fake.start('brew', ['upgrade']);
+      expect(fake.startCalls, hasLength(1));
+      expect(fake.startCalls[0].executable, 'brew');
+      final exitCode = await process.exitCode;
+      expect(exitCode, 0);
     });
   });
 }

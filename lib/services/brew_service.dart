@@ -32,7 +32,8 @@ class BrewService {
       : _runner = runner ?? const SystemProcessRunner();
 
   Future<void> _resolveBrewPath() {
-    return _resolveFuture ??= () async {
+    if (_resolveFuture != null) return _resolveFuture!;
+    return _resolveFuture = () async {
       try {
         if ((await _runner.run('which', ['brew'])).exitCode == 0) {
           _brewPath = 'brew';
@@ -40,8 +41,12 @@ class BrewService {
           _brewPath = '/opt/homebrew/bin/brew';
         } else if (File('/usr/local/bin/brew').existsSync()) {
           _brewPath = '/usr/local/bin/brew';
+        } else {
+          _resolveFuture = null; // brew not found — allow retry later
         }
-      } catch (_) {}
+      } catch (_) {
+        _resolveFuture = null; // transient failure — allow retry later
+      }
     }();
   }
 

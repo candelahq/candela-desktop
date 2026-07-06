@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
+import '../utils/process_runner.dart';
+
 /// How the app was installed — determines update mechanism.
 enum InstallChannel {
   /// Downloaded directly (e.g., from GitHub Releases or candelahq.com).
@@ -45,6 +47,7 @@ class UpdateService extends ChangeNotifier {
       'https://github.com/candelahq/candela-desktop/releases';
 
   final http.Client _client;
+  final ProcessRunner _runner;
 
   String? _latestVersion;
   InstallChannel? _cachedChannel;
@@ -64,7 +67,9 @@ class UpdateService extends ChangeNotifier {
     }
   }
 
-  UpdateService({http.Client? client}) : _client = client ?? http.Client();
+  UpdateService({http.Client? client, ProcessRunner? runner})
+      : _client = client ?? http.Client(),
+        _runner = runner ?? const SystemProcessRunner();
 
   /// Current update status.
   UpdateStatus get status => _status;
@@ -225,7 +230,7 @@ class UpdateService extends ChangeNotifier {
     if (!Platform.isMacOS) return false;
     _setStatus(UpdateStatus.checking);
     try {
-      final result = await Process.run(
+      final result = await _runner.run(
         'brew',
         ['upgrade', '--cask', 'candelahq/tap/candela-desktop'],
       );
@@ -235,7 +240,7 @@ class UpdateService extends ChangeNotifier {
         return false;
       }
 
-      await Process.start(
+      await _runner.start(
         'open',
         ['-n', '-a', 'Candela'],
         mode: ProcessStartMode.detached,

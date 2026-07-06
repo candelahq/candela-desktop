@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../utils/platform_paths.dart' as platform_paths;
+import '../utils/process_runner.dart';
 
 /// State of a managed process.
 enum ProcessState {
@@ -54,10 +55,14 @@ class ManagedProcess {
 
 /// Manages local processes: configured runtime backend + Candela Proxy.
 class ProcessManager extends ChangeNotifier {
+  final ProcessRunner _runner;
   final Map<String, ManagedProcess> _processes = {};
   final Map<String, Process> _handles = {};
   final Map<String, Timer> _healthTimers = {};
   final _client = http.Client();
+
+  ProcessManager({ProcessRunner? runner})
+      : _runner = runner ?? const SystemProcessRunner();
   bool _disposed = false;
 
   /// Safe notification — prevents crashes if called after [dispose].
@@ -145,7 +150,7 @@ class ProcessManager extends ChangeNotifier {
     if (binary == null) return false;
     try {
       final cmd = Platform.isWindows ? 'where.exe' : 'which';
-      final result = await Process.run(cmd, [binary]);
+      final result = await _runner.run(cmd, [binary]);
       return result.exitCode == 0;
     } catch (_) {
       return false;
@@ -207,7 +212,7 @@ class ProcessManager extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final process = await Process.start(
+      final process = await _runner.start(
         binary,
         args,
         environment: _env(name),
@@ -453,7 +458,7 @@ class ProcessManager extends ChangeNotifier {
     if (port <= 0 || port > 65535) return null;
     if (Platform.isWindows) return null;
     try {
-      final result = await Process.run('lsof', ['-ti', ':$port']);
+      final result = await _runner.run('lsof', ['-ti', ':$port']);
       if (result.exitCode == 0) {
         final pid = int.tryParse(
           (result.stdout as String).trim().split('\n').first,

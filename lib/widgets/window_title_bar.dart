@@ -11,8 +11,8 @@ import '../theme/colors.dart';
 /// the OS even with `TitleBarStyle.hidden`. On Windows and Linux, hiding the
 /// title bar removes all window controls, so we provide custom ones.
 ///
-/// This widget renders a transparent drag-to-move area with minimize, maximize,
-/// and close buttons in the top-right corner.
+/// Uses [DragToMoveArea] for the drag region (scoped to the spacer only,
+/// not the buttons) to avoid gesture conflicts with button taps.
 class WindowTitleBar extends StatelessWidget {
   const WindowTitleBar({super.key});
 
@@ -21,29 +21,29 @@ class WindowTitleBar extends StatelessWidget {
     // macOS renders native traffic lights — no custom controls needed.
     if (Platform.isMacOS) return const SizedBox.shrink();
 
-    return GestureDetector(
-      onPanStart: (_) => windowManager.startDragging(),
-      child: Container(
-        height: 36,
-        color: Colors.transparent,
-        child: Row(
-          children: [
-            const Spacer(),
-            // ── Window control buttons ──
-            _WindowButton(
-              icon: Icons.minimize,
-              onPressed: () => windowManager.minimize(),
-              hoverColor: CandelaColors.bgTertiary,
-            ),
-            _MaximizeButton(),
-            _WindowButton(
-              icon: Icons.close,
-              onPressed: () => windowManager.close(),
-              hoverColor: const Color(0xFFE81123),
-              hoverIconColor: Colors.white,
-            ),
-          ],
-        ),
+    return SizedBox(
+      height: 36,
+      child: Row(
+        children: [
+          // Drag-to-move area — scoped to the spacer only so button taps
+          // are never swallowed by the pan gesture recognizer.
+          const Expanded(child: DragToMoveArea(child: SizedBox.expand())),
+          // ── Window control buttons ──
+          _WindowButton(
+            icon: Icons.minimize,
+            semanticLabel: 'Minimize',
+            onPressed: () => windowManager.minimize(),
+            hoverColor: CandelaColors.bgTertiary,
+          ),
+          _MaximizeButton(),
+          _WindowButton(
+            icon: Icons.close,
+            semanticLabel: 'Close',
+            onPressed: () => windowManager.close(),
+            hoverColor: const Color(0xFFE81123),
+            hoverIconColor: Colors.white,
+          ),
+        ],
       ),
     );
   }
@@ -88,6 +88,7 @@ class _MaximizeButtonState extends State<_MaximizeButton> with WindowListener {
   Widget build(BuildContext context) {
     return _WindowButton(
       icon: _isMaximized ? Icons.filter_none : Icons.crop_square,
+      semanticLabel: _isMaximized ? 'Restore' : 'Maximize',
       onPressed: () async {
         if (_isMaximized) {
           await windowManager.unmaximize();
@@ -100,15 +101,18 @@ class _MaximizeButtonState extends State<_MaximizeButton> with WindowListener {
   }
 }
 
-/// A single window control button with hover effect.
+/// A single window control button with hover effect, accessibility, and
+/// pointer cursor affordance.
 class _WindowButton extends StatefulWidget {
   final IconData icon;
+  final String semanticLabel;
   final VoidCallback onPressed;
   final Color hoverColor;
   final Color? hoverIconColor;
 
   const _WindowButton({
     required this.icon,
+    required this.semanticLabel,
     required this.onPressed,
     required this.hoverColor,
     this.hoverIconColor,
@@ -123,22 +127,31 @@ class _WindowButtonState extends State<_WindowButton> {
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovering = true),
-      onExit: (_) => setState(() => _hovering = false),
-      child: GestureDetector(
-        onTap: widget.onPressed,
-        child: Container(
-          width: 46,
-          height: 36,
-          color: _hovering ? widget.hoverColor : Colors.transparent,
-          child: Center(
-            child: Icon(
-              widget.icon,
-              size: 16,
-              color: _hovering && widget.hoverIconColor != null
-                  ? widget.hoverIconColor
-                  : CandelaColors.textSecondary,
+    return Semantics(
+      button: true,
+      label: widget.semanticLabel,
+      child: Tooltip(
+        message: widget.semanticLabel,
+        waitDuration: const Duration(milliseconds: 800),
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          onEnter: (_) => setState(() => _hovering = true),
+          onExit: (_) => setState(() => _hovering = false),
+          child: GestureDetector(
+            onTap: widget.onPressed,
+            child: Container(
+              width: 46,
+              height: 36,
+              color: _hovering ? widget.hoverColor : Colors.transparent,
+              child: Center(
+                child: Icon(
+                  widget.icon,
+                  size: 16,
+                  color: _hovering && widget.hoverIconColor != null
+                      ? widget.hoverIconColor
+                      : CandelaColors.textSecondary,
+                ),
+              ),
             ),
           ),
         ),

@@ -62,11 +62,18 @@ void main() async {
     // Configure launch-at-startup with the app name and executable path.
     // On Windows this writes to HKCU\...\Run; on macOS it uses SMLoginItem.
     // Must be called before any LaunchAtStartup.instance.enable/isEnabled.
-    final packageInfo = await PackageInfo.fromPlatform();
-    LaunchAtStartup.instance.setup(
-      appName: packageInfo.appName,
-      appPath: Platform.resolvedExecutable,
-    );
+    // Guarded so a failure here doesn't prevent the app from launching.
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      final appName =
+          packageInfo.appName.isNotEmpty ? packageInfo.appName : 'Candela';
+      LaunchAtStartup.instance.setup(
+        appName: appName,
+        appPath: Platform.resolvedExecutable,
+      );
+    } catch (e) {
+      debugPrint('LaunchAtStartup.setup() failed: $e');
+    }
 
     const windowOptions = WindowOptions(
       size: Size(1280, 820),

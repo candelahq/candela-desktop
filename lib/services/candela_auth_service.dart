@@ -23,15 +23,20 @@ import 'adc_service.dart';
 class CandelaAuthService {
   final AdcService _adcService;
   final ProcessRunner _runner;
+  final http.Client _client;
 
   /// Cached token from the most recent refresh — avoids redundant network
   /// round-trips when multiple callers request a token in quick succession
   /// (e.g., [isApiEnabled] followed by [getAccessToken]).
   TokenInfo? _cachedToken;
 
-  CandelaAuthService({AdcService? adcService, ProcessRunner? runner})
-      : _adcService = adcService ?? AdcService(),
-        _runner = runner ?? const SystemProcessRunner();
+  CandelaAuthService({
+    AdcService? adcService,
+    ProcessRunner? runner,
+    http.Client? client,
+  })  : _adcService = adcService ?? AdcService(client: client),
+        _runner = runner ?? const SystemProcessRunner(),
+        _client = client ?? http.Client();
 
   // ── Status ──────────────────────────────────────────────────────────────
 
@@ -114,7 +119,7 @@ class CandelaAuthService {
         'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/'
         '$serviceAccount:generateIdToken',
       );
-      final response = await http
+      final response = await _client
           .post(
             url,
             headers: {
@@ -172,7 +177,7 @@ class CandelaAuthService {
         'serviceusage.googleapis.com',
         '/v1/projects/$project/services/$api',
       );
-      final response = await http.get(uri, headers: {
+      final response = await _client.get(uri, headers: {
         'Authorization': 'Bearer $accessToken',
       }).timeout(const Duration(seconds: 10));
 

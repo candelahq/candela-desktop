@@ -13,7 +13,8 @@ import '../utils/platform_paths.dart' as platform_paths;
 /// - Zed: `~/.config/zed/settings.json`
 /// - Open Design: `<projectRoot>/.od/media-config.json`
 class IdeConfigWriter {
-  IdeConfigWriter._();
+  /// Const constructor for DI. Default instance uses real filesystem.
+  const IdeConfigWriter();
 
   // ── Continue ──────────────────────────────────────────────────────────────
 
@@ -21,7 +22,7 @@ class IdeConfigWriter {
   ///
   /// Merges by entry title — if an entry titled "Candela (local proxy)" already
   /// exists it is replaced in-place; otherwise it is prepended to the models list.
-  static Future<void> writeContinueConfig(String endpointUrl) async {
+  Future<void> writeContinueConfig(String endpointUrl) async {
     final String configPath;
     try {
       configPath = _continuePath();
@@ -59,7 +60,7 @@ class IdeConfigWriter {
     await _writeJson(file, config);
   }
 
-  static String _continuePath() {
+  String _continuePath() {
     final home = platform_paths.homeDir();
     return p.join(home, '.continue', 'config.json');
   }
@@ -69,7 +70,7 @@ class IdeConfigWriter {
   /// Write/update the Candela endpoint in Zed's settings.json.
   ///
   /// Merges the `language_models.openai` block, preserving all other Zed settings.
-  static Future<void> writeZedConfig(String endpointUrl) async {
+  Future<void> writeZedConfig(String endpointUrl) async {
     final String zedPath;
     try {
       zedPath = _zedPath();
@@ -107,7 +108,7 @@ class IdeConfigWriter {
     await _writeJson(file, settings);
   }
 
-  static String _zedPath() {
+  String _zedPath() {
     // Zed on Windows: %APPDATA%\Zed\settings.json
     // Zed on macOS/Linux: ~/.config/zed/settings.json
     if (Platform.isWindows) {
@@ -129,7 +130,7 @@ class IdeConfigWriter {
   /// [projectRoot] must be the root directory that contains a `.od/` folder.
   /// Creates `.od/media-config.json` if it does not exist yet.
   /// Uses `"candela"` as the API key (OD requires a non-empty string).
-  static Future<void> writeOpenDesignConfig(
+  Future<void> writeOpenDesignConfig(
     String projectRoot,
     String endpointUrl,
   ) async {
@@ -172,7 +173,7 @@ class IdeConfigWriter {
   ///
   /// A project root is any directory that contains a `.od/` subdirectory
   /// (but not the `.od/` dir itself, and not directories inside `.od/`).
-  static Future<List<String>> findOpenDesignProjects({
+  Future<List<String>> findOpenDesignProjects({
     int maxDepth = 3,
     @visibleForTesting Directory? startDir,
   }) async {
@@ -195,7 +196,7 @@ class IdeConfigWriter {
     return results;
   }
 
-  static Future<void> _scanForOdDirs(
+  Future<void> _scanForOdDirs(
     Directory dir,
     int depth,
     int maxDepth,
@@ -293,7 +294,7 @@ class IdeConfigWriter {
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
-  static Future<void> _writeJson(File file, Map<String, dynamic> data) async {
+  Future<void> _writeJson(File file, Map<String, dynamic> data) async {
     await file.parent.create(recursive: true);
     // Pretty-print with 2-space indent for human-readable config files.
     final encoder = const JsonEncoder.withIndent('  ');

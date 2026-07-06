@@ -18,6 +18,7 @@ class DiagnosticRunner {
   final CandelaAuthService _candelaAuth;
   final AdcService _adc;
   final ProviderTestService _providers;
+  final http.Client _client;
 
   final _controller = StreamController<DiagnosticEntry>.broadcast();
   Stream<DiagnosticEntry> get entries => _controller.stream;
@@ -35,10 +36,12 @@ class DiagnosticRunner {
     CandelaAuthService? candelaAuth,
     AdcService? adc,
     ProviderTestService? providers,
+    http.Client? client,
   })  : _config = config,
-        _candelaAuth = candelaAuth ?? CandelaAuthService(),
-        _adc = adc ?? AdcService(),
-        _providers = providers ?? ProviderTestService();
+        _candelaAuth = candelaAuth ?? CandelaAuthService(client: client),
+        _adc = adc ?? AdcService(client: client),
+        _providers = providers ?? ProviderTestService(),
+        _client = client ?? http.Client();
 
   /// Run all diagnostic checks. Returns summary when complete.
   /// Rejects concurrent runs by returning the in-flight future.
@@ -193,7 +196,7 @@ class DiagnosticRunner {
         final uri = Uri.parse(config.remote!);
         final healthUri = uri.replace(path: '/healthz');
         final resp =
-            await http.get(healthUri).timeout(const Duration(seconds: 5));
+            await _client.get(healthUri).timeout(const Duration(seconds: 5));
         if (resp.statusCode == 200 || resp.statusCode == 204) {
           _emit('Team backend: Reachable', DiagnosticStatus.pass);
           passed++;

@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:candela_desktop/services/ide_config_writer.dart';
 
 void main() {
+  const writer = IdeConfigWriter();
+
   group('IdeConfigWriter', () {
     // ── Snippet generators ──────────────────────────────────────────────────
 
@@ -108,7 +110,7 @@ void main() {
         // Create .od/ subdirectory to simulate a project root.
         Directory('${tempDir.path}/.od').createSync();
 
-        await IdeConfigWriter.writeOpenDesignConfig(
+        await writer.writeOpenDesignConfig(
           tempDir.path,
           'http://localhost:8181',
         );
@@ -144,7 +146,7 @@ void main() {
         });
         configFile.writeAsStringSync(existing);
 
-        await IdeConfigWriter.writeOpenDesignConfig(
+        await writer.writeOpenDesignConfig(
           tempDir.path,
           'http://localhost:9090',
         );
@@ -169,7 +171,7 @@ void main() {
       test('throws StateError if no .od/ directory exists', () {
         // tempDir exists but has no .od/ subdirectory.
         expect(
-          () => IdeConfigWriter.writeOpenDesignConfig(
+          () => writer.writeOpenDesignConfig(
             tempDir.path,
             'http://localhost:8181',
           ),
@@ -183,7 +185,7 @@ void main() {
         configFile.writeAsStringSync('{{not valid json!!!');
 
         // Should not throw — source starts with empty config on parse failure.
-        await IdeConfigWriter.writeOpenDesignConfig(
+        await writer.writeOpenDesignConfig(
           tempDir.path,
           'http://localhost:8181',
         );
@@ -202,7 +204,7 @@ void main() {
         final configFile = File('${tempDir.path}/.od/media-config.json');
         expect(configFile.existsSync(), isFalse);
 
-        await IdeConfigWriter.writeOpenDesignConfig(
+        await writer.writeOpenDesignConfig(
           tempDir.path,
           'http://localhost:8181',
         );
@@ -213,7 +215,7 @@ void main() {
       test('output is pretty-printed JSON', () async {
         Directory('${tempDir.path}/.od').createSync();
 
-        await IdeConfigWriter.writeOpenDesignConfig(
+        await writer.writeOpenDesignConfig(
           tempDir.path,
           'http://localhost:8181',
         );
@@ -249,7 +251,7 @@ void main() {
         // Create a non-project dir.
         Directory('${scanRoot.path}/notAProject').createSync();
 
-        final results = await IdeConfigWriter.findOpenDesignProjects(
+        final results = await writer.findOpenDesignProjects(
           maxDepth: 3,
           startDir: scanRoot,
         );
@@ -266,7 +268,7 @@ void main() {
         Directory('${scanRoot.path}/shallow/.od').createSync(recursive: true);
 
         // maxDepth=1: should find shallow (at depth 1) but not deep (at depth 3).
-        final results = await IdeConfigWriter.findOpenDesignProjects(
+        final results = await writer.findOpenDesignProjects(
           maxDepth: 1,
           startDir: scanRoot,
         );
@@ -286,7 +288,7 @@ void main() {
         // Regular dir with .od — should be found.
         Directory('${scanRoot.path}/visible/.od').createSync(recursive: true);
 
-        final results = await IdeConfigWriter.findOpenDesignProjects(
+        final results = await writer.findOpenDesignProjects(
           maxDepth: 3,
           startDir: scanRoot,
         );
@@ -308,7 +310,7 @@ void main() {
         Directory('${scanRoot.path}/realProject/.od')
             .createSync(recursive: true);
 
-        final results = await IdeConfigWriter.findOpenDesignProjects(
+        final results = await writer.findOpenDesignProjects(
           maxDepth: 3,
           startDir: scanRoot,
         );
@@ -322,7 +324,7 @@ void main() {
         Directory('${scanRoot.path}/foo/bar').createSync(recursive: true);
         Directory('${scanRoot.path}/baz').createSync();
 
-        final results = await IdeConfigWriter.findOpenDesignProjects(
+        final results = await writer.findOpenDesignProjects(
           maxDepth: 3,
           startDir: scanRoot,
         );
@@ -334,7 +336,7 @@ void main() {
         // If scanRoot itself has .od, it should be detected.
         Directory('${scanRoot.path}/.od').createSync();
 
-        final results = await IdeConfigWriter.findOpenDesignProjects(
+        final results = await writer.findOpenDesignProjects(
           maxDepth: 3,
           startDir: scanRoot,
         );

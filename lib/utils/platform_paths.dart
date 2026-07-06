@@ -158,19 +158,38 @@ class PlatformPaths {
   /// Build an augmented environment map with extra CLI paths prepended
   /// to PATH.
   ///
+  /// When [filterExisting] is true, directories that don't exist on the
+  /// filesystem are excluded.  The top-level shim passes `true`; unit
+  /// tests with synthetic envs can leave it `false`.
+  ///
   /// Note: Dart's `Platform.environment` on Windows already normalises keys
   /// to upper case, so `'PATH'` is the canonical key on all platforms.
-  Map<String, String> buildAugmentedEnv({List<String>? additionalPaths}) {
+  Map<String, String> buildAugmentedEnv({
+    List<String>? additionalPaths,
+    bool filterExisting = false,
+  }) {
     final result = Map<String, String>.from(env);
-    final extras = [...extraCliPaths(), ...?additionalPaths];
-    final currentPath = result['PATH'];
+    var extras = [...extraCliPaths(), ...?additionalPaths];
+    if (filterExisting) {
+      extras = extras.where((p) => Directory(p).existsSync()).toList();
+    }
+    if (extras.isEmpty) return result;
+
+    // Windows environment keys are case-insensitive; the actual key may be
+    // 'PATH', 'Path', or 'path'. Find the canonical key.
+    final pathKey = result.keys.firstWhere(
+      (k) => k.toUpperCase() == 'PATH',
+      orElse: () => 'PATH',
+    );
+    final currentPath = result[pathKey];
+
     // Avoid trailing separator when PATH is empty — an empty entry in PATH
     // is interpreted as CWD on Unix (CWE-426: Untrusted Search Path).
     if (currentPath != null && currentPath.isNotEmpty) {
-      result['PATH'] =
+      result[pathKey] =
           '${extras.join(pathSeparator)}$pathSeparator$currentPath';
     } else {
-      result['PATH'] = extras.join(pathSeparator);
+      result[pathKey] = extras.join(pathSeparator);
     }
     return result;
   }
@@ -217,7 +236,11 @@ List<String> extraCliPaths() => _default.extraCliPaths();
 String get pathSeparator => _default.pathSeparator;
 
 /// Build an augmented environment map with extra CLI paths prepended.
+/// Non-existent directories are filtered out.
 ///
 /// See [PlatformPaths.buildAugmentedEnv] for details.
 Map<String, String> buildAugmentedEnv({List<String>? additionalPaths}) =>
-    _default.buildAugmentedEnv(additionalPaths: additionalPaths);
+    _default.buildAugmentedEnv(
+      additionalPaths: additionalPaths,
+      filterExisting: true,
+    );

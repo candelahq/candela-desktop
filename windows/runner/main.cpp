@@ -7,6 +7,12 @@
 
 int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
                       _In_ wchar_t *command_line, _In_ int show_command) {
+  // Harden DLL search order: only load from System32 and the application
+  // directory.  This prevents DLL hijacking when the app is installed in a
+  // user-writable location (CWE-427).
+  ::SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32 |
+                             LOAD_LIBRARY_SEARCH_APPLICATION_DIR);
+
   // Attach to console when present (e.g., 'flutter run') or create a
   // new console when running with a debugger.
   if (!::AttachConsole(ATTACH_PARENT_PROCESS) && ::IsDebuggerPresent()) {

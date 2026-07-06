@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../utils/platform_paths.dart' as platform_paths;
 
 /// State of a managed process.
 enum ProcessState {
@@ -368,12 +369,26 @@ class ProcessManager extends ChangeNotifier {
         _ => [],
       };
 
-  Map<String, String>? _env(String name) => switch (name) {
-        'ollama' => {
-            'OLLAMA_HOST': '0.0.0.0:${_processes['ollama']?.port ?? '11434'}',
-          },
-        _ => null,
-      };
+  /// Build the environment map for a process. Starts with the augmented
+  /// PATH (so gcloud, candela, etc. are discoverable) and merges any
+  /// per-process overrides on top.
+  Map<String, String> _env(String name) {
+    Map<String, String> base;
+    try {
+      base = platform_paths.buildAugmentedEnv();
+    } catch (_) {
+      // If path resolution fails (e.g. missing env vars), fall back to
+      // the unaugmented system environment.
+      base = Map<String, String>.from(Platform.environment);
+    }
+    final overrides = switch (name) {
+      'ollama' => {
+          'OLLAMA_HOST': '0.0.0.0:${_processes['ollama']?.port ?? '11434'}',
+        },
+      _ => <String, String>{},
+    };
+    return {...base, ...overrides};
+  }
 
   Future<bool> _isHealthy(String name) async {
     final url = _healthUrl(name);

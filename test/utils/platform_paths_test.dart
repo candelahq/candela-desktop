@@ -91,13 +91,31 @@ void main() {
     });
 
     test('buildAugmentedEnv prepends extra CLI paths', () {
-      final env = platform_paths.buildAugmentedEnv();
+      // Use the injectable PlatformPaths with filterExisting: false
+      // so this test works on CI where google-cloud-sdk isn't installed.
+      final paths = platform_paths.PlatformPaths(
+        env: Platform.environment,
+        isWindows: Platform.isWindows,
+        isMacOS: Platform.isMacOS,
+        isLinux: Platform.isLinux,
+        resolvedExecutable: Platform.resolvedExecutable,
+      );
+      final env = paths.buildAugmentedEnv();
       final augmentedPath = env['PATH']!;
       expect(augmentedPath, contains('google-cloud-sdk'));
     });
 
     test('buildAugmentedEnv includes additional paths when specified', () {
-      final env = platform_paths.buildAugmentedEnv(
+      // Use the injectable PlatformPaths so the test works without
+      // requiring /tmp to exist (which it may not on all CI runners).
+      final paths = platform_paths.PlatformPaths(
+        env: Platform.environment,
+        isWindows: Platform.isWindows,
+        isMacOS: Platform.isMacOS,
+        isLinux: Platform.isLinux,
+        resolvedExecutable: Platform.resolvedExecutable,
+      );
+      final env = paths.buildAugmentedEnv(
         additionalPaths: ['/custom/test/path'],
       );
       expect(env['PATH'], contains('/custom/test/path'));

@@ -27,12 +27,30 @@ void _logToFile(String message) {
     }
 
     logFile.writeAsStringSync(
-      '[${DateTime.now().toIso8601String()}] $message\n',
+      '[${DateTime.now().toIso8601String()}] ${_sanitize(message)}\n',
       mode: FileMode.append,
     );
   } catch (_) {
     // Never let logging itself crash the app.
   }
+}
+
+/// Strips tokens and secrets from crash log output to prevent leaking
+/// credentials.  Matches Google access tokens (`ya29.…`), Bearer headers,
+/// refresh tokens, and client secrets.
+final _tokenPatterns = [
+  RegExp(r'ya29\.[A-Za-z0-9_-]+', dotAll: true),
+  RegExp(r'Bearer\s+[A-Za-z0-9._-]+', caseSensitive: false),
+  RegExp(r'"?refresh_token"?\s*[:=]\s*"?[A-Za-z0-9_/-]+"?'),
+  RegExp(r'"?client_secret"?\s*[:=]\s*"?[A-Za-z0-9_/-]+"?'),
+];
+
+String _sanitize(String input) {
+  var result = input;
+  for (final pattern in _tokenPatterns) {
+    result = result.replaceAll(pattern, '[REDACTED]');
+  }
+  return result;
 }
 
 void main() async {

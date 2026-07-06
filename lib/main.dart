@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:launch_at_startup/launch_at_startup.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:window_manager/window_manager.dart';
 import 'app.dart';
 import 'utils/platform_paths.dart' as platform_paths;
@@ -56,6 +58,22 @@ void main() async {
     };
 
     await windowManager.ensureInitialized();
+
+    // Configure launch-at-startup with the app name and executable path.
+    // On Windows this writes to HKCU\...\Run; on macOS it uses SMLoginItem.
+    // Must be called before any LaunchAtStartup.instance.enable/isEnabled.
+    // Guarded so a failure here doesn't prevent the app from launching.
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      final appName =
+          packageInfo.appName.isNotEmpty ? packageInfo.appName : 'Candela';
+      LaunchAtStartup.instance.setup(
+        appName: appName,
+        appPath: Platform.resolvedExecutable,
+      );
+    } catch (e) {
+      debugPrint('LaunchAtStartup.setup() failed: $e');
+    }
 
     const windowOptions = WindowOptions(
       size: Size(1280, 820),

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 import 'app.dart';
+import 'utils/platform_paths.dart' as platform_paths;
 
 /// Persistent crash log for release builds — stderr is invisible to users.
 ///
@@ -12,9 +13,7 @@ import 'app.dart';
 /// Each entry is timestamped and capped at 512KB to prevent unbounded growth.
 void _logToFile(String message) {
   try {
-    final home = Platform.environment['HOME'];
-    if (home == null) return;
-    final logDir = Directory('$home/.config/candela');
+    final logDir = Directory(platform_paths.candelaConfigDir());
     if (!logDir.existsSync()) logDir.createSync(recursive: true);
     final logFile = File('${logDir.path}/crash.log');
 

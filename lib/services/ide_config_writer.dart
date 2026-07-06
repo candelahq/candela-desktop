@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 
+import '../utils/platform_paths.dart' as platform_paths;
+
 /// Writes the Candela proxy endpoint into IDE and tool config files.
 ///
 /// Supports:
@@ -52,7 +54,7 @@ class IdeConfigWriter {
   }
 
   static String _continuePath() {
-    final home = Platform.environment['HOME'] ?? '';
+    final home = platform_paths.homeDir();
     return p.join(home, '.continue', 'config.json');
   }
 
@@ -94,7 +96,7 @@ class IdeConfigWriter {
   }
 
   static String _zedPath() {
-    final home = Platform.environment['HOME'] ?? '';
+    final home = platform_paths.homeDir();
     return p.join(home, '.config', 'zed', 'settings.json');
   }
 
@@ -152,7 +154,7 @@ class IdeConfigWriter {
     int maxDepth = 3,
     @visibleForTesting Directory? startDir,
   }) async {
-    final root = startDir ?? Directory(Platform.environment['HOME'] ?? '');
+    final root = startDir ?? Directory(platform_paths.homeDir());
     if (!root.existsSync()) return [];
 
     final results = <String>[];

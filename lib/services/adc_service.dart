@@ -2,7 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
-import 'package:path/path.dart' as path;
+
+import '../utils/platform_paths.dart' as platform_paths;
 
 import '../models/identity_state.dart';
 
@@ -100,10 +101,5 @@ class AdcService {
     }
   }
 
-  String _adcPath() {
-    final home = Platform.environment['HOME'] ?? '';
-    // Standard ADC location on macOS/Linux.
-    return path.join(
-        home, '.config', 'gcloud', 'application_default_credentials.json');
-  }
+  String _adcPath() => platform_paths.adcCredentialPath();
 }

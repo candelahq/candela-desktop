@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../models/provider_status.dart';
+import '../utils/platform_paths.dart' as platform_paths;
 
 /// Tests connectivity to each LLM provider.
 class ProviderTestService {
@@ -252,10 +253,8 @@ class ProviderTestService {
       // AWS CLI not installed, fall back to checking credential files
       final hasEnv = Platform.environment['AWS_ACCESS_KEY_ID'] != null &&
           Platform.environment['AWS_ACCESS_KEY_ID']!.isNotEmpty;
-      final home =
-          Platform.environment['HOME'] ?? Platform.environment['USERPROFILE'];
-      final hasFile =
-          home != null && File('$home/.aws/credentials').existsSync();
+      final home = platform_paths.homeDir();
+      final hasFile = File('$home/.aws/credentials').existsSync();
 
       if (!hasEnv && !hasFile) {
         return const ProviderStatus(

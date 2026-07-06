@@ -150,10 +150,29 @@ class ConfigService {
 
   /// Resolve the config path. May throw [StateError] if platform env vars
   /// (e.g. `%APPDATA%`, `$HOME`) are not set.
+  ///
+  /// On Windows, checks `%USERPROFILE%\.config\candela\config.yaml` first
+  /// (matching Go CLI step 3) before falling back to
+  /// `%APPDATA%\candela\config.yaml` (Go CLI step 4).
   String _resolveConfigPath() {
     if (configPath != null) return configPath!;
     final envPath = Platform.environment['CANDELA_CONFIG'];
     if (envPath != null && envPath.isNotEmpty) return envPath;
+
+    // On Windows, match Go CLI search order: check the Unix-style
+    // ~/.config/candela/ path first (where `candela init` may have
+    // created it), then fall back to the Windows-native %APPDATA% path.
+    if (Platform.isWindows) {
+      try {
+        final home = platform_paths.homeDir();
+        final unixStylePath =
+            path.join(home, '.config', 'candela', 'config.yaml');
+        if (File(unixStylePath).existsSync()) return unixStylePath;
+      } catch (_) {
+        // homeDir() unavailable — fall through to default.
+      }
+    }
+
     return defaultConfigPath();
   }
 

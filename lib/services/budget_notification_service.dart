@@ -89,8 +89,20 @@ class BudgetNotificationService {
       : _adapter = adapter;
 
   /// Initialize the notification plugin. Safe to call multiple times.
+  ///
+  /// On Windows, `flutter_local_notifications` has no native support.
+  /// Notifications are silently skipped until a Windows-native notification
+  /// package (e.g. `local_notifier`) is integrated.
   Future<void> init() async {
     if (_initialized) return;
+
+    // Windows: flutter_local_notifications has no native support.
+    // Leave _initialized false so evaluate() remains a no-op.
+    if (Platform.isWindows) {
+      debugPrint('[BudgetNotificationService] skipped — '
+          'no Windows notification support');
+      return;
+    }
 
     // macOS: request permission to show banners.
     if (Platform.isMacOS) {

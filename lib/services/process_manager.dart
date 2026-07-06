@@ -84,7 +84,8 @@ class ProcessManager extends ChangeNotifier {
     final staleNames =
         _handles.keys.where((n) => !providerNames.contains(n) && n != 'proxy');
     for (final name in staleNames.toList()) {
-      _handles[name]?.kill(ProcessSignal.sigterm);
+      final h = _handles[name];
+      if (h != null) _killProcess(h);
       _handles.remove(name);
     }
 
@@ -142,7 +143,8 @@ class ProcessManager extends ChangeNotifier {
     final binary = _binaryName(name);
     if (binary == null) return false;
     try {
-      final result = await Process.run('which', [binary]);
+      final cmd = Platform.isWindows ? 'where.exe' : 'which';
+      final result = await Process.run(cmd, [binary]);
       return result.exitCode == 0;
     } catch (_) {
       return false;
@@ -282,17 +284,17 @@ class ProcessManager extends ChangeNotifier {
     final handle = _handles[name];
     if (handle != null) {
       // Graceful shutdown.
-      handle.kill(ProcessSignal.sigterm);
+      _killProcess(handle);
       try {
         await handle.exitCode.timeout(const Duration(seconds: 5));
       } catch (_) {
         // Force kill.
-        handle.kill(ProcessSignal.sigkill);
+        _killProcess(handle, force: true);
       }
       _handles.remove(name);
     } else if (p.pid != null) {
       // Process we detected but didn't start — kill by PID.
-      Process.killPid(p.pid!, ProcessSignal.sigterm);
+      _killPid(p.pid!);
     }
 
     p.state = ProcessState.stopped;
@@ -332,6 +334,24 @@ class ProcessManager extends ChangeNotifier {
   }
 
   // --- Private helpers ---
+
+  /// Kill a process. On Windows, always uses TerminateProcess (no POSIX signals).
+  void _killProcess(Process handle, {bool force = false}) {
+    if (Platform.isWindows) {
+      handle.kill(); // TerminateProcess
+    } else {
+      handle.kill(force ? ProcessSignal.sigkill : ProcessSignal.sigterm);
+    }
+  }
+
+  /// Kill a process by PID. On Windows, uses TerminateProcess.
+  void _killPid(int pid) {
+    if (Platform.isWindows) {
+      Process.killPid(pid);
+    } else {
+      Process.killPid(pid, ProcessSignal.sigterm);
+    }
+  }
 
   String? _binaryName(String name) => switch (name) {
         'ollama' => 'ollama',
@@ -439,7 +459,7 @@ class ProcessManager extends ChangeNotifier {
     }
     // Kill any processes we started to prevent orphans.
     for (final handle in _handles.values) {
-      handle.kill(ProcessSignal.sigterm);
+      _killProcess(handle);
     }
     _handles.clear();
     _client.close();

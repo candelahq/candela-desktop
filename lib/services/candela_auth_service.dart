@@ -34,7 +34,7 @@ class CandelaAuthService {
     AdcService? adcService,
     ProcessRunner? runner,
     http.Client? client,
-  })  : _adcService = adcService ?? AdcService(),
+  })  : _adcService = adcService ?? AdcService(client: client),
         _runner = runner ?? const SystemProcessRunner(),
         _client = client ?? http.Client();
 
@@ -119,7 +119,7 @@ class CandelaAuthService {
         'https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/'
         '$serviceAccount:generateIdToken',
       );
-      final response = await http
+      final response = await _client
           .post(
             url,
             headers: {

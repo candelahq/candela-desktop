@@ -38,8 +38,8 @@ class DiagnosticRunner {
     ProviderTestService? providers,
     http.Client? client,
   })  : _config = config,
-        _candelaAuth = candelaAuth ?? CandelaAuthService(),
-        _adc = adc ?? AdcService(),
+        _candelaAuth = candelaAuth ?? CandelaAuthService(client: client),
+        _adc = adc ?? AdcService(client: client),
         _providers = providers ?? ProviderTestService(),
         _client = client ?? http.Client();
 

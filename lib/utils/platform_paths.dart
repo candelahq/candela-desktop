@@ -71,7 +71,8 @@ class PlatformPaths {
 
   /// Returns the Candela config directory.
   ///
-  /// - Unix/macOS: `~/.config/candela`
+  /// - Linux: `$XDG_CONFIG_HOME/candela` (defaults to `~/.config/candela`)
+  /// - macOS: `~/.config/candela`
   /// - Windows: `%APPDATA%\candela`
   ///
   /// Throws [StateError] on Windows if `%APPDATA%` is not set.
@@ -84,7 +85,7 @@ class PlatformPaths {
       }
       return path.join(appData, 'candela');
     }
-    return path.join(homeDir(), '.config', 'candela');
+    return path.join(_xdgConfigHome(), 'candela');
   }
 
   /// Returns the full path to `config.yaml`.
@@ -118,7 +119,19 @@ class PlatformPaths {
       return path.join(appData, 'gcloud', adcFile);
     }
 
-    return path.join(homeDir(), '.config', 'gcloud', adcFile);
+    return path.join(_xdgConfigHome(), 'gcloud', adcFile);
+  }
+
+  /// Returns `$XDG_CONFIG_HOME` if set (Linux only), otherwise `~/.config`.
+  ///
+  /// Per the XDG Base Directory Specification, `XDG_CONFIG_HOME` defaults
+  /// to `$HOME/.config` when not explicitly set.
+  String _xdgConfigHome() {
+    if (isLinux) {
+      final xdg = env['XDG_CONFIG_HOME'];
+      if (xdg != null && xdg.isNotEmpty) return xdg;
+    }
+    return path.join(homeDir(), '.config');
   }
 
   /// Returns additional PATH entries for finding CLI tools (gcloud, candela,

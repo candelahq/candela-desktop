@@ -11,7 +11,9 @@ import 'package:yaml_edit/yaml_edit.dart';
 
 import '../models/candela_config.dart';
 
-/// Reads, parses, validates, and modifies ~/.config/candela/config.yaml.
+/// Reads, parses, validates, and modifies the candela config file.
+///
+/// Default path: `~/.config/candela/config.yaml` (Linux honors `$XDG_CONFIG_HOME`).
 ///
 /// Uses [yaml_edit] for all modifications to preserve comments and formatting.
 class ConfigService {

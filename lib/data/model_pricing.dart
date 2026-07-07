@@ -147,6 +147,9 @@ const Map<String, ModelPricing> _pricingMap = {
 
 /// Look up static list pricing for a model.
 /// Returns null for models without a known price (e.g. local/custom).
+@Deprecated('Pricing should come from the catalog RPC (ModelCatalogService). '
+    'This hardcoded map will be removed once the Usage tab also sources '
+    'pricing from the catalog.')
 ModelPricing? lookupPricing(String model) {
   return _pricingMap[model.toLowerCase()];
 }

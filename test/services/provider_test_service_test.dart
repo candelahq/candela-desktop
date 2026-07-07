@@ -432,57 +432,6 @@ void main() {
       });
     });
 
-    group('verifyProxyModels — parallel per-model verification', () {
-      test('verifies each model independently', () async {
-        // Simulate model1 succeeding, model2 failing.
-        final mockClient = http_testing.MockClient((request) async {
-          final body = jsonDecode(request.body) as Map<String, dynamic>;
-          final model = body['model'] as String;
-          if (model == 'gemini-2.5-flash') {
-            return http.Response(
-              jsonEncode({
-                'choices': [
-                  {
-                    'message': {'content': 'ok'}
-                  }
-                ]
-              }),
-              200,
-            );
-          }
-          return http.Response(
-            jsonEncode({
-              'error': {'message': 'Model not found'}
-            }),
-            404,
-          );
-        });
-        final svc = ProviderTestService(client: mockClient);
-        final results = await svc.verifyProxyModels(
-          ['gemini-2.5-flash', 'nonexistent-model'],
-          port: 8181,
-        );
-        expect(results.length, 2);
-        // Each model should have its own independent result.
-        final flash = results.firstWhere((r) => r.model == 'gemini-2.5-flash');
-        final missing =
-            results.firstWhere((r) => r.model == 'nonexistent-model');
-        expect(flash.reachable, isTrue);
-        expect(missing.reachable, isFalse);
-        svc.dispose();
-      });
-
-      test('returns empty list for empty model list', () async {
-        final mockClient = http_testing.MockClient((request) async {
-          return http.Response('Not found', 404);
-        });
-        final svc = ProviderTestService(client: mockClient);
-        final results = await svc.verifyProxyModels([], port: 8181);
-        expect(results, isEmpty);
-        svc.dispose();
-      });
-    });
-
     group('ProviderStatus.rawModels', () {
       test('defaults to empty list', () {
         const status = ProviderStatus(

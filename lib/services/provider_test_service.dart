@@ -513,58 +513,6 @@ class ProviderTestService {
     }
   }
 
-  /// Verify a specific model is reachable through the proxy by sending a
-  /// minimal completion request. Returns true if the model responds.
-  Future<ModelVerification> verifyProxyModel(String model,
-      {int port = 8181}) async {
-    final proxyUrl = 'http://localhost:$port';
-    try {
-      final sw = Stopwatch()..start();
-      final resp = await _client
-          .post(
-            Uri.parse('$proxyUrl/v1/chat/completions'),
-            headers: {'Content-Type': 'application/json'},
-            body: json.encode({
-              'model': model,
-              'messages': [
-                {'role': 'user', 'content': 'ping'}
-              ],
-              'max_tokens': 1,
-            }),
-          )
-          .timeout(const Duration(seconds: 15));
-      sw.stop();
-
-      if (resp.statusCode == 200) {
-        return ModelVerification(
-            model: model, reachable: true, latency: sw.elapsed);
-      } else {
-        String? error;
-        try {
-          final body = json.decode(resp.body) as Map<String, dynamic>;
-          error = (body['error'] as Map?)?['message']?.toString();
-        } catch (_) {}
-        return ModelVerification(
-          model: model,
-          reachable: false,
-          error: error ?? 'HTTP ${resp.statusCode}',
-          latency: sw.elapsed,
-        );
-      }
-    } catch (e) {
-      return ModelVerification(
-          model: model, reachable: false, error: e.toString());
-    }
-  }
-
-  /// Verify all models through the proxy in parallel.
-  Future<List<ModelVerification>> verifyProxyModels(List<String> models,
-      {int port = 8181}) async {
-    return Future.wait(
-      models.map((m) => verifyProxyModel(m, port: port)),
-    );
-  }
-
   static final _openAiPattern = RegExp(r'^(gpt-|o[13](-|$))');
   static String modelCategory(String model) {
     if (model.contains('gemini')) return 'google';

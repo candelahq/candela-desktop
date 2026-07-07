@@ -101,6 +101,9 @@ class PlatformPaths {
   ///   2. Windows: `%APPDATA%\gcloud\application_default_credentials.json`
   ///   3. Unix:    `~/.config/gcloud/application_default_credentials.json`
   ///
+  /// Note: This intentionally does NOT honor `$XDG_CONFIG_HOME` for ADC,
+  /// to maintain parity with the Go CLI. Use `$CLOUDSDK_CONFIG` to override.
+  ///
   /// Throws [StateError] on Windows if `%APPDATA%` is not set (and
   /// `$CLOUDSDK_CONFIG` is not set either).
   String adcCredentialPath() {
@@ -119,7 +122,8 @@ class PlatformPaths {
       return path.join(appData, 'gcloud', adcFile);
     }
 
-    return path.join(_xdgConfigHome(), 'gcloud', adcFile);
+    // Hardcoded to ~/.config/gcloud — not XDG-aware, matching Go CLI behavior.
+    return path.join(homeDir(), '.config', 'gcloud', adcFile);
   }
 
   /// Returns `$XDG_CONFIG_HOME` if set (Linux only), otherwise `~/.config`.

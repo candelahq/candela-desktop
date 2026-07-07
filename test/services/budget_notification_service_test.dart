@@ -45,6 +45,11 @@ class FakeAdapter implements BudgetNotifAdapter {
       WindowsNotificationDetails? details) async {
     shown.add((id: id, title: title, body: body));
   }
+
+  @override
+  Future<void> cancelAllWindows() async {
+    cancelAllCount++;
+  }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

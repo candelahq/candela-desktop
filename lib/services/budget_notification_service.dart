@@ -39,6 +39,9 @@ abstract interface class BudgetNotifAdapter {
   /// Show a Windows-native notification. No-op on other platforms.
   Future<void> showWindows(
       int id, String? title, String? body, WindowsNotificationDetails? details);
+
+  /// Cancel all Windows notifications. No-op on other platforms.
+  Future<void> cancelAllWindows();
 }
 
 /// Production adapter — wraps the real FlutterLocalNotificationsPlugin
@@ -77,6 +80,11 @@ class _RealAdapter implements BudgetNotifAdapter {
   Future<void> showWindows(int id, String? title, String? body,
       WindowsNotificationDetails? details) async {
     await _windowsPlugin?.show(id, title, body, details: details);
+  }
+
+  @override
+  Future<void> cancelAllWindows() async {
+    await _windowsPlugin?.cancelAll();
   }
 }
 
@@ -124,10 +132,15 @@ class BudgetNotificationService {
     if (Platform.isWindows) {
       const windowsSettings = WindowsInitializationSettings(
         appName: 'Candela Desktop',
-        appUserModelId: 'com.candelahq.candela-desktop',
-        guid: 'd3b07384-d113-4ec8-9d0b-0e8f6d2c5a3b',
+        appUserModelId: 'CandelaHQ.CandelaDesktop',
+        guid: '996a8d1f-95a3-4caf-a845-ed17944ffb7a',
       );
-      await _adapter.initializeWindows(windowsSettings);
+      try {
+        await _adapter.initializeWindows(windowsSettings);
+      } on Exception catch (e) {
+        debugPrint('[BudgetNotificationService] Windows init failed: $e');
+        return; // Leave _initialized false — evaluate() becomes a no-op.
+      }
     } else {
       // macOS: request permission to show banners.
       if (Platform.isMacOS) {
@@ -203,7 +216,13 @@ class BudgetNotificationService {
   }
 
   /// Cancel all pending budget notifications (e.g., on sign-out).
-  Future<void> cancelAll() => _adapter.cancelAll();
+  Future<void> cancelAll() async {
+    if (Platform.isWindows) {
+      await _adapter.cancelAllWindows();
+    } else {
+      await _adapter.cancelAll();
+    }
+  }
 
   /// Expose whether any threshold has been fired (for testing).
   @visibleForTesting

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import '../../data/cache_efficiency.dart';
+import '../../gen/candela/types/model_catalog.pb.dart';
 import '../../models/catalog_model_view.dart';
 import '../../models/span_stats.dart';
 import '../../providers.dart';
@@ -733,10 +734,16 @@ class _UsageTabState extends ConsumerState<_UsageTab>
       // Build a pricing index from the catalog RPC state. The catalog
       // entries carry `inputPerMillion` / `outputPerMillion` directly,
       // so we no longer need the hardcoded _pricingMap.
+      // Index by both canonical modelId and known aliases so that
+      // telemetry-reported alias names also resolve to pricing.
       final catalogModels = ref.read(catalogProvider).models;
-      final catalogIndex = {
-        for (final entry in catalogModels) entry.modelId.toLowerCase(): entry,
-      };
+      final catalogIndex = <String, ModelCatalogEntry>{};
+      for (final entry in catalogModels) {
+        catalogIndex[entry.modelId.toLowerCase()] = entry;
+        for (final alias in entry.aliases) {
+          catalogIndex[alias.toLowerCase()] = entry;
+        }
+      }
 
       setState(() {
         final usedModels = (result?.models ?? []).map((m) {
@@ -744,8 +751,10 @@ class _UsageTabState extends ConsumerState<_UsageTab>
           if (entry != null &&
               (entry.inputPerMillion > 0 || entry.outputPerMillion > 0)) {
             return m.withPricing(
-              inputPerMillion: entry.inputPerMillion,
-              outputPerMillion: entry.outputPerMillion,
+              inputPerMillion:
+                  entry.inputPerMillion > 0 ? entry.inputPerMillion : null,
+              outputPerMillion:
+                  entry.outputPerMillion > 0 ? entry.outputPerMillion : null,
             );
           }
           return m;

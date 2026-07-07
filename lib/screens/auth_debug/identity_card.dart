@@ -94,6 +94,10 @@ class _IdentityCardState extends State<IdentityCard> {
                   const SizedBox(height: 4),
                   Text(statusText,
                       style: TextStyle(fontSize: 12, color: statusColor)),
+                  if (identity.credentialOverride != null) ...[
+                    const SizedBox(height: 6),
+                    _credentialOverrideBanner(identity.credentialOverride!),
+                  ],
                 ],
               ),
             ),
@@ -218,6 +222,66 @@ class _IdentityCardState extends State<IdentityCard> {
     setState(() {});
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('ADC login cancelled')),
+    );
+  }
+
+  Widget _credentialOverrideBanner(CredentialOverride override) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: CandelaColors.warning.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: CandelaColors.warning.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.warning_amber_rounded,
+              size: 14, color: CandelaColors.warning),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'GOOGLE_APPLICATION_CREDENTIALS override active',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: CandelaColors.warning,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  override.displayLabel,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: CandelaColors.textSecondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  override.isServiceAccount
+                      ? 'Client libraries will authenticate as this SA, '
+                          'not your ADC identity. '
+                          'Run: unset GOOGLE_APPLICATION_CREDENTIALS'
+                      : 'Client libraries may use different credentials '
+                          'than shown above. '
+                          'Run: unset GOOGLE_APPLICATION_CREDENTIALS',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: CandelaColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

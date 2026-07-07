@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:candela_desktop/widgets/cli_status_banner.dart';
@@ -41,28 +43,39 @@ void main() {
     });
 
     testWidgets(
-        'shows brew-not-available warning with no action button when !isBrewAvailable',
+        'shows brew-not-available warning on macOS, generic CLI message on other platforms',
         (tester) async {
       await tester.pumpWidget(_wrap(const CliStatusBanner(
         isInstalled: false,
         isBrewAvailable: false,
       )));
 
-      expect(find.textContaining('Homebrew is required'), findsOneWidget);
-      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
-      // No action button
-      expect(find.byType(TextButton), findsNothing);
+      if (Platform.isMacOS) {
+        expect(find.textContaining('Homebrew is required'), findsOneWidget);
+        expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+        // No action button
+        expect(find.byType(TextButton), findsNothing);
+      } else {
+        // On non-macOS, brew warning is suppressed; falls through to
+        // "not installed" banner instead.
+        expect(find.textContaining('Candela CLI is required'), findsOneWidget);
+        expect(find.byIcon(Icons.download_rounded), findsOneWidget);
+      }
     });
 
-    testWidgets(
-        'shows Install via Homebrew button when !isInstalled && isBrewAvailable',
+    testWidgets('shows Install button when !isInstalled && isBrewAvailable',
         (tester) async {
       await tester.pumpWidget(_wrap(const CliStatusBanner(
         isInstalled: false,
         isBrewAvailable: true,
       )));
 
-      expect(find.text('Install via Homebrew'), findsOneWidget);
+      if (Platform.isMacOS) {
+        expect(find.text('Install via Homebrew'), findsOneWidget);
+      } else {
+        // On non-macOS, button label is null — no install button shown.
+        expect(find.text('Install via Homebrew'), findsNothing);
+      }
       expect(find.byIcon(Icons.download_rounded), findsOneWidget);
     });
 
@@ -110,7 +123,8 @@ void main() {
       expect(dismissed, isTrue);
     });
 
-    testWidgets('action button calls onAction callback', (tester) async {
+    testWidgets('action button calls onAction callback on macOS',
+        (tester) async {
       var actionCalled = false;
 
       await tester.pumpWidget(_wrap(CliStatusBanner(
@@ -119,8 +133,13 @@ void main() {
         onAction: () => actionCalled = true,
       )));
 
-      await tester.tap(find.text('Install via Homebrew'));
-      expect(actionCalled, isTrue);
+      if (Platform.isMacOS) {
+        await tester.tap(find.text('Install via Homebrew'));
+        expect(actionCalled, isTrue);
+      } else {
+        // On non-macOS, no install button is shown.
+        expect(find.text('Install via Homebrew'), findsNothing);
+      }
     });
 
     testWidgets('shows correct icon for each state', (tester) async {
@@ -137,7 +156,12 @@ void main() {
         isInstalled: false,
         isBrewAvailable: false,
       )));
-      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+      if (Platform.isMacOS) {
+        expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+      } else {
+        // Falls through to "not installed" on non-macOS.
+        expect(find.byIcon(Icons.download_rounded), findsOneWidget);
+      }
 
       // Not installed
       await tester.pumpWidget(_wrap(const CliStatusBanner(

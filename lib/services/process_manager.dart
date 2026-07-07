@@ -452,11 +452,17 @@ class ProcessManager extends ChangeNotifier {
   }
 
   /// Resolve the PID of a process listening on [port].
-  /// Uses `lsof` on macOS/Linux only. Returns null on Windows or if not found.
+  ///
+  /// Uses `netstat -ano` on Windows, `lsof -ti` on macOS/Linux.
+  /// Returns null if not found or the command fails (best-effort).
   Future<int?> _findPidForPort(int port) async {
     // CRITICAL-5: validate port is a safe positive integer before shell use.
     if (port <= 0 || port > 65535) return null;
-    if (Platform.isWindows) return null;
+
+    if (Platform.isWindows) {
+      return _findPidForPortWindows(port);
+    }
+
     try {
       final result = await _runner.run('lsof', ['-ti', ':$port']);
       if (result.exitCode == 0) {
@@ -467,6 +473,39 @@ class ProcessManager extends ChangeNotifier {
       }
     } catch (_) {
       // lsof not available — PID resolution is best-effort.
+    }
+    return null;
+  }
+
+  /// Windows implementation: parse `netstat -ano` for LISTENING on [port].
+  ///
+  /// Example netstat output line:
+  ///   TCP    0.0.0.0:8080           0.0.0.0:0              LISTENING       1234
+  Future<int?> _findPidForPortWindows(int port) async {
+    try {
+      final result = await _runner.run(
+        'netstat',
+        ['-ano'],
+      ).timeout(const Duration(seconds: 3));
+      if (result.exitCode != 0) return null;
+
+      final portSuffix = ':$port';
+      for (final line in (result.stdout as String).split('\n')) {
+        final trimmed = line.trim();
+        if (!trimmed.contains('LISTENING')) continue;
+
+        // Split by whitespace: [protocol, local, foreign, state, pid]
+        final parts = trimmed.split(RegExp(r'\s+'));
+        if (parts.length < 5) continue;
+
+        final localAddr = parts[1]; // e.g. "0.0.0.0:8080" or "[::]:8080"
+        if (!localAddr.endsWith(portSuffix)) continue;
+
+        final pid = int.tryParse(parts[4]);
+        if (pid != null && pid > 0) return pid;
+      }
+    } catch (_) {
+      // netstat not available — PID resolution is best-effort.
     }
     return null;
   }

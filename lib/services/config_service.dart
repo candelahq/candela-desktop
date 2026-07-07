@@ -421,7 +421,7 @@ class ConfigService {
       }
       // Leave a breadcrumb in the old file.
       await legacy.writeAsString(
-        '# Candela config has moved to ~/.config/candela/config.yaml\n'
+        '# Candela config has moved to ${_tryResolveConfigPath() ?? 'the new config location'}\n'
         '# This file is no longer used and can be safely deleted.\n',
       );
     }
@@ -480,11 +480,7 @@ class ConfigService {
       if (previous != null) await previous;
       await file.parent.create(recursive: true);
       await file.writeAsString(yamlContent);
-      if (!Platform.isWindows) {
-        try {
-          await _runner.run('chmod', ['600', file.path]);
-        } catch (_) {}
-      }
+      await _securePermissions(file);
     } finally {
       completer.complete();
       if (_writeLock == completer.future) _writeLock = null;
@@ -797,14 +793,29 @@ class ConfigService {
       if (previous != null) await previous;
       await file.parent.create(recursive: true);
       await file.writeAsString(content);
-      if (!Platform.isWindows) {
-        try {
-          await _runner.run('chmod', ['600', file.path]);
-        } catch (_) {}
-      }
+      await _securePermissions(file);
     } finally {
       completer.complete();
       if (_writeLock == completer.future) _writeLock = null;
+    }
+  }
+
+  /// Set restrictive file permissions: chmod 600 on Unix, icacls on Windows.
+  Future<void> _securePermissions(File file) async {
+    if (!Platform.isWindows) {
+      try {
+        await _runner.run('chmod', ['600', file.path]);
+      } catch (_) {}
+    } else {
+      final username = Platform.environment['USERNAME'];
+      if (username != null && username.isNotEmpty) {
+        try {
+          await _runner.run(
+            'icacls',
+            [file.path, '/inheritance:r', '/grant:r', '$username:F'],
+          );
+        } catch (_) {}
+      }
     }
   }
 

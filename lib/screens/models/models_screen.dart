@@ -113,13 +113,14 @@ class _CatalogTabState extends ConsumerState<_CatalogTab>
   bool get wantKeepAlive => true;
 
   List<CatalogModelView> _sort(List<CatalogModelView> models) {
-    final filtered = _search.isEmpty
+    final query = _search.toLowerCase();
+    final filtered = query.isEmpty
         ? models
         : models
             .where((m) =>
-                m.modelId.toLowerCase().contains(_search.toLowerCase()) ||
-                m.displayName.toLowerCase().contains(_search.toLowerCase()) ||
-                m.provider.toLowerCase().contains(_search.toLowerCase()))
+                m.modelId.toLowerCase().contains(query) ||
+                m.displayName.toLowerCase().contains(query) ||
+                m.provider.toLowerCase().contains(query))
             .toList();
 
     filtered.sort((a, b) {
@@ -532,8 +533,11 @@ class _CatalogDetail extends StatelessWidget {
               _metricBar('Input / 1M tokens',
                   '\$${model.inputPerMillion!.toStringAsFixed(2)}'),
               const SizedBox(height: 8),
-              _metricBar('Output / 1M tokens',
-                  '\$${model.outputPerMillion!.toStringAsFixed(2)}'),
+              _metricBar(
+                  'Output / 1M tokens',
+                  model.outputPerMillion != null
+                      ? '\$${model.outputPerMillion!.toStringAsFixed(2)}'
+                      : '—'),
               if (model.inputPerMillionHigh != null) ...[
                 const SizedBox(height: 8),
                 _metricBar('Input (high tier)',

@@ -87,8 +87,8 @@ class CatalogModelView {
       contextWindow:
           e.contextWindow != Int64.ZERO ? e.contextWindow.toInt() : null,
       enabled: e.enabled,
-      inputPerMillion: e.inputPerMillion,
-      outputPerMillion: e.outputPerMillion,
+      inputPerMillion: e.inputPerMillion > 0 ? e.inputPerMillion : null,
+      outputPerMillion: e.outputPerMillion > 0 ? e.outputPerMillion : null,
       inputPerMillionHigh:
           e.inputPerMillionHigh > 0 ? e.inputPerMillionHigh : null,
       outputPerMillionHigh:

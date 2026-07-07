@@ -66,6 +66,20 @@ void main() {
         expect(view.discountPercent, isNull);
       });
 
+      test('treats proto-default zero pricing as no pricing', () {
+        // Proto scalar defaults are 0.0, not null — should map to null.
+        final entry = ModelCatalogEntry(
+          modelId: 'no-pricing-model',
+          provider: 'test',
+          // inputPerMillion and outputPerMillion default to 0.0 in proto.
+        );
+
+        final view = CatalogModelView.fromTeamEntry(entry);
+        expect(view.inputPerMillion, isNull);
+        expect(view.outputPerMillion, isNull);
+        expect(view.hasPricing, isFalse);
+      });
+
       test('disabled entries have enabled=false', () {
         final entry = ModelCatalogEntry(
           modelId: 'disabled-model',

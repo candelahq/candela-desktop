@@ -3,7 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
-import '../../data/model_pricing.dart';
+import '../../data/cache_efficiency.dart';
+import '../../gen/candela/types/model_catalog.pb.dart';
 import '../../models/catalog_model_view.dart';
 import '../../models/span_stats.dart';
 import '../../providers.dart';
@@ -729,14 +730,31 @@ class _UsageTabState extends ConsumerState<_UsageTab>
       final availableIds = results[1] as List<String>;
 
       if (!mounted) return;
+
+      // Build a pricing index from the catalog RPC state. The catalog
+      // entries carry `inputPerMillion` / `outputPerMillion` directly,
+      // so we no longer need the hardcoded _pricingMap.
+      // Index by both canonical modelId and known aliases so that
+      // telemetry-reported alias names also resolve to pricing.
+      final catalogModels = ref.read(catalogProvider).models;
+      final catalogIndex = <String, ModelCatalogEntry>{};
+      for (final entry in catalogModels) {
+        catalogIndex[entry.modelId.toLowerCase()] = entry;
+        for (final alias in entry.aliases) {
+          catalogIndex[alias.toLowerCase()] = entry;
+        }
+      }
+
       setState(() {
-        // ignore: deprecated_member_use
         final usedModels = (result?.models ?? []).map((m) {
-          final pricing = lookupPricing(m.model);
-          if (pricing != null) {
+          final entry = catalogIndex[m.model.toLowerCase()];
+          if (entry != null &&
+              (entry.inputPerMillion > 0 || entry.outputPerMillion > 0)) {
             return m.withPricing(
-              inputPerMillion: pricing.inputPerMillion,
-              outputPerMillion: pricing.outputPerMillion,
+              inputPerMillion:
+                  entry.inputPerMillion > 0 ? entry.inputPerMillion : null,
+              outputPerMillion:
+                  entry.outputPerMillion > 0 ? entry.outputPerMillion : null,
             );
           }
           return m;
@@ -746,8 +764,7 @@ class _UsageTabState extends ConsumerState<_UsageTab>
 
         final unusedModels =
             availableIds.where((id) => !usedNames.contains(id)).map((id) {
-          // ignore: deprecated_member_use
-          final pricing = lookupPricing(id);
+          final entry = catalogIndex[id.toLowerCase()];
           return ModelBreakdown(
             model: id,
             provider: _inferProvider(id),
@@ -756,8 +773,12 @@ class _UsageTabState extends ConsumerState<_UsageTab>
             outputTokens: 0,
             costUsd: 0,
             avgLatencyMs: 0,
-            inputPricePerMillion: pricing?.inputPerMillion,
-            outputPricePerMillion: pricing?.outputPerMillion,
+            inputPricePerMillion: entry != null && entry.inputPerMillion > 0
+                ? entry.inputPerMillion
+                : null,
+            outputPricePerMillion: entry != null && entry.outputPerMillion > 0
+                ? entry.outputPerMillion
+                : null,
           );
         }).toList();
 

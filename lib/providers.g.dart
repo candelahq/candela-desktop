@@ -267,7 +267,7 @@ final class CatalogNotifierProvider
   }
 }
 
-String _$catalogNotifierHash() => r'c7e85585d2b00eb34c2f85a600baea1e34d37772';
+String _$catalogNotifierHash() => r'65bdc5552dd81fac83255021294a1f9e5f5a65cc';
 
 /// Shared catalog state — the single source of truth for the model catalog.
 ///
@@ -296,51 +296,51 @@ abstract class _$CatalogNotifier
   }
 }
 
-/// The singleton ProcessManager, auto-configured when config changes.
+/// Auto-configures the ProcessManagerNotifier when config changes.
 
-@ProviderFor(processManager)
-final processManagerProvider = ProcessManagerProvider._();
+@ProviderFor(processManagerSetup)
+final processManagerSetupProvider = ProcessManagerSetupProvider._();
 
-/// The singleton ProcessManager, auto-configured when config changes.
+/// Auto-configures the ProcessManagerNotifier when config changes.
 
-final class ProcessManagerProvider
-    extends $FunctionalProvider<ProcessManager, ProcessManager, ProcessManager>
-    with $Provider<ProcessManager> {
-  /// The singleton ProcessManager, auto-configured when config changes.
-  ProcessManagerProvider._()
+final class ProcessManagerSetupProvider
+    extends $FunctionalProvider<void, void, void> with $Provider<void> {
+  /// Auto-configures the ProcessManagerNotifier when config changes.
+  ProcessManagerSetupProvider._()
       : super(
           from: null,
           argument: null,
           retry: null,
-          name: r'processManagerProvider',
+          name: r'processManagerSetupProvider',
           isAutoDispose: false,
           dependencies: null,
           $allTransitiveDependencies: null,
         );
 
   @override
-  String debugGetCreateSourceHash() => _$processManagerHash();
+  String debugGetCreateSourceHash() => _$processManagerSetupHash();
 
   @$internal
   @override
-  $ProviderElement<ProcessManager> $createElement($ProviderPointer pointer) =>
+  $ProviderElement<void> $createElement($ProviderPointer pointer) =>
       $ProviderElement(pointer);
 
   @override
-  ProcessManager create(Ref ref) {
-    return processManager(ref);
+  void create(Ref ref) {
+    return processManagerSetup(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(ProcessManager value) {
+  Override overrideWithValue(void value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<ProcessManager>(value),
+      providerOverride: $SyncValueProvider<void>(value),
     );
   }
 }
 
-String _$processManagerHash() => r'14a390b49e43422b6ef4c4f7eb88d92526049f8c';
+String _$processManagerSetupHash() =>
+    r'cf9ca3908064cb42ce0aa02ececd41a530e9075a';
 
 /// Homebrew CLI wrapper for install/upgrade operations.
 
@@ -388,17 +388,17 @@ final class BrewServiceProvider
 
 String _$brewServiceHash() => r'aa1487c7bf80333253703e58cbb368c98397ad5e';
 
-/// System tray service, wired to the process manager.
+/// System tray service, wired to the process manager notifier.
 
 @ProviderFor(trayService)
 final trayServiceProvider = TrayServiceProvider._();
 
-/// System tray service, wired to the process manager.
+/// System tray service, wired to the process manager notifier.
 
 final class TrayServiceProvider
     extends $FunctionalProvider<TrayService, TrayService, TrayService>
     with $Provider<TrayService> {
-  /// System tray service, wired to the process manager.
+  /// System tray service, wired to the process manager notifier.
   TrayServiceProvider._()
       : super(
           from: null,
@@ -432,4 +432,4 @@ final class TrayServiceProvider
   }
 }
 
-String _$trayServiceHash() => r'12b936d5a0d61baa8b474020f1c1910eab2ea8c8';
+String _$trayServiceHash() => r'f0ed9a9f44a59dc2ed14e488da6523122bf7ac82';

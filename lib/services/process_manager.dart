@@ -1,11 +1,12 @@
 import 'dart:async';
-import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../utils/platform_paths.dart' as platform_paths;
 import '../utils/process_runner.dart';
+
+part 'process_manager.g.dart';
 
 /// State of a managed process.
 enum ProcessState {
@@ -18,27 +19,32 @@ enum ProcessState {
   notInstalled
 }
 
-/// A locally managed process (Ollama, vLLM, LM Studio, Proxy).
+/// An immutable snapshot of a locally managed process (Ollama, vLLM, LM Studio, Proxy).
 class ManagedProcess {
   final String name;
   final String displayName;
   final String icon;
-  ProcessState state;
-  int? pid;
-  String? port;
-  DateTime? startedAt;
-  String? errorMessage;
+  final ProcessState state;
+  final int? pid;
+  final String? port;
+  final DateTime? startedAt;
+  final String? errorMessage;
 
-  /// Ring buffer for recent log lines — O(1) add, O(1) removeFirst.
-  final Queue<String> recentLogs = Queue<String>();
+  /// Recent log lines — stored as an immutable list snapshot.
+  final List<String> recentLogs;
+
   static const int maxLogLines = 50;
 
-  ManagedProcess({
+  const ManagedProcess({
     required this.name,
     required this.displayName,
     required this.icon,
     this.state = ProcessState.detecting,
+    this.pid,
     this.port,
+    this.startedAt,
+    this.errorMessage,
+    this.recentLogs = const [],
   });
 
   Duration? get uptime =>
@@ -51,24 +57,84 @@ class ManagedProcess {
     if (d.inMinutes > 0) return '${d.inMinutes}m';
     return '${d.inSeconds}s';
   }
+
+  ManagedProcess copyWith({
+    String? name,
+    String? displayName,
+    String? icon,
+    ProcessState? state,
+    int? Function()? pid,
+    String? Function()? port,
+    DateTime? Function()? startedAt,
+    String? Function()? errorMessage,
+    List<String>? recentLogs,
+  }) {
+    return ManagedProcess(
+      name: name ?? this.name,
+      displayName: displayName ?? this.displayName,
+      icon: icon ?? this.icon,
+      state: state ?? this.state,
+      pid: pid != null ? pid() : this.pid,
+      port: port != null ? port() : this.port,
+      startedAt: startedAt != null ? startedAt() : this.startedAt,
+      errorMessage: errorMessage != null ? errorMessage() : this.errorMessage,
+      recentLogs: recentLogs ?? this.recentLogs,
+    );
+  }
+}
+
+/// Immutable state exposed by [ProcessManagerNotifier].
+class ProcessManagerState {
+  final List<ManagedProcess> processes;
+
+  const ProcessManagerState({this.processes = const []});
+
+  /// All managed processes.
+  List<ManagedProcess> get all => processes;
+
+  /// Lookup a process by name, returns null if not found.
+  ManagedProcess? get(String name) {
+    for (final p in processes) {
+      if (p.name == name) return p;
+    }
+    return null;
+  }
+
+  ProcessManagerState copyWith({List<ManagedProcess>? processes}) {
+    return ProcessManagerState(processes: processes ?? this.processes);
+  }
 }
 
 /// Manages local processes: configured runtime backend + Candela Proxy.
-class ProcessManager extends ChangeNotifier {
-  final ProcessRunner _runner;
-  final Map<String, ManagedProcess> _processes = {};
+///
+/// Exposed state is immutable [ProcessManagerState]. OS process handles,
+/// health timers, and the HTTP client are internal implementation details.
+@Riverpod(keepAlive: true)
+class ProcessManagerNotifier extends _$ProcessManagerNotifier {
+  ProcessRunner _runner = const SystemProcessRunner();
   final Map<String, Process> _handles = {};
   final Map<String, Timer> _healthTimers = {};
-  final _client = http.Client();
+  final http.Client _client = http.Client();
 
-  ProcessManager({ProcessRunner? runner})
-      : _runner = runner ?? const SystemProcessRunner();
-  bool _disposed = false;
+  /// Internal mutable ring buffers for log accumulation.
+  /// Snapshot into immutable lists when emitting state.
+  final Map<String, List<String>> _logBuffers = {};
 
-  /// Safe notification — prevents crashes if called after [dispose].
   @override
-  void notifyListeners() {
-    if (!_disposed) super.notifyListeners();
+  ProcessManagerState build() {
+    ref.onDispose(_cleanup);
+    return const ProcessManagerState();
+  }
+
+  /// Public accessor for the current state.
+  /// Use this in non-widget code (e.g. TrayService) instead of the
+  /// protected [state] getter.
+  ProcessManagerState get currentState => state;
+
+  /// Override the process runner for testing.
+  // ignore: use_setters_to_change_properties
+  void setRunner(ProcessRunner runner) {
+    _runner = runner;
   }
 
   /// Configure which processes to manage based on the providers list.
@@ -87,52 +153,56 @@ class ProcessManager extends ChangeNotifier {
 
     // Kill handles for processes being removed to prevent orphaned OS
     // processes that can no longer be stopped via the UI.
+    final currentNames = state.processes.map((p) => p.name).toSet();
     final staleNames =
-        _handles.keys.where((n) => !providerNames.contains(n) && n != 'proxy');
+        currentNames.where((n) => !providerNames.contains(n) && n != 'proxy');
     for (final name in staleNames.toList()) {
       final h = _handles[name];
       if (h != null) _killProcess(h);
       _handles.remove(name);
     }
 
-    _processes.clear();
+    _logBuffers.clear();
+
+    final newProcesses = <ManagedProcess>[];
 
     // Proxy is always managed.
-    _processes['proxy'] = ManagedProcess(
+    newProcesses.add(ManagedProcess(
       name: 'proxy',
       displayName: 'Candela Proxy',
       icon: '🕯️',
       port: proxyPort ?? '8181',
-    );
+    ));
 
     // Add any local providers from the config.
     for (final name in providerNames) {
-      final info = _runtimeInfo(name);
+      var info = _runtimeInfo(name);
       if (info != null) {
         // Apply port override from config if available.
         if (portOverrides != null && portOverrides.containsKey(name)) {
-          info.port = portOverrides[name];
+          info = info.copyWith(port: () => portOverrides[name]);
         }
-        _processes[name] = info;
+        newProcesses.add(info);
       }
     }
-    notifyListeners();
+
+    state = ProcessManagerState(processes: newProcesses);
   }
 
   static ManagedProcess? _runtimeInfo(String name) => switch (name) {
-        'ollama' => ManagedProcess(
+        'ollama' => const ManagedProcess(
             name: 'ollama',
             displayName: 'Ollama',
             icon: '🦙',
             port: '11434',
           ),
-        'vllm' => ManagedProcess(
+        'vllm' => const ManagedProcess(
             name: 'vllm',
             displayName: 'vLLM',
             icon: 'V',
             port: '8000',
           ),
-        'lmstudio' => ManagedProcess(
+        'lmstudio' => const ManagedProcess(
             name: 'lmstudio',
             displayName: 'LM Studio',
             icon: 'L',
@@ -140,9 +210,6 @@ class ProcessManager extends ChangeNotifier {
           ),
         _ => null,
       };
-
-  List<ManagedProcess> get all => _processes.values.toList();
-  ManagedProcess? get(String name) => _processes[name];
 
   /// Check if a binary is installed.
   Future<bool> isInstalled(String name) async {
@@ -160,56 +227,64 @@ class ProcessManager extends ChangeNotifier {
   /// Detect already-running processes on startup.
   /// Checks all processes in parallel to avoid sequential 2s timeouts.
   Future<void> detectRunning() async {
-    final entries = _processes.entries.toList();
+    final processes = state.processes;
     final results = await Future.wait(
-      entries.map((e) async {
-        final healthy = await _isHealthy(e.key);
-        final installed = healthy || await isInstalled(e.key);
+      processes.map((p) async {
+        final healthy = await _isHealthy(p.name);
+        final installed = healthy || await isInstalled(p.name);
         int? pid;
-        if (healthy && e.value.port != null) {
-          final portNum = int.tryParse(e.value.port!);
+        if (healthy && p.port != null) {
+          final portNum = int.tryParse(p.port!);
           if (portNum != null) pid = await _findPidForPort(portNum);
         }
         return (healthy: healthy, installed: installed, pid: pid);
       }),
     );
-    for (var i = 0; i < entries.length; i++) {
-      final p = entries[i].value;
+
+    final updated = <ManagedProcess>[];
+    for (var i = 0; i < processes.length; i++) {
+      final p = processes[i];
       if (results[i].healthy) {
-        p.state = ProcessState.running;
-        p.pid = results[i].pid;
-        // Leave startedAt null — actual start time is unknown.
-        _startHealthPolling(entries[i].key);
+        updated.add(p.copyWith(
+          state: ProcessState.running,
+          pid: () => results[i].pid,
+        ));
+        _startHealthPolling(p.name);
       } else if (!results[i].installed) {
-        p.state = ProcessState.notInstalled;
+        updated.add(p.copyWith(state: ProcessState.notInstalled));
       } else {
         // Installed but not running — transition from detecting to stopped.
-        p.state = ProcessState.stopped;
+        updated.add(p.copyWith(state: ProcessState.stopped));
       }
     }
-    notifyListeners();
+    state = state.copyWith(processes: updated);
   }
 
   /// Start a process.
   Future<void> start(String name) async {
-    final p = _processes[name];
-    if (p == null) return;
+    if (state.get(name) == null) return;
 
     final binary = _binaryName(name);
     final args = _binaryArgs(name);
     if (binary == null) return;
 
     if (!await isInstalled(name)) {
-      p.state = ProcessState.notInstalled;
-      p.errorMessage = '$binary not found in PATH';
-      notifyListeners();
+      _updateProcess(
+          name,
+          (p) => p.copyWith(
+                state: ProcessState.notInstalled,
+                errorMessage: () => '$binary not found in PATH',
+              ));
       return;
     }
 
-    p.state = ProcessState.starting;
-    p.errorMessage = null;
-    p.recentLogs.clear();
-    notifyListeners();
+    _updateProcess(
+        name,
+        (p) => p.copyWith(
+              state: ProcessState.starting,
+              errorMessage: () => null,
+            ));
+    _logBuffers[name] = [];
 
     try {
       final process = await _runner.start(
@@ -218,7 +293,7 @@ class ProcessManager extends ChangeNotifier {
         environment: _env(name),
       );
       _handles[name] = process;
-      p.pid = process.pid;
+      _updateProcess(name, (p) => p.copyWith(pid: () => process.pid));
 
       // Capture stdout/stderr with error handlers — prevents unhandled
       // stream errors from invalid UTF-8 (GPU drivers, crash dumps, vLLM).
@@ -226,24 +301,24 @@ class ProcessManager extends ChangeNotifier {
           .transform(utf8.decoder)
           .transform(const LineSplitter())
           .listen(
-            (line) => _addLog(p, line),
-            onError: (Object e) => _addLog(p, '[stdout-err] $e'),
+            (line) => _addLog(name, line),
+            onError: (Object e) => _addLog(name, '[stdout-err] $e'),
           );
       process.stderr
           .transform(utf8.decoder)
           .transform(const LineSplitter())
           .listen(
-            (line) => _addLog(p, '[err] $line'),
-            onError: (Object e) => _addLog(p, '[stderr-err] $e'),
+            (line) => _addLog(name, '[err] $line'),
+            onError: (Object e) => _addLog(name, '[stderr-err] $e'),
           );
 
       // Wait for health check (poll up to 15 seconds).
-      // Check p.state each iteration for early exit if stop() was called.
+      // Check state each iteration for early exit if stop() was called.
       var healthy = false;
       for (var i = 0; i < 30; i++) {
         await Future.delayed(const Duration(milliseconds: 500));
         // Bail if stop() was called during startup.
-        if (p.state != ProcessState.starting) break;
+        if (state.get(name)?.state != ProcessState.starting) break;
         if (await _isHealthy(name)) {
           healthy = true;
           break;
@@ -251,39 +326,53 @@ class ProcessManager extends ChangeNotifier {
       }
 
       if (healthy) {
-        p.state = ProcessState.running;
-        p.startedAt = DateTime.now();
+        _updateProcess(
+            name,
+            (p) => p.copyWith(
+                  state: ProcessState.running,
+                  startedAt: () => DateTime.now(),
+                ));
         _startHealthPolling(name);
       } else {
-        p.state = ProcessState.error;
-        p.errorMessage = 'Started but health check failed after 15s';
+        _updateProcess(
+            name,
+            (p) => p.copyWith(
+                  state: ProcessState.error,
+                  errorMessage: () =>
+                      'Started but health check failed after 15s',
+                ));
       }
 
       // Handle unexpected exit.
       process.exitCode.then((code) {
-        if (p.state == ProcessState.running ||
-            p.state == ProcessState.starting) {
-          p.state = ProcessState.error;
-          p.errorMessage = 'Process exited with code $code';
+        final currentState = state.get(name)?.state;
+        if (currentState == ProcessState.running ||
+            currentState == ProcessState.starting) {
+          _updateProcess(
+              name,
+              (p) => p.copyWith(
+                    state: ProcessState.error,
+                    errorMessage: () => 'Process exited with code $code',
+                  ));
           _handles.remove(name);
           _healthTimers[name]?.cancel();
-          notifyListeners();
         }
       });
     } catch (e) {
-      p.state = ProcessState.error;
-      p.errorMessage = e.toString();
+      _updateProcess(
+          name,
+          (p) => p.copyWith(
+                state: ProcessState.error,
+                errorMessage: () => e.toString(),
+              ));
     }
-    notifyListeners();
   }
 
   /// Stop a process.
   Future<void> stop(String name) async {
-    final p = _processes[name];
-    if (p == null) return;
+    if (state.get(name) == null) return;
 
-    p.state = ProcessState.stopping;
-    notifyListeners();
+    _updateProcess(name, (p) => p.copyWith(state: ProcessState.stopping));
 
     _healthTimers[name]?.cancel();
 
@@ -298,15 +387,21 @@ class ProcessManager extends ChangeNotifier {
         _killProcess(handle, force: true);
       }
       _handles.remove(name);
-    } else if (p.pid != null) {
-      // Process we detected but didn't start — kill by PID.
-      _killPid(p.pid!);
+    } else {
+      final currentPid = state.get(name)?.pid;
+      if (currentPid != null) {
+        // Process we detected but didn't start — kill by PID.
+        _killPid(currentPid);
+      }
     }
 
-    p.state = ProcessState.stopped;
-    p.pid = null;
-    p.startedAt = null;
-    notifyListeners();
+    _updateProcess(
+        name,
+        (p) => p.copyWith(
+              state: ProcessState.stopped,
+              pid: () => null,
+              startedAt: () => null,
+            ));
   }
 
   /// Restart a process.
@@ -319,27 +414,36 @@ class ProcessManager extends ChangeNotifier {
   /// Stop all managed processes (including detected ones without handles).
   /// Also stops error-state processes that may still have live OS handles/PIDs.
   Future<void> stopAll() async {
-    for (final name in _processes.keys.toList()) {
-      final state = _processes[name]?.state;
-      if (state == ProcessState.running ||
-          state == ProcessState.starting ||
-          state == ProcessState.error) {
-        await stop(name);
+    for (final p in state.processes.toList()) {
+      if (p.state == ProcessState.running ||
+          p.state == ProcessState.starting ||
+          p.state == ProcessState.error) {
+        await stop(p.name);
       }
     }
   }
 
   /// Start all configured processes.
   Future<void> startAll() async {
-    for (final entry in _processes.entries) {
-      if (entry.value.state == ProcessState.stopped &&
-          await isInstalled(entry.key)) {
-        await start(entry.key);
+    for (final p in state.processes) {
+      if (p.state == ProcessState.stopped && await isInstalled(p.name)) {
+        await start(p.name);
       }
     }
   }
 
   // --- Private helpers ---
+
+  /// Update a single process in state by name.
+  void _updateProcess(
+      String name, ManagedProcess Function(ManagedProcess) updater) {
+    state = state.copyWith(
+      processes: [
+        for (final p in state.processes)
+          if (p.name == name) updater(p) else p,
+      ],
+    );
+  }
 
   /// Kill a process. On Windows, always uses TerminateProcess (no POSIX signals).
   void _killProcess(Process handle, {bool force = false}) {
@@ -388,7 +492,7 @@ class ProcessManager extends ChangeNotifier {
     }
     final overrides = switch (name) {
       'ollama' => {
-          'OLLAMA_HOST': '0.0.0.0:${_processes['ollama']?.port ?? '11434'}',
+          'OLLAMA_HOST': '0.0.0.0:${state.get('ollama')?.port ?? '11434'}',
         },
       _ => <String, String>{},
     };
@@ -408,7 +512,7 @@ class ProcessManager extends ChangeNotifier {
   }
 
   String? _healthUrl(String name) {
-    final port = _processes[name]?.port;
+    final port = state.get(name)?.port;
     return switch (name) {
       'ollama' => 'http://localhost:${port ?? "11434"}/api/tags',
       'proxy' => 'http://localhost:${port ?? "8181"}/v1/models',
@@ -423,7 +527,7 @@ class ProcessManager extends ChangeNotifier {
     _healthTimers[name] = Timer.periodic(const Duration(seconds: 10), (
       _,
     ) async {
-      final p = _processes[name];
+      final p = state.get(name);
       if (p == null) return;
       // Only poll processes that are running or in recoverable error.
       if (p.state != ProcessState.running && p.state != ProcessState.error) {
@@ -433,22 +537,31 @@ class ProcessManager extends ChangeNotifier {
       final healthy = await _isHealthy(name);
       if (healthy && p.state == ProcessState.error) {
         // Recovered from transient failure.
-        p.state = ProcessState.running;
-        p.errorMessage = null;
-        notifyListeners();
+        _updateProcess(
+            name,
+            (p) => p.copyWith(
+                  state: ProcessState.running,
+                  errorMessage: () => null,
+                ));
       } else if (!healthy && p.state == ProcessState.running) {
-        p.state = ProcessState.error;
-        p.errorMessage = 'Health check failed';
-        notifyListeners();
+        _updateProcess(
+            name,
+            (p) => p.copyWith(
+                  state: ProcessState.error,
+                  errorMessage: () => 'Health check failed',
+                ));
       }
     });
   }
 
-  void _addLog(ManagedProcess p, String line) {
-    p.recentLogs.addLast(line);
-    while (p.recentLogs.length > ManagedProcess.maxLogLines) {
-      p.recentLogs.removeFirst();
+  void _addLog(String name, String line) {
+    final buffer = _logBuffers.putIfAbsent(name, () => []);
+    buffer.add(line);
+    while (buffer.length > ManagedProcess.maxLogLines) {
+      buffer.removeAt(0);
     }
+    // Emit a new snapshot with updated logs.
+    _updateProcess(name, (p) => p.copyWith(recentLogs: List.of(buffer)));
   }
 
   /// Resolve the PID of a process listening on [port].
@@ -510,9 +623,7 @@ class ProcessManager extends ChangeNotifier {
     return null;
   }
 
-  @override
-  void dispose() {
-    _disposed = true;
+  void _cleanup() {
     for (final t in _healthTimers.values) {
       t.cancel();
     }
@@ -522,6 +633,5 @@ class ProcessManager extends ChangeNotifier {
     }
     _handles.clear();
     _client.close();
-    super.dispose();
   }
 }

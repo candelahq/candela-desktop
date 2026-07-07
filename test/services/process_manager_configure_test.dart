@@ -1,52 +1,58 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:candela_desktop/services/process_manager.dart';
 
 void main() {
-  group('ProcessManager.configure', () {
+  group('ProcessManagerNotifier.configure', () {
+    late ProviderContainer container;
+    late ProcessManagerNotifier notifier;
+
+    setUp(() {
+      container = ProviderContainer();
+      notifier = container.read(processManagerProvider.notifier);
+    });
+
+    tearDown(() => container.dispose());
+
     test('clears previous processes on reconfigure', () {
-      final pm = ProcessManager();
-      pm.configure(
+      notifier.configure(
         providerNames: ['ollama'],
         proxyPort: '8181',
       );
-      expect(pm.all.length, 2); // proxy + ollama
+      expect(container.read(processManagerProvider).all.length,
+          2); // proxy + ollama
 
-      pm.configure(
+      notifier.configure(
         providerNames: ['lmstudio'],
         proxyPort: '8181',
       );
-      expect(pm.all.length, 2); // proxy + lmstudio
-      expect(pm.get('ollama'), isNull);
-      expect(pm.get('lmstudio'), isNotNull);
-      pm.dispose();
+      final state = container.read(processManagerProvider);
+      expect(state.all.length, 2); // proxy + lmstudio
+      expect(state.get('ollama'), isNull);
+      expect(state.get('lmstudio'), isNotNull);
     });
 
     test('always includes proxy', () {
-      final pm = ProcessManager();
-      pm.configure(providerNames: [], proxyPort: '8181');
-      expect(pm.get('proxy'), isNotNull);
-      pm.dispose();
+      notifier.configure(providerNames: [], proxyPort: '8181');
+      expect(container.read(processManagerProvider).get('proxy'), isNotNull);
     });
 
     test('applies port overrides', () {
-      final pm = ProcessManager();
-      pm.configure(
+      notifier.configure(
         providerNames: ['lmstudio'],
         proxyPort: '9090',
         portOverrides: {'lmstudio': '1234'},
       );
-      expect(pm.get('lmstudio')?.port, '1234');
-      expect(pm.get('proxy')?.port, '9090');
-      pm.dispose();
+      final state = container.read(processManagerProvider);
+      expect(state.get('lmstudio')?.port, '1234');
+      expect(state.get('proxy')?.port, '9090');
     });
 
     test('reconfigure cancels stale health timers', () {
-      final pm = ProcessManager();
-      pm.configure(providerNames: ['ollama'], proxyPort: '8181');
+      notifier.configure(providerNames: ['ollama'], proxyPort: '8181');
       // Reconfigure — should not leak timers from first configure.
-      pm.configure(providerNames: ['lmstudio'], proxyPort: '8181');
+      notifier.configure(providerNames: ['lmstudio'], proxyPort: '8181');
       // No crash or timer leak.
-      pm.dispose();
     });
   });
 
@@ -56,14 +62,14 @@ void main() {
         name: 'test',
         displayName: 'Test',
         icon: '🧪',
+        startedAt:
+            DateTime.now().subtract(const Duration(hours: 2, minutes: 15)),
       );
-      p.startedAt =
-          DateTime.now().subtract(const Duration(hours: 2, minutes: 15));
       expect(p.uptimeString, contains('h'));
     });
 
     test('initial state is detecting', () {
-      final p = ManagedProcess(
+      const p = ManagedProcess(
         name: 'test',
         displayName: 'Test',
         icon: '🧪',

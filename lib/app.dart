@@ -179,19 +179,20 @@ class _AppShellState extends ConsumerState<AppShell>
     }
 
     // Detect already-running processes.
-    final pm = ref.read(processManagerProvider);
-    await pm.detectRunning();
+    ref.read(processManagerSetupProvider); // ensure auto-configuration
+    final pmNotifier = ref.read(processManagerProvider.notifier);
+    await pmNotifier.detectRunning();
     if (!mounted) return;
 
     // Auto-start proxy if installed but not already running.
     final configService = ref.read(configServiceProvider);
     final config = await configService.load();
-    final proxy = pm.get('proxy');
+    final proxy = ref.read(processManagerProvider).get('proxy');
     if (config.autoStartProxy &&
         proxy != null &&
         proxy.state == ProcessState.stopped &&
-        await pm.isInstalled('proxy')) {
-      pm.start('proxy');
+        await pmNotifier.isInstalled('proxy')) {
+      pmNotifier.start('proxy');
     }
   }
 

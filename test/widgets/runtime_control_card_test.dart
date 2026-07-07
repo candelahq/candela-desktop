@@ -23,16 +23,15 @@ ManagedProcess _process({
   String? errorMessage,
   int? pid,
 }) {
-  final p = ManagedProcess(
+  return ManagedProcess(
     name: name,
     displayName: displayName,
     icon: icon,
     state: state,
     port: port ?? '11434',
+    errorMessage: errorMessage,
+    pid: pid,
   );
-  p.errorMessage = errorMessage;
-  p.pid = pid;
-  return p;
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────

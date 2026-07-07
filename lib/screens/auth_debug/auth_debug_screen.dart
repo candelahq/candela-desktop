@@ -98,15 +98,15 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
 
       // Sync process manager with config.
       if (!mounted || gen != _loadGeneration) return;
-      final pm = ref.read(processManagerProvider);
-      pm.configure(
+      final pmNotifier = ref.read(processManagerProvider.notifier);
+      pmNotifier.configure(
         providerNames: config.providers.map((p) => p.name).toList(),
         proxyPort: config.port.toString(),
         portOverrides: {
           'lmstudio': config.lmStudioPort.toString(),
         },
       );
-      await pm.detectRunning();
+      await pmNotifier.detectRunning();
       if (!mounted || gen != _loadGeneration) return;
 
       // Run provider tests.
@@ -301,11 +301,11 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
         await _checkCliStatus();
         // Auto-start proxy after install.
         if (_cliInstalled) {
-          final pm = ref.read(processManagerProvider);
-          await pm.detectRunning();
-          final proxy = pm.get('proxy');
+          final pmNotifier = ref.read(processManagerProvider.notifier);
+          await pmNotifier.detectRunning();
+          final proxy = ref.read(processManagerProvider).get('proxy');
           if (proxy != null && proxy.state == ProcessState.stopped) {
-            pm.start('proxy');
+            pmNotifier.start('proxy');
           }
         }
         await _loadAll();
@@ -494,11 +494,10 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
                               style: TextStyle(
                                   fontSize: 15, fontWeight: FontWeight.w600)),
                           const Spacer(),
-                          ListenableBuilder(
-                            listenable: ref.watch(processManagerProvider),
-                            builder: (_, __) {
-                              final pm = ref.watch(processManagerProvider);
-                              final running = pm.all
+                          Builder(
+                            builder: (_) {
+                              final pmState = ref.watch(processManagerProvider);
+                              final running = pmState.all
                                   .where((p) => p.state == ProcessState.running)
                                   .length;
                               if (running > 0) {
@@ -522,10 +521,11 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      ListenableBuilder(
-                        listenable: ref.watch(processManagerProvider),
-                        builder: (context, _) {
-                          final pm = ref.watch(processManagerProvider);
+                      Builder(
+                        builder: (context) {
+                          final pmState = ref.watch(processManagerProvider);
+                          final pmNotifier =
+                              ref.read(processManagerProvider.notifier);
                           return LayoutBuilder(
                             builder: (context, constraints) {
                               final crossCount =
@@ -541,14 +541,17 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
                                   for (final s in _providerStatuses)
                                     _isLocalProvider(s.name)
                                         ? RuntimeControlCard(
-                                            process: pm.get(s.name) ??
+                                            process: pmState.get(s.name) ??
                                                 ManagedProcess(
                                                     name: s.name,
                                                     displayName: s.displayName,
                                                     icon: s.icon ?? '?'),
-                                            onStart: () => pm.start(s.name),
-                                            onStop: () => pm.stop(s.name),
-                                            onRestart: () => pm.restart(s.name),
+                                            onStart: () =>
+                                                pmNotifier.start(s.name),
+                                            onStop: () =>
+                                                pmNotifier.stop(s.name),
+                                            onRestart: () =>
+                                                pmNotifier.restart(s.name),
                                             onRemove:
                                                 _isRemovableProvider(s.name)
                                                     ? () =>

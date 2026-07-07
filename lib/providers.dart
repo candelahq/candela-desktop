@@ -172,13 +172,15 @@ class CatalogNotifier extends _$CatalogNotifier {
 
 // ── Process Manager ─────────────────────────────────────────────────────────
 
-/// The singleton ProcessManager, auto-configured when config changes.
-@Riverpod(keepAlive: true)
-ProcessManager processManager(Ref ref) {
-  final pm = ProcessManager();
+// ProcessManagerNotifier is defined with @Riverpod in process_manager.dart.
+// The generated provider is `processManagerProvider`.
+// We configure it reactively here via a setup provider.
 
+/// Auto-configures the ProcessManagerNotifier when config changes.
+@Riverpod(keepAlive: true)
+void processManagerSetup(Ref ref) {
   void configure(CandelaConfig config) {
-    pm.configure(
+    ref.read(processManagerProvider.notifier).configure(
       providerNames: config.providers.map((p) => p.name).toList(),
       proxyPort: config.port.toString(),
       portOverrides: {
@@ -195,9 +197,6 @@ ProcessManager processManager(Ref ref) {
   ref.listen<AsyncValue<CandelaConfig>>(configProvider, (prev, next) {
     next.whenData(configure);
   });
-
-  ref.onDispose(() => pm.dispose());
-  return pm;
 }
 
 // ── Brew ─────────────────────────────────────────────────────────────────────
@@ -210,11 +209,11 @@ BrewService brewService(Ref ref) {
 
 // ── Tray ────────────────────────────────────────────────────────────────────
 
-/// System tray service, wired to the process manager.
+/// System tray service, wired to the process manager notifier.
 @Riverpod(keepAlive: true)
 TrayService trayService(Ref ref) {
-  final pm = ref.watch(processManagerProvider);
-  final tray = TrayService(processManager: pm);
+  final notifier = ref.watch(processManagerProvider.notifier);
+  final tray = TrayService(processManager: notifier);
   ref.onDispose(() => tray.dispose());
   return tray;
 }

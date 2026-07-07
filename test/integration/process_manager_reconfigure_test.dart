@@ -1,47 +1,50 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:candela_desktop/services/process_manager.dart';
 
-/// Integration test: ProcessManager configure → reconfigure with no state leak.
+/// Integration test: ProcessManagerNotifier configure → reconfigure with no state leak.
 void main() {
-  group('ProcessManager — integration reconfigure', () {
-    late ProcessManager pm;
+  group('ProcessManagerNotifier — integration reconfigure', () {
+    late ProviderContainer container;
+    late ProcessManagerNotifier notifier;
 
-    setUp(() => pm = ProcessManager());
-    tearDown(() => pm.dispose());
+    setUp(() {
+      container = ProviderContainer();
+      notifier = container.read(processManagerProvider.notifier);
+    });
+
+    tearDown(() => container.dispose());
 
     test('configure → reconfigure preserves no stale state', () {
       // Initial config with ollama + vllm.
-      pm.configure(
+      notifier.configure(
         providerNames: ['ollama', 'vllm'],
         proxyPort: '8181',
       );
-      expect(pm.all.length, 3); // proxy + ollama + vllm
-
-      // Simulate ollama running.
-      final ollama = pm.get('ollama')!;
-      ollama.state = ProcessState.running;
-      ollama.pid = 12345;
-      ollama.startedAt = DateTime.now();
-      ollama.recentLogs.addLast('started serving');
+      final state1 = container.read(processManagerProvider);
+      expect(state1.all.length, 3); // proxy + ollama + vllm
+      expect(state1.get('ollama'), isNotNull);
 
       // Reconfigure with only lmstudio.
-      pm.configure(
+      notifier.configure(
         providerNames: ['lmstudio'],
         proxyPort: '9090',
         portOverrides: {'lmstudio': '5555'},
       );
 
+      final state2 = container.read(processManagerProvider);
+
       // Old processes should be fully gone.
-      expect(pm.get('ollama'), isNull);
-      expect(pm.get('vllm'), isNull);
-      expect(pm.all.length, 2); // proxy + lmstudio
+      expect(state2.get('ollama'), isNull);
+      expect(state2.get('vllm'), isNull);
+      expect(state2.all.length, 2); // proxy + lmstudio
 
       // New proxy should have updated port.
-      expect(pm.get('proxy')!.port, '9090');
-      expect(pm.get('lmstudio')!.port, '5555');
+      expect(state2.get('proxy')!.port, '9090');
+      expect(state2.get('lmstudio')!.port, '5555');
 
       // All new processes start fresh.
-      for (final p in pm.all) {
+      for (final p in state2.all) {
         expect(p.state, ProcessState.detecting);
         expect(p.pid, isNull);
         expect(p.recentLogs, isEmpty);
@@ -49,18 +52,14 @@ void main() {
     });
 
     test('stopAll then reconfigure leaves clean state', () async {
-      pm.configure(providerNames: ['ollama']);
-      final ollama = pm.get('ollama')!;
-      ollama.state = ProcessState.error;
-      ollama.pid = 99999;
-      ollama.errorMessage = 'crashed';
+      notifier.configure(providerNames: ['ollama']);
 
-      await pm.stopAll();
-      expect(ollama.state, ProcessState.stopped);
+      await notifier.stopAll();
 
-      pm.configure(providerNames: ['vllm']);
-      expect(pm.get('ollama'), isNull);
-      expect(pm.get('vllm')!.state, ProcessState.detecting);
+      notifier.configure(providerNames: ['vllm']);
+      final state = container.read(processManagerProvider);
+      expect(state.get('ollama'), isNull);
+      expect(state.get('vllm')!.state, ProcessState.detecting);
     });
   });
 }

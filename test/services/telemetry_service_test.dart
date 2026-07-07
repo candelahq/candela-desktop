@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:connectrpc/connect.dart' show ConnectException, Code;
 import 'package:fixnum/fixnum.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -917,21 +918,23 @@ void main() {
   group('ProcessState.detecting transitions', () {
     test('detectRunning transitions from detecting to stopped when installed',
         () async {
-      final pm = ProcessManager();
-      pm.configure(providerNames: ['lmstudio']);
-      expect(pm.get('lmstudio')!.state, ProcessState.detecting);
-      await pm.detectRunning();
+      final container = ProviderContainer();
+      final notifier = container.read(processManagerProvider.notifier);
+      notifier.configure(providerNames: ['lmstudio']);
+      expect(container.read(processManagerProvider).get('lmstudio')!.state,
+          ProcessState.detecting);
+      await notifier.detectRunning();
       // After detection: lmstudio has no binary, so → notInstalled or running
       expect(
-        pm.get('lmstudio')!.state,
+        container.read(processManagerProvider).get('lmstudio')!.state,
         anyOf(ProcessState.notInstalled, ProcessState.running,
             ProcessState.stopped),
       );
-      pm.dispose();
+      container.dispose();
     });
 
     test('detecting state is not treated as running or stopped', () {
-      final p = ManagedProcess(name: 'x', displayName: 'X', icon: 'X');
+      const p = ManagedProcess(name: 'x', displayName: 'X', icon: 'X');
       expect(p.state, ProcessState.detecting);
       expect(p.state != ProcessState.running, isTrue);
       expect(p.state != ProcessState.stopped, isTrue);

@@ -162,8 +162,8 @@ class _CatalogTabState extends ConsumerState<_CatalogTab>
     final catalogState = ref.watch(catalogProvider);
 
     // The catalog source string is set by the server response.
-    // Team mode populates it (e.g. "team"); solo/local mode leaves it empty.
-    final isTeamMode = catalogState.source.isNotEmpty;
+    // Only show pricing columns when the source is explicitly "team".
+    final isTeamMode = catalogState.source == 'team';
 
     // Convert to unified view models.
     final viewModels =

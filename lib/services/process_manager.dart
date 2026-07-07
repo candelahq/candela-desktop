@@ -397,7 +397,10 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
 
   /// Stop a process using two-phase graceful shutdown.
   ///
-  /// Phase 1: Ask nicely — HTTP shutdown for proxy, SIGTERM/Ctrl+C for others.
+  /// Phase 1: Ask nicely — HTTP shutdown for proxy, SIGTERM for others (Unix).
+  ///          On Windows, only the proxy has a graceful path (HTTP); other
+  ///          processes are force-killed immediately since TerminateProcess
+  ///          is the only option and there's nothing to wait for.
   /// Phase 2: If still alive after 5s, force kill the entire process tree.
   Future<void> stop(String name) async {
     if (state.get(name) == null) return;
@@ -410,18 +413,25 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
     if (handle != null) {
       // Phase 1: graceful — try HTTP shutdown for processes that support it.
       await _requestGracefulShutdown(name);
-      // On Unix, SIGTERM is the graceful signal. On Windows, handle.kill()
-      // calls TerminateProcess which is a hard kill — skip it here and let
-      // the HTTP shutdown + timeout do the work. Phase 2 handles the force.
+      // On Unix, SIGTERM is the graceful signal for all processes.
+      // On Windows, only the proxy has a graceful path (HTTP shutdown).
+      // Other processes have no signal mechanism — force-kill immediately
+      // instead of stalling 5s for a timeout that will always fire.
+      final attemptedGraceful = !Platform.isWindows || name == 'proxy';
       if (!Platform.isWindows) {
         _killProcess(handle);
       }
 
-      // Wait up to 5s for graceful exit.
-      try {
-        await handle.exitCode.timeout(const Duration(seconds: 5));
-      } catch (_) {
-        // Phase 2: force kill entire process tree.
+      if (attemptedGraceful) {
+        // Wait up to 5s for graceful exit.
+        try {
+          await handle.exitCode.timeout(const Duration(seconds: 5));
+        } catch (_) {
+          // Phase 2: force kill entire process tree.
+          await _forceKillTree(handle.pid);
+        }
+      } else {
+        // No graceful path available — force kill immediately.
         await _forceKillTree(handle.pid);
       }
       _handles.remove(name);

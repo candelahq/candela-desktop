@@ -234,8 +234,7 @@ void main() {
       expect(find.textContaining('us-east1'), findsAtLeast(1));
     });
 
-    testWidgets(
-        'proxy detail dialog does NOT auto-verify — no warning icons on open',
+    testWidgets('proxy detail dialog lists models without verification UI',
         (tester) async {
       const status = ProviderStatus(
         name: 'proxy',
@@ -255,38 +254,16 @@ void main() {
       await tester.tap(find.byType(InkWell).first);
       await tester.pumpAndSettle();
 
-      // Dialog should be open.
+      // Dialog should be open with model list header.
       expect(find.text('Available Models'), findsOneWidget);
-      // No warning icons — if auto-verify had run against no server, every
-      // model would have failed and shown warning_amber icons.
-      expect(find.byIcon(Icons.warning_amber), findsNothing);
-      // No spinners either.
-      expect(find.byType(CircularProgressIndicator), findsNothing);
-    });
-
-    testWidgets('detail dialog shows model list without verification UI',
-        (tester) async {
-      const status = ProviderStatus(
-        name: 'proxy',
-        displayName: 'Candela Proxy',
-        state: ProviderState.connected,
-        models: ['claude-sonnet-4', 'gemini-2.0-flash'],
-        icon: '🕯',
-      );
-
-      await tester.pumpWidget(buildApp(status));
-
-      // Open dialog.
-      await tester.tap(find.byType(InkWell).first);
-      await tester.pumpAndSettle();
-
-      // Models are listed.
+      // Individual models are listed.
       expect(find.text('claude-sonnet-4'), findsOneWidget);
       expect(find.text('gemini-2.0-flash'), findsOneWidget);
-
-      // No verification UI.
+      expect(find.text('llama3'), findsOneWidget);
+      // No verification UI: no dots, no Test Models button, no warnings.
       expect(find.text('Test Models'), findsNothing);
       expect(find.byIcon(Icons.warning_amber), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
     });
   });
 }

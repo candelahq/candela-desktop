@@ -47,18 +47,3 @@ enum ProviderState {
   notConfigured,
   notInstalled,
 }
-
-/// Result of verifying a single model through the proxy.
-class ModelVerification {
-  final String model;
-  final bool reachable;
-  final Duration? latency;
-  final String? error;
-
-  const ModelVerification({
-    required this.model,
-    required this.reachable,
-    this.latency,
-    this.error,
-  });
-}

@@ -51,13 +51,14 @@ void main() {
       test('start_all dispatches processManager.startAll()', () async {
         // startAll is a no-op when all processes are in detecting state
         service.onTrayMenuItemClick(MenuItem(key: 'start_all', label: 'Start'));
-        // Verify it completes without error (can't verify call recording
-        // without a mock, but we confirm no exceptions).
+        // Let the async dispatch complete before teardown.
+        await Future<void>.delayed(Duration.zero);
       });
 
-      test('stop_all dispatches processManager.stopAll()', () {
+      test('stop_all dispatches processManager.stopAll()', () async {
         service.onTrayMenuItemClick(MenuItem(key: 'stop_all', label: 'Stop'));
-        // Verify it completes without error.
+        // Let the async dispatch complete before teardown.
+        await Future<void>.delayed(Duration.zero);
       });
 
       test('show calls onShowWindow callback', () {

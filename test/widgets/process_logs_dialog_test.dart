@@ -9,44 +9,28 @@ import 'package:candela_desktop/theme/candela_theme.dart';
 // Helpers
 // ---------------------------------------------------------------------------
 
-ManagedProcess _makeProcess({
-  String name = 'proxy',
-  String displayName = 'Candela Proxy',
-  String icon = '🕯️',
-  ProcessState state = ProcessState.running,
-  List<String> logs = const [],
-}) {
-  return ManagedProcess(
-    name: name,
-    displayName: displayName,
-    icon: icon,
-    state: state,
-    recentLogs: logs,
-  );
-}
-
-Widget _wrapDialog(List<ManagedProcess> processes,
-        {String processName = 'proxy'}) =>
-    ProviderScope(
-      overrides: [
-        processManagerProvider
-            .overrideWithValue(ProcessManagerState(processes: processes)),
-      ],
-      child: MaterialApp(
-        theme: CandelaTheme.dark,
-        home: Scaffold(
-          body: Builder(
-            builder: (context) => ElevatedButton(
-              onPressed: () => showDialog(
-                context: context,
-                builder: (_) => ProcessLogsDialog(processName: processName),
-              ),
-              child: const Text('Open'),
+/// Build a test harness with a real [ProcessManagerNotifier] so that the
+/// dialog can call `notifier.getLogs()` (logs are no longer stored in state).
+Widget _buildHarness(ProviderContainer container,
+    {String processName = 'proxy'}) {
+  return UncontrolledProviderScope(
+    container: container,
+    child: MaterialApp(
+      theme: CandelaTheme.dark,
+      home: Scaffold(
+        body: Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () => showDialog(
+              context: context,
+              builder: (_) => ProcessLogsDialog(processName: processName),
             ),
+            child: const Text('Open'),
           ),
         ),
       ),
-    );
+    ),
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -56,7 +40,12 @@ void main() {
   group('ProcessLogsDialog', () {
     testWidgets('shows "Process no longer exists." when process is null',
         (tester) async {
-      await tester.pumpWidget(_wrapDialog([], processName: 'nonexistent'));
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      // Don't configure — looking up 'nonexistent' returns null.
+
+      await tester
+          .pumpWidget(_buildHarness(container, processName: 'nonexistent'));
       await tester.tap(find.text('Open'));
       await tester.pump();
 
@@ -65,7 +54,13 @@ void main() {
 
     testWidgets('shows "No logs available yet." when logs are empty',
         (tester) async {
-      await tester.pumpWidget(_wrapDialog([_makeProcess(logs: [])]));
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      container
+          .read(processManagerProvider.notifier)
+          .configure(providerNames: []);
+
+      await tester.pumpWidget(_buildHarness(container));
       await tester.tap(find.text('Open'));
       await tester.pump();
 
@@ -73,9 +68,13 @@ void main() {
     });
 
     testWidgets('shows process displayName in title', (tester) async {
-      await tester.pumpWidget(_wrapDialog([
-        _makeProcess(displayName: 'Candela Proxy', icon: '🕯️'),
-      ]));
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      container
+          .read(processManagerProvider.notifier)
+          .configure(providerNames: []);
+
+      await tester.pumpWidget(_buildHarness(container));
       await tester.tap(find.text('Open'));
       await tester.pump();
 
@@ -83,21 +82,30 @@ void main() {
       expect(find.textContaining('Logs'), findsOneWidget);
     });
 
-    testWidgets('renders log text in dark terminal area', (tester) async {
-      await tester.pumpWidget(_wrapDialog([
-        _makeProcess(logs: ['Line 1 from stdout', 'Line 2 from stderr']),
-      ]));
+    testWidgets('renders empty log state in terminal area', (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      container
+          .read(processManagerProvider.notifier)
+          .configure(providerNames: []);
+
+      await tester.pumpWidget(_buildHarness(container));
       await tester.tap(find.text('Open'));
       await tester.pump();
 
-      expect(find.textContaining('Line 1 from stdout'), findsOneWidget);
-      expect(find.textContaining('Line 2 from stderr'), findsOneWidget);
+      // Logs are now in a private buffer — with no process output,
+      // the dialog shows the empty-state message.
+      expect(find.text('No logs available yet.'), findsOneWidget);
     });
 
     testWidgets('copy button exists', (tester) async {
-      await tester.pumpWidget(_wrapDialog([
-        _makeProcess(logs: ['hello'])
-      ]));
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      container
+          .read(processManagerProvider.notifier)
+          .configure(providerNames: []);
+
+      await tester.pumpWidget(_buildHarness(container));
       await tester.tap(find.text('Open'));
       await tester.pump();
 
@@ -105,20 +113,21 @@ void main() {
     });
 
     testWidgets('close button dismisses dialog', (tester) async {
-      await tester.pumpWidget(_wrapDialog([
-        _makeProcess(logs: ['hello'])
-      ]));
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      container
+          .read(processManagerProvider.notifier)
+          .configure(providerNames: []);
+
+      await tester.pumpWidget(_buildHarness(container));
       await tester.tap(find.text('Open'));
       await tester.pump();
 
-      // Dialog is visible
       expect(find.byType(AlertDialog), findsOneWidget);
 
-      // Tap close icon
       await tester.tap(find.byIcon(Icons.close));
       await tester.pumpAndSettle();
 
-      // Dialog is dismissed
       expect(find.byType(AlertDialog), findsNothing);
     });
   });

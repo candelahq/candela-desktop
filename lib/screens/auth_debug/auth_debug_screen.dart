@@ -546,6 +546,8 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
                                                     name: s.name,
                                                     displayName: s.displayName,
                                                     icon: s.icon ?? '?'),
+                                            recentLogs:
+                                                pmNotifier.getLogs(s.name),
                                             onStart: () =>
                                                 pmNotifier.start(s.name),
                                             onStop: () =>

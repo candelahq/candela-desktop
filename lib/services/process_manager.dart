@@ -139,50 +139,66 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
 
   /// Configure which processes to manage based on the providers list.
   /// Always includes proxy. Adds any local providers found in the list.
+  ///
+  /// Preserves existing runtime state (pid, logs, health timers) for
+  /// processes that remain configured, to avoid resetting running services.
   void configure({
     required List<String> providerNames,
     String? proxyPort,
     Map<String, String>? portOverrides,
   }) {
-    // Cancel stale health timers before clearing processes to prevent leaks
-    // when providers are added/removed dynamically.
-    for (final t in _healthTimers.values) {
-      t.cancel();
-    }
-    _healthTimers.clear();
+    // Build the set of names that should remain after reconfiguration.
+    final desiredNames = {'proxy', ...providerNames};
+    final existingByName = {
+      for (final p in state.processes) p.name: p,
+    };
 
-    // Kill handles for processes being removed to prevent orphaned OS
-    // processes that can no longer be stopped via the UI.
-    final currentNames = state.processes.map((p) => p.name).toSet();
-    final staleNames =
-        currentNames.where((n) => !providerNames.contains(n) && n != 'proxy');
-    for (final name in staleNames.toList()) {
-      final h = _handles[name];
-      if (h != null) _killProcess(h);
-      _handles.remove(name);
+    // Kill handles and cancel timers for processes being removed.
+    for (final name in existingByName.keys) {
+      if (!desiredNames.contains(name)) {
+        final h = _handles.remove(name);
+        if (h != null) _killProcess(h);
+        _healthTimers[name]?.cancel();
+        _healthTimers.remove(name);
+        _logBuffers.remove(name);
+      }
     }
-
-    _logBuffers.clear();
 
     final newProcesses = <ManagedProcess>[];
 
-    // Proxy is always managed.
-    newProcesses.add(ManagedProcess(
-      name: 'proxy',
-      displayName: 'Candela Proxy',
-      icon: '🕯️',
-      port: proxyPort ?? '8181',
-    ));
+    // Proxy is always managed — preserve existing state if present.
+    final existingProxy = existingByName['proxy'];
+    if (existingProxy != null) {
+      newProcesses.add(existingProxy.copyWith(
+        port: () => proxyPort ?? '8181',
+      ));
+    } else {
+      newProcesses.add(ManagedProcess(
+        name: 'proxy',
+        displayName: 'Candela Proxy',
+        icon: '🕯️',
+        port: proxyPort ?? '8181',
+      ));
+    }
 
-    // Add any local providers from the config.
+    // Add local providers — preserve existing state when available.
     for (final name in providerNames) {
-      var info = _runtimeInfo(name);
-      if (info != null) {
-        // Apply port override from config if available.
+      final existing = existingByName[name];
+      if (existing != null) {
+        // Apply port override if changed.
         if (portOverrides != null && portOverrides.containsKey(name)) {
-          info = info.copyWith(port: () => portOverrides[name]);
+          newProcesses.add(existing.copyWith(port: () => portOverrides[name]));
+        } else {
+          newProcesses.add(existing);
         }
-        newProcesses.add(info);
+      } else {
+        var info = _runtimeInfo(name);
+        if (info != null) {
+          if (portOverrides != null && portOverrides.containsKey(name)) {
+            info = info.copyWith(port: () => portOverrides[name]);
+          }
+          newProcesses.add(info);
+        }
       }
     }
 
@@ -292,6 +308,12 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
         args,
         environment: _env(name),
       );
+      // Guard: if configure() ran while we were starting, the process
+      // is no longer in our managed set — kill it to prevent orphans.
+      if (state.get(name) == null) {
+        _killProcess(process, force: true);
+        return;
+      }
       _handles[name] = process;
       _updateProcess(name, (p) => p.copyWith(pid: () => process.pid));
 
@@ -324,6 +346,11 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
           break;
         }
       }
+
+      // Re-check: process may have been removed or stopped during the loop.
+      final postLoopState = state.get(name);
+      if (postLoopState == null) return;
+      if (postLoopState.state != ProcessState.starting) return;
 
       if (healthy) {
         _updateProcess(
@@ -535,7 +562,12 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
       }
 
       final healthy = await _isHealthy(name);
-      if (healthy && p.state == ProcessState.error) {
+
+      // Re-fetch state after the async gap — the snapshot `p` is stale.
+      final current = state.get(name);
+      if (current == null) return;
+
+      if (healthy && current.state == ProcessState.error) {
         // Recovered from transient failure.
         _updateProcess(
             name,
@@ -543,7 +575,7 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
                   state: ProcessState.running,
                   errorMessage: () => null,
                 ));
-      } else if (!healthy && p.state == ProcessState.running) {
+      } else if (!healthy && current.state == ProcessState.running) {
         _updateProcess(
             name,
             (p) => p.copyWith(
@@ -554,14 +586,22 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
     });
   }
 
+  /// Retrieve a snapshot of the log buffer for a process.
+  ///
+  /// Logs are kept as private mutable buffers to avoid triggering
+  /// Riverpod state rebuilds on every line. The UI (ProcessLogsDialog)
+  /// polls this method periodically.
+  List<String> getLogs(String name) =>
+      List.unmodifiable(_logBuffers[name] ?? const <String>[]);
+
   void _addLog(String name, String line) {
     final buffer = _logBuffers.putIfAbsent(name, () => []);
     buffer.add(line);
     while (buffer.length > ManagedProcess.maxLogLines) {
       buffer.removeAt(0);
     }
-    // Emit a new snapshot with updated logs.
-    _updateProcess(name, (p) => p.copyWith(recentLogs: List.of(buffer)));
+    // Logs are intentionally NOT emitted as state to avoid flooding
+    // Riverpod listeners on every line from chatty processes.
   }
 
   /// Resolve the PID of a process listening on [port].

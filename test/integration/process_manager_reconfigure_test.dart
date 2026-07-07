@@ -39,16 +39,18 @@ void main() {
       expect(state2.get('vllm'), isNull);
       expect(state2.all.length, 2); // proxy + lmstudio
 
-      // New proxy should have updated port.
+      // New proxy should have updated port; state preserved from initial config.
       expect(state2.get('proxy')!.port, '9090');
       expect(state2.get('lmstudio')!.port, '5555');
 
-      // All new processes start fresh.
-      for (final p in state2.all) {
-        expect(p.state, ProcessState.detecting);
-        expect(p.pid, isNull);
-        expect(p.recentLogs, isEmpty);
-      }
+      // lmstudio is newly added — starts fresh.
+      expect(state2.get('lmstudio')!.state, ProcessState.detecting);
+      expect(state2.get('lmstudio')!.pid, isNull);
+
+      // proxy was preserved from previous config — still detecting (its
+      // initial state), since we never changed it.
+      expect(state2.get('proxy')!.state, ProcessState.detecting);
+      expect(state2.get('proxy')!.pid, isNull);
     });
 
     test('stopAll then reconfigure leaves clean state', () async {

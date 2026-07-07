@@ -27,17 +27,14 @@ class _ProcessLogsDialogState extends ConsumerState<ProcessLogsDialog> {
   }
 
   void _refreshLogs() {
-    final pmState = ref.read(processManagerProvider);
-    final process = pmState.get(widget.processName);
-    if (process != null) {
-      final newLogs = process.recentLogs;
-      // Simple dirty check to avoid unnecessary setStates
-      if (_logs.length != newLogs.length ||
-          (_logs.isNotEmpty &&
-              newLogs.isNotEmpty &&
-              _logs.last != newLogs.last)) {
-        if (mounted) setState(() => _logs = newLogs);
-      }
+    final notifier = ref.read(processManagerProvider.notifier);
+    final newLogs = notifier.getLogs(widget.processName);
+    // Simple dirty check to avoid unnecessary setStates
+    if (_logs.length != newLogs.length ||
+        (_logs.isNotEmpty &&
+            newLogs.isNotEmpty &&
+            _logs.last != newLogs.last)) {
+      if (mounted) setState(() => _logs = newLogs);
     }
   }
 

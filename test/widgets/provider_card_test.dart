@@ -1,20 +1,14 @@
-import 'dart:convert';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
-import 'package:http/testing.dart' as http_testing;
-import 'package:http/http.dart' as http;
 import 'package:candela_desktop/theme/candela_theme.dart';
 import 'package:candela_desktop/models/provider_status.dart';
 import 'package:candela_desktop/screens/auth_debug/provider_card.dart';
-import 'package:candela_desktop/services/provider_test_service.dart';
 
 void main() {
   group('ProviderCard', () {
     Widget buildApp(
       ProviderStatus status, {
       VoidCallback? onRemove,
-      ProviderTestService Function()? testServiceFactory,
     }) {
       return MaterialApp(
         theme: CandelaTheme.dark,
@@ -25,7 +19,6 @@ void main() {
             child: ProviderCard(
               status: status,
               onRemove: onRemove,
-              testServiceFactory: testServiceFactory,
             ),
           ),
         ),
@@ -271,98 +264,29 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsNothing);
     });
 
-    testWidgets('proxy detail dialog shows Test Models button', (tester) async {
-      const status = ProviderStatus(
-        name: 'proxy',
-        displayName: 'Candela Proxy',
-        state: ProviderState.connected,
-        models: ['claude-sonnet-4'],
-        rawModels: ['claude-sonnet-4-20250514'],
-        icon: '🕯',
-        port: 8181,
-      );
-      await tester.pumpWidget(buildApp(status));
-      await tester.tap(find.byType(InkWell).first);
-      await tester.pumpAndSettle();
-
-      expect(find.text('Test Models'), findsOneWidget);
-      expect(find.byIcon(Icons.speed), findsOneWidget);
-    });
-
-    testWidgets('non-proxy detail dialog does NOT show Test Models button',
-        (tester) async {
-      const status = ProviderStatus(
-        name: 'google',
-        displayName: 'Google / Vertex AI',
-        state: ProviderState.connected,
-        models: ['gemini-2.0-flash'],
-        icon: 'G',
-      );
-      await tester.pumpWidget(buildApp(status));
-      await tester.tap(find.byType(InkWell).first);
-      await tester.pumpAndSettle();
-
-      expect(find.text('Test Models'), findsNothing);
-    });
-
-    testWidgets('clicking Test Models triggers verification and shows results',
+    testWidgets('detail dialog shows model list without verification UI',
         (tester) async {
       const status = ProviderStatus(
         name: 'proxy',
         displayName: 'Candela Proxy',
         state: ProviderState.connected,
         models: ['claude-sonnet-4', 'gemini-2.0-flash'],
-        rawModels: ['claude-sonnet-4-20250514', 'gemini-2.0-flash-001'],
         icon: '🕯',
-        port: 8181,
       );
 
-      // Mock: claude succeeds, gemini fails.
-      final mockClient = http_testing.MockClient((req) async {
-        if (req.url.path == '/v1/chat/completions') {
-          final body = json.decode(req.body) as Map<String, dynamic>;
-          final model = body['model'] as String;
-          if (model.contains('claude')) {
-            return http.Response(
-              json.encode({
-                'choices': [
-                  {
-                    'message': {'content': 'pong'}
-                  }
-                ]
-              }),
-              200,
-            );
-          } else {
-            return http.Response(
-              json.encode({
-                'error': {'message': 'Model not found'}
-              }),
-              404,
-            );
-          }
-        }
-        return http.Response('Not found', 404);
-      });
-
-      await tester.pumpWidget(buildApp(
-        status,
-        testServiceFactory: () => ProviderTestService(client: mockClient),
-      ));
+      await tester.pumpWidget(buildApp(status));
 
       // Open dialog.
       await tester.tap(find.byType(InkWell).first);
       await tester.pumpAndSettle();
 
-      // Before clicking — no latency values shown.
-      expect(find.textContaining('ms'), findsNothing);
+      // Models are listed.
+      expect(find.text('claude-sonnet-4'), findsOneWidget);
+      expect(find.text('gemini-2.0-flash'), findsOneWidget);
 
-      // Click Test Models.
-      await tester.tap(find.text('Test Models'));
-      await tester.pumpAndSettle();
-
-      // After verification — claude shows latency, gemini shows warning.
-      expect(find.byIcon(Icons.warning_amber), findsOneWidget);
+      // No verification UI.
+      expect(find.text('Test Models'), findsNothing);
+      expect(find.byIcon(Icons.warning_amber), findsNothing);
     });
   });
 }

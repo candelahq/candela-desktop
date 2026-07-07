@@ -3,21 +3,15 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
 import '../../theme/colors.dart';
 import '../../models/provider_status.dart';
-import '../../services/provider_test_service.dart';
 
 class ProviderCard extends StatelessWidget {
   final ProviderStatus status;
   final VoidCallback? onRemove;
 
-  /// Optional factory for injecting a [ProviderTestService] in tests.
-  @visibleForTesting
-  final ProviderTestService Function()? testServiceFactory;
-
   const ProviderCard({
     super.key,
     required this.status,
     this.onRemove,
-    this.testServiceFactory,
   });
 
   @override
@@ -86,10 +80,7 @@ class ProviderCard extends StatelessWidget {
   void _showDetailDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (ctx) => _ProviderDetailDialog(
-        status: status,
-        serviceFactory: testServiceFactory,
-      ),
+      builder: (ctx) => _ProviderDetailDialog(status: status),
     );
   }
 
@@ -173,83 +164,22 @@ class ProviderCard extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Detail dialog — auto-verifies proxy models on open.
+// Detail dialog — shows model list with pricing (no per-model verification).
 // ---------------------------------------------------------------------------
 
-class _ProviderDetailDialog extends StatefulWidget {
+class _ProviderDetailDialog extends StatelessWidget {
   final ProviderStatus status;
-  final ProviderTestService Function()? serviceFactory;
-  const _ProviderDetailDialog({required this.status, this.serviceFactory});
-  @override
-  State<_ProviderDetailDialog> createState() => _ProviderDetailDialogState();
-}
-
-class _ProviderDetailDialogState extends State<_ProviderDetailDialog> {
-  // Lazy-initialized — only created when the user clicks "Test Models".
-  // This avoids allocating an http.Client for non-proxy dialogs.
-  ProviderTestService? _providerTest;
-  Map<String, ModelVerification?> _verifications = {};
-  bool _verifying = false;
-
-  Future<void> _verifyAll() async {
-    final displayModels = widget.status.models;
-    final rawModels = widget.status.rawModels;
-
-    _providerTest ??= widget.serviceFactory?.call() ?? ProviderTestService();
-
-    setState(() {
-      _verifying = true;
-      _verifications = {for (final m in displayModels) m: null};
-    });
-
-    final raw = rawModels.isNotEmpty ? rawModels : displayModels;
-
-    final results = await _providerTest!.verifyProxyModels(
-      raw,
-      port: widget.status.port ?? 8181,
-    );
-
-    if (!mounted) return;
-
-    final rawResults = {for (final r in results) r.model: r};
-
-    setState(() {
-      _verifying = false;
-      for (var i = 0; i < displayModels.length; i++) {
-        final rawName = i < raw.length ? raw[i] : displayModels[i];
-        final r = rawResults[rawName];
-        _verifications[displayModels[i]] = ModelVerification(
-            model: displayModels[i],
-            reachable: r?.reachable ?? false,
-            latency: r?.latency,
-            error: r == null ? 'No verification result' : r.error);
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _providerTest?.dispose();
-    super.dispose();
-  }
+  const _ProviderDetailDialog({required this.status});
 
   @override
   Widget build(BuildContext context) {
-    final s = widget.status;
+    final s = status;
     return AlertDialog(
       backgroundColor: CandelaColors.bgSecondary,
       title: Row(children: [
         Text(s.icon ?? '', style: const TextStyle(fontSize: 18)),
         const SizedBox(width: 8),
         Text(s.displayName),
-        const Spacer(),
-        if (s.name == 'proxy')
-          TextButton.icon(
-            onPressed: _verifying ? null : _verifyAll,
-            icon:
-                Icon(_verifying ? Icons.hourglass_top : Icons.speed, size: 14),
-            label: Text(_verifying ? 'Testing...' : 'Test Models'),
-          ),
       ]),
       content: SizedBox(
         width: 420,
@@ -284,53 +214,13 @@ class _ProviderDetailDialogState extends State<_ProviderDetailDialog> {
   }
 
   Widget _modelRow(String model) {
-    final v = _verifications[model];
-    final Widget indicator;
-    if (v == null && _verifications.containsKey(model)) {
-      indicator = const SizedBox(
-          width: 12,
-          height: 12,
-          child: CircularProgressIndicator(
-              strokeWidth: 1.5, color: CandelaColors.accent));
-    } else if (v != null) {
-      indicator = Container(
-        width: 8,
-        height: 8,
-        decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: v.reachable ? CandelaColors.success : CandelaColors.error),
-      );
-    } else {
-      indicator = Container(
-        width: 8,
-        height: 8,
-        decoration: const BoxDecoration(
-            shape: BoxShape.circle, color: CandelaColors.success),
-      );
-    }
-
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(children: [
-        indicator,
-        const SizedBox(width: 10),
         Expanded(
             child: Text(model,
                 style: const TextStyle(
                     fontSize: 12, fontFamily: 'SF Mono, monospace'))),
-        if (v?.latency != null)
-          Text('${v!.latency!.inMilliseconds}ms',
-              style: const TextStyle(
-                  fontSize: 10, color: CandelaColors.textMuted)),
-        if (v != null && !v.reachable && v.error != null)
-          Tooltip(
-            message: v.error,
-            child: const Padding(
-              padding: EdgeInsets.only(left: 4),
-              child: Icon(Icons.warning_amber,
-                  size: 12, color: CandelaColors.error),
-            ),
-          ),
       ]),
     );
   }

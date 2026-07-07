@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers.dart';
+import '../services/process_manager.dart';
 import '../theme/colors.dart';
 
 class ProcessLogsDialog extends ConsumerStatefulWidget {
@@ -27,17 +27,14 @@ class _ProcessLogsDialogState extends ConsumerState<ProcessLogsDialog> {
   }
 
   void _refreshLogs() {
-    final processManager = ref.read(processManagerProvider);
-    final process = processManager.get(widget.processName);
-    if (process != null) {
-      final newLogs = process.recentLogs.toList();
-      // Simple dirty check to avoid unnecessary setStates
-      if (_logs.length != newLogs.length ||
-          (_logs.isNotEmpty &&
-              newLogs.isNotEmpty &&
-              _logs.last != newLogs.last)) {
-        if (mounted) setState(() => _logs = newLogs);
-      }
+    final notifier = ref.read(processManagerProvider.notifier);
+    final newLogs = notifier.getLogs(widget.processName);
+    // Simple dirty check to avoid unnecessary setStates
+    if (_logs.length != newLogs.length ||
+        (_logs.isNotEmpty &&
+            newLogs.isNotEmpty &&
+            _logs.last != newLogs.last)) {
+      if (mounted) setState(() => _logs = newLogs);
     }
   }
 
@@ -49,9 +46,9 @@ class _ProcessLogsDialogState extends ConsumerState<ProcessLogsDialog> {
 
   @override
   Widget build(BuildContext context) {
-    // Watch processManager to react to state changes (starting, error, stopped)
-    final processManager = ref.watch(processManagerProvider);
-    final process = processManager.get(widget.processName);
+    // Watch process manager state to react to state changes (starting, error, stopped)
+    final pmState = ref.watch(processManagerProvider);
+    final process = pmState.get(widget.processName);
 
     if (process == null) {
       return const AlertDialog(

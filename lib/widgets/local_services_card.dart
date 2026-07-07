@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/process_manager.dart';
-import '../providers.dart';
 import '../theme/colors.dart';
 import 'process_logs_dialog.dart';
 
@@ -10,8 +9,9 @@ class LocalServicesCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final processManager = ref.watch(processManagerProvider);
-    final processes = processManager.all;
+    final pmState = ref.watch(processManagerProvider);
+    final pmNotifier = ref.read(processManagerProvider.notifier);
+    final processes = pmState.all;
 
     if (processes.isEmpty) {
       return const SizedBox.shrink();
@@ -48,9 +48,9 @@ class LocalServicesCard extends ConsumerWidget {
               const Divider(height: 24, color: CandelaColors.borderSubtle),
             _ProcessRow(
               process: processes[i],
-              onStart: () => processManager.start(processes[i].name),
-              onStop: () => processManager.stop(processes[i].name),
-              onRestart: () => processManager.restart(processes[i].name),
+              onStart: () => pmNotifier.start(processes[i].name),
+              onStop: () => pmNotifier.stop(processes[i].name),
+              onRestart: () => pmNotifier.restart(processes[i].name),
             ),
           ],
         ],

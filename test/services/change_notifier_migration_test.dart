@@ -1,73 +1,59 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:candela_desktop/services/process_manager.dart';
 import 'package:candela_desktop/services/update_service.dart';
 
-/// Tests verifying ChangeNotifier behavior after the SafeChangeNotifier removal.
-/// These ensure the migration preserved correct dispose/notify semantics.
+/// Tests verifying Riverpod Notifier behavior after the ChangeNotifier → Riverpod migration.
+/// These ensure the migration preserved correct state-update semantics.
 void main() {
-  group('ProcessManager — ChangeNotifier migration', () {
-    test('notifyListeners works after configure', () {
-      final pm = ProcessManager();
-      var notified = false;
-      pm.addListener(() => notified = true);
-      pm.configure(providerNames: ['ollama']);
-      expect(notified, isTrue);
-      pm.dispose();
+  group('ProcessManagerNotifier — Riverpod migration', () {
+    late ProviderContainer container;
+    late ProcessManagerNotifier notifier;
+
+    setUp(() {
+      container = ProviderContainer();
+      notifier = container.read(processManagerProvider.notifier);
     });
 
-    test('notifyListeners is safe after dispose', () {
-      final pm = ProcessManager();
-      pm.configure(providerNames: ['ollama']);
-      pm.dispose();
+    tearDown(() => container.dispose());
 
-      // After dispose, notifyListeners should be a no-op (not throw).
-      // Calling configure after dispose exercises the override.
-      expect(() => pm.configure(providerNames: ['vllm']), returnsNormally);
+    test('state updates after configure', () {
+      var stateChanged = false;
+      container.listen<ProcessManagerState>(
+        processManagerProvider,
+        (prev, next) => stateChanged = true,
+      );
+
+      notifier.configure(providerNames: ['ollama']);
+      expect(stateChanged, isTrue);
     });
 
-    test('disposed ProcessManager does not notify after detectRunning',
-        () async {
-      final pm = ProcessManager();
-      pm.configure(providerNames: ['ollama']);
+    test('multiple configure calls each produce new state', () {
+      final states = <ProcessManagerState>[];
+      container.listen<ProcessManagerState>(
+        processManagerProvider,
+        (prev, next) => states.add(next),
+      );
 
-      var notifiedAfterDispose = false;
-      pm.addListener(() => notifiedAfterDispose = true);
+      notifier.configure(providerNames: ['ollama']);
+      notifier.configure(providerNames: ['vllm']);
+      notifier.configure(providerNames: []);
 
-      pm.dispose();
-      notifiedAfterDispose = false;
-
-      // detectRunning should complete without error even after dispose.
-      await pm.detectRunning();
-      expect(notifiedAfterDispose, isFalse);
+      expect(states.length, 3);
     });
 
-    test('multiple configure calls notify each time', () {
-      final pm = ProcessManager();
-      var count = 0;
-      pm.addListener(() => count++);
-
-      pm.configure(providerNames: ['ollama']);
-      pm.configure(providerNames: ['vllm']);
-      pm.configure(providerNames: []);
-
-      expect(count, 3);
-      pm.dispose();
+    test('container.dispose cleans up without error', () {
+      notifier.configure(providerNames: ['ollama', 'vllm', 'lmstudio']);
+      container.dispose();
+      // Re-create so tearDown doesn't double-dispose.
+      container = ProviderContainer();
     });
 
-    test('dispose cleans up handles and timers without error', () {
-      final pm = ProcessManager();
-      pm.configure(providerNames: ['ollama', 'vllm', 'lmstudio']);
-      pm.dispose();
-    });
-
-    test('stop after dispose does not crash', () async {
-      final pm = ProcessManager();
-      pm.configure(providerNames: ['ollama']);
-      pm.get('ollama')!.state = ProcessState.running;
-      pm.dispose();
-
-      // stop() calls notifyListeners — should be safe after dispose.
-      await expectLater(pm.stop('ollama'), completes);
+    test('state reflects configured processes', () {
+      notifier.configure(providerNames: ['ollama']);
+      final state = container.read(processManagerProvider);
+      expect(state.get('ollama'), isNotNull);
+      expect(state.get('ollama')!.state, ProcessState.detecting);
     });
   });
 

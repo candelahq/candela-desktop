@@ -110,30 +110,40 @@ void main() {
 
     // ── processManagerProvider ────────────────────────────────────────────
 
-    test('processManagerProvider returns a ProcessManager instance', () {
-      final pm = container.read(processManagerProvider);
-      expect(pm, isA<ProcessManager>());
+    test('processManagerProvider returns a ProcessManagerState instance', () {
+      final state = container.read(processManagerProvider);
+      expect(state, isA<ProcessManagerState>());
     });
 
-    test('processManagerProvider is a singleton (keepAlive)', () {
+    test('processManagerProvider notifier is a ProcessManagerNotifier', () {
+      final notifier = container.read(processManagerProvider.notifier);
+      expect(notifier, isA<ProcessManagerNotifier>());
+    });
+
+    test('processManagerProvider returns consistent state', () {
       final a = container.read(processManagerProvider);
       final b = container.read(processManagerProvider);
       expect(identical(a, b), isTrue);
     });
 
-    test('processManagerProvider can be overridden in tests', () {
-      final mockPM = ProcessManager();
+    test('processManagerProvider can be overridden with state value', () {
+      const mockState = ProcessManagerState(processes: [
+        ManagedProcess(
+          name: 'test',
+          displayName: 'Test',
+          icon: 'T',
+        ),
+      ]);
       final overridden = ProviderContainer(
         overrides: [
-          processManagerProvider.overrideWithValue(mockPM),
+          processManagerProvider.overrideWithValue(mockState),
         ],
       );
-      addTearDown(() {
-        mockPM.dispose();
-        overridden.dispose();
-      });
-      expect(
-          identical(overridden.read(processManagerProvider), mockPM), isTrue);
+      addTearDown(overridden.dispose);
+
+      final state = overridden.read(processManagerProvider);
+      expect(state.all.length, 1);
+      expect(state.get('test')!.displayName, 'Test');
     });
 
     // ── trayServiceProvider ──────────────────────────────────────────────
@@ -144,11 +154,11 @@ void main() {
     });
 
     test('trayServiceProvider receives processManager dependency', () {
-      final pm = container.read(processManagerProvider);
+      final state = container.read(processManagerProvider);
       final tray = container.read(trayServiceProvider);
-      // TrayService is wired to the same processManager.
+      // TrayService is wired to the processManager notifier.
       expect(tray, isNotNull);
-      expect(pm, isNotNull);
+      expect(state, isNotNull);
     });
   });
 
@@ -159,9 +169,12 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      // Read processManager to trigger the provider.
-      final pm = container.read(processManagerProvider);
-      expect(pm, isA<ProcessManager>());
+      // Read processManagerSetup to trigger the reactive wiring.
+      container.read(processManagerSetupProvider);
+
+      // Read processManager state.
+      final state = container.read(processManagerProvider);
+      expect(state, isA<ProcessManagerState>());
 
       // Wait for configProvider to emit and trigger the listen callback.
       final completer = Completer<void>();
@@ -182,7 +195,8 @@ void main() {
 
       // After config emits, the processManager should have the proxy
       // configured (configure() is called in the listen callback).
-      expect(pm.get('proxy'), isNotNull);
+      final updatedState = container.read(processManagerProvider);
+      expect(updatedState.get('proxy'), isNotNull);
     });
   });
 
@@ -195,8 +209,8 @@ void main() {
       expect(configProvider, isA<ConfigProvider>());
     });
 
-    test('processManagerProvider is a ProcessManagerProvider', () {
-      expect(processManagerProvider, isA<ProcessManagerProvider>());
+    test('processManagerProvider is a ProcessManagerNotifierProvider', () {
+      expect(processManagerProvider, isA<ProcessManagerNotifierProvider>());
     });
 
     test('brewServiceProvider is a BrewServiceProvider', () {

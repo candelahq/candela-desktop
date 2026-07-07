@@ -6,6 +6,7 @@ import '../../models/provider_status.dart';
 /// Card showing a local provider with connectivity status + Start/Stop/Restart controls.
 class RuntimeControlCard extends StatelessWidget {
   final ManagedProcess process;
+  final List<String> recentLogs;
   final VoidCallback? onStart;
   final VoidCallback? onStop;
   final VoidCallback? onRestart;
@@ -15,6 +16,7 @@ class RuntimeControlCard extends StatelessWidget {
   const RuntimeControlCard({
     super.key,
     required this.process,
+    this.recentLogs = const [],
     this.onStart,
     this.onStop,
     this.onRestart,
@@ -53,8 +55,7 @@ class RuntimeControlCard extends StatelessWidget {
               )),
             ]),
           ],
-          if (process.recentLogs.isNotEmpty &&
-              process.state == ProcessState.error) ...[
+          if (recentLogs.isNotEmpty && process.state == ProcessState.error) ...[
             const SizedBox(height: 6),
             Container(
               padding: const EdgeInsets.all(8),
@@ -65,7 +66,7 @@ class RuntimeControlCard extends StatelessWidget {
               constraints: const BoxConstraints(maxHeight: 60),
               child: SingleChildScrollView(
                 child: Text(
-                  process.recentLogs.toList().takeLast(5).join('\n'),
+                  recentLogs.toList().takeLast(5).join('\n'),
                   style: const TextStyle(
                       fontSize: 10,
                       fontFamily: 'SF Mono, monospace',

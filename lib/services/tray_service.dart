@@ -9,7 +9,7 @@ import 'update_service.dart';
 
 /// Manages the macOS/Windows/Linux system tray icon and menu.
 class TrayService with TrayListener {
-  final ProcessManager processManager;
+  final ProcessManagerNotifier processManager;
   final UpdateService? updateService;
   Timer? _updateTimer;
   Timer? _debounceTimer;
@@ -33,14 +33,6 @@ class TrayService with TrayListener {
     // Refresh menu every 10s to reflect process state.
     _updateTimer =
         Timer.periodic(const Duration(seconds: 10), (_) => _updateMenu());
-
-    // Also update when process state changes (debounced).
-    processManager.addListener(_debouncedUpdate);
-  }
-
-  void _debouncedUpdate() {
-    _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 500), _updateMenu);
   }
 
   String? _trayIconPath() {
@@ -89,7 +81,8 @@ class TrayService with TrayListener {
     final items = <MenuItem>[];
 
     // Process status section.
-    for (final p in processManager.all) {
+    final processes = processManager.currentState.all;
+    for (final p in processes) {
       final stateStr = switch (p.state) {
         ProcessState.running => '● Running :${p.port}',
         ProcessState.starting => '◐ Starting...',
@@ -108,10 +101,8 @@ class TrayService with TrayListener {
     items.add(MenuItem.separator());
 
     // Controls.
-    final hasRunning =
-        processManager.all.any((p) => p.state == ProcessState.running);
-    final hasStopped =
-        processManager.all.any((p) => p.state == ProcessState.stopped);
+    final hasRunning = processes.any((p) => p.state == ProcessState.running);
+    final hasStopped = processes.any((p) => p.state == ProcessState.stopped);
 
     if (hasStopped) {
       items.add(MenuItem(
@@ -206,7 +197,6 @@ class TrayService with TrayListener {
   void dispose() {
     _updateTimer?.cancel();
     _debounceTimer?.cancel();
-    processManager.removeListener(_debouncedUpdate);
     trayManager.removeListener(this);
   }
 }

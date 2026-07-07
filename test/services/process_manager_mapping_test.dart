@@ -1,76 +1,77 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:candela_desktop/services/process_manager.dart';
 
 void main() {
-  group('ProcessManager — static process mapping', () {
+  group('ProcessManagerNotifier — static process mapping', () {
+    late ProviderContainer container;
+    late ProcessManagerNotifier notifier;
+
+    setUp(() {
+      container = ProviderContainer();
+      notifier = container.read(processManagerProvider.notifier);
+    });
+
+    tearDown(() => container.dispose());
+
     test('ollama process has correct defaults', () {
-      final pm = ProcessManager();
-      pm.configure(providerNames: ['ollama'], proxyPort: '8181');
-      final ollama = pm.get('ollama');
+      notifier.configure(providerNames: ['ollama'], proxyPort: '8181');
+      final ollama = container.read(processManagerProvider).get('ollama');
       expect(ollama, isNotNull);
       expect(ollama!.displayName, 'Ollama');
       expect(ollama.icon, '🦙');
       expect(ollama.port, '11434');
-      pm.dispose();
     });
 
     test('vllm process has correct defaults', () {
-      final pm = ProcessManager();
-      pm.configure(providerNames: ['vllm'], proxyPort: '8181');
-      final vllm = pm.get('vllm');
+      notifier.configure(providerNames: ['vllm'], proxyPort: '8181');
+      final vllm = container.read(processManagerProvider).get('vllm');
       expect(vllm, isNotNull);
       expect(vllm!.displayName, 'vLLM');
       expect(vllm.port, '8000');
-      pm.dispose();
     });
 
     test('lmstudio process has correct defaults', () {
-      final pm = ProcessManager();
-      pm.configure(providerNames: ['lmstudio'], proxyPort: '8181');
-      final lm = pm.get('lmstudio');
+      notifier.configure(providerNames: ['lmstudio'], proxyPort: '8181');
+      final lm = container.read(processManagerProvider).get('lmstudio');
       expect(lm, isNotNull);
       expect(lm!.displayName, 'LM Studio');
       expect(lm.port, '1234');
-      pm.dispose();
     });
 
     test('unknown provider is silently skipped', () {
-      final pm = ProcessManager();
-      pm.configure(providerNames: ['unknown_runtime'], proxyPort: '8181');
+      notifier.configure(providerNames: ['unknown_runtime'], proxyPort: '8181');
+      final state = container.read(processManagerProvider);
       // Only proxy should exist
-      expect(pm.all.length, 1);
-      expect(pm.get('proxy'), isNotNull);
-      pm.dispose();
+      expect(state.all.length, 1);
+      expect(state.get('proxy'), isNotNull);
     });
 
     test('proxy is configured with correct port', () {
-      final pm = ProcessManager();
-      pm.configure(providerNames: [], proxyPort: '9999');
-      final proxy = pm.get('proxy');
+      notifier.configure(providerNames: [], proxyPort: '9999');
+      final proxy = container.read(processManagerProvider).get('proxy');
       expect(proxy, isNotNull);
       expect(proxy!.displayName, 'Candela Proxy');
       expect(proxy.port, '9999');
-      pm.dispose();
     });
 
     test('multiple providers configured simultaneously', () {
-      final pm = ProcessManager();
-      pm.configure(
+      notifier.configure(
         providerNames: ['ollama', 'vllm', 'lmstudio'],
         proxyPort: '8181',
       );
-      expect(pm.all.length, 4); // proxy + 3
-      expect(pm.get('ollama'), isNotNull);
-      expect(pm.get('vllm'), isNotNull);
-      expect(pm.get('lmstudio'), isNotNull);
-      expect(pm.get('proxy'), isNotNull);
-      pm.dispose();
+      final state = container.read(processManagerProvider);
+      expect(state.all.length, 4); // proxy + 3
+      expect(state.get('ollama'), isNotNull);
+      expect(state.get('vllm'), isNotNull);
+      expect(state.get('lmstudio'), isNotNull);
+      expect(state.get('proxy'), isNotNull);
     });
   });
 
-  group('ManagedProcess — state transitions', () {
+  group('ManagedProcess — state transitions (immutable)', () {
     test('state starts as detecting', () {
-      final p = ManagedProcess(
+      const p = ManagedProcess(
         name: 'test',
         displayName: 'Test',
         icon: 'T',
@@ -78,42 +79,46 @@ void main() {
       expect(p.state, ProcessState.detecting);
     });
 
-    test('can transition to starting', () {
-      final p = ManagedProcess(
+    test('copyWith can transition to starting', () {
+      const p = ManagedProcess(
         name: 'test',
         displayName: 'Test',
         icon: 'T',
       );
-      p.state = ProcessState.starting;
-      expect(p.state, ProcessState.starting);
+      final updated = p.copyWith(state: ProcessState.starting);
+      expect(updated.state, ProcessState.starting);
     });
 
-    test('can transition to running', () {
-      final p = ManagedProcess(
+    test('copyWith can transition to running', () {
+      const p = ManagedProcess(
         name: 'test',
         displayName: 'Test',
         icon: 'T',
       );
-      p.state = ProcessState.running;
-      p.startedAt = DateTime.now();
-      expect(p.state, ProcessState.running);
-      expect(p.startedAt, isNotNull);
+      final updated = p.copyWith(
+        state: ProcessState.running,
+        startedAt: () => DateTime.now(),
+      );
+      expect(updated.state, ProcessState.running);
+      expect(updated.startedAt, isNotNull);
     });
 
-    test('can set error with message', () {
-      final p = ManagedProcess(
+    test('copyWith can set error with message', () {
+      const p = ManagedProcess(
         name: 'test',
         displayName: 'Test',
         icon: 'T',
       );
-      p.state = ProcessState.error;
-      p.errorMessage = 'Process crashed';
-      expect(p.state, ProcessState.error);
-      expect(p.errorMessage, 'Process crashed');
+      final updated = p.copyWith(
+        state: ProcessState.error,
+        errorMessage: () => 'Process crashed',
+      );
+      expect(updated.state, ProcessState.error);
+      expect(updated.errorMessage, 'Process crashed');
     });
 
     test('uptimeString returns empty when not started', () {
-      final p = ManagedProcess(
+      const p = ManagedProcess(
         name: 'test',
         displayName: 'Test',
         icon: 'T',
@@ -126,8 +131,8 @@ void main() {
         name: 'test',
         displayName: 'Test',
         icon: 'T',
+        startedAt: DateTime.now().subtract(const Duration(minutes: 5)),
       );
-      p.startedAt = DateTime.now().subtract(const Duration(minutes: 5));
       final uptime = p.uptimeString;
       expect(uptime, isNotNull);
       expect(uptime, contains('m'));
@@ -138,21 +143,20 @@ void main() {
         name: 'test',
         displayName: 'Test',
         icon: 'T',
+        startedAt: DateTime.now().subtract(const Duration(hours: 3)),
       );
-      p.startedAt = DateTime.now().subtract(const Duration(hours: 3));
       final uptime = p.uptimeString;
       expect(uptime, isNotNull);
       expect(uptime, contains('h'));
     });
 
-    test('recentLogs captures entries', () {
-      final p = ManagedProcess(
+    test('recentLogs set via constructor', () {
+      const p = ManagedProcess(
         name: 'test',
         displayName: 'Test',
         icon: 'T',
+        recentLogs: ['line 1', 'line 2'],
       );
-      p.recentLogs.addLast('line 1');
-      p.recentLogs.addLast('line 2');
       expect(p.recentLogs.length, 2);
       expect(p.recentLogs.first, 'line 1');
     });

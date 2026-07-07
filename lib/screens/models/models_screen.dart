@@ -161,9 +161,9 @@ class _CatalogTabState extends ConsumerState<_CatalogTab>
     super.build(context);
     final catalogState = ref.watch(catalogProvider);
 
-    // Determine source: if catalog has models with pricing, it's team mode.
-    final isTeamMode = catalogState.models.isNotEmpty &&
-        catalogState.models.any((m) => m.inputPerMillion > 0);
+    // The catalog source string is set by the server response.
+    // Team mode populates it (e.g. "team"); solo/local mode leaves it empty.
+    final isTeamMode = catalogState.source.isNotEmpty;
 
     // Convert to unified view models.
     final viewModels =

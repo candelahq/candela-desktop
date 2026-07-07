@@ -461,6 +461,113 @@ void main() {
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
+  // PlatformPaths — XDG_CONFIG_HOME (Linux)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  group('PlatformPaths — XDG_CONFIG_HOME', () {
+    test('candelaConfigDir honors XDG_CONFIG_HOME on Linux', () {
+      final paths = const PlatformPaths(
+        env: {
+          'HOME': '/home/testuser',
+          'XDG_CONFIG_HOME': '/home/testuser/.myconfig',
+        },
+        isWindows: false,
+        isLinux: true,
+      );
+      expect(paths.candelaConfigDir(), '/home/testuser/.myconfig/candela');
+    });
+
+    test('candelaConfigDir falls back to ~/.config when XDG unset on Linux',
+        () {
+      final paths = const PlatformPaths(
+        env: {'HOME': '/home/testuser'},
+        isWindows: false,
+        isLinux: true,
+      );
+      expect(paths.candelaConfigDir(), '/home/testuser/.config/candela');
+    });
+
+    test('candelaConfigDir ignores empty XDG_CONFIG_HOME on Linux', () {
+      final paths = const PlatformPaths(
+        env: {
+          'HOME': '/home/testuser',
+          'XDG_CONFIG_HOME': '',
+        },
+        isWindows: false,
+        isLinux: true,
+      );
+      expect(paths.candelaConfigDir(), '/home/testuser/.config/candela');
+    });
+
+    test('candelaConfigDir ignores relative XDG_CONFIG_HOME on Linux', () {
+      final paths = const PlatformPaths(
+        env: {
+          'HOME': '/home/testuser',
+          'XDG_CONFIG_HOME': 'relative/path',
+        },
+        isWindows: false,
+        isLinux: true,
+      );
+      expect(paths.candelaConfigDir(), '/home/testuser/.config/candela');
+    });
+
+    test('adcCredentialPath ignores relative XDG_CONFIG_HOME on Linux', () {
+      final paths = const PlatformPaths(
+        env: {
+          'HOME': '/home/testuser',
+          'XDG_CONFIG_HOME': 'relative/path',
+        },
+        isWindows: false,
+        isLinux: true,
+      );
+      expect(
+          paths.adcCredentialPath(),
+          '/home/testuser/.config/gcloud/'
+          'application_default_credentials.json');
+    });
+
+    test('candelaConfigDir ignores XDG_CONFIG_HOME on macOS', () {
+      final paths = const PlatformPaths(
+        env: {
+          'HOME': '/Users/testuser',
+          'XDG_CONFIG_HOME': '/Users/testuser/.myconfig',
+        },
+        isWindows: false,
+        isMacOS: true,
+      );
+      expect(paths.candelaConfigDir(), '/Users/testuser/.config/candela');
+    });
+
+    test('adcCredentialPath honors XDG_CONFIG_HOME on Linux', () {
+      final paths = const PlatformPaths(
+        env: {
+          'HOME': '/home/testuser',
+          'XDG_CONFIG_HOME': '/home/testuser/.myconfig',
+        },
+        isWindows: false,
+        isLinux: true,
+      );
+      expect(
+          paths.adcCredentialPath(),
+          '/home/testuser/.myconfig/gcloud/'
+          'application_default_credentials.json');
+    });
+
+    test('adcCredentialPath falls back to ~/.config when XDG unset on Linux',
+        () {
+      final paths = const PlatformPaths(
+        env: {'HOME': '/home/testuser'},
+        isWindows: false,
+        isLinux: true,
+      );
+      expect(
+          paths.adcCredentialPath(),
+          '/home/testuser/.config/gcloud/'
+          'application_default_credentials.json');
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
   // PlatformPaths class tests — Cross-platform edge cases
   // ═══════════════════════════════════════════════════════════════════════════
 

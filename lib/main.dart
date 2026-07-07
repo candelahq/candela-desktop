@@ -11,7 +11,8 @@ import 'utils/platform_paths.dart' as platform_paths;
 
 /// Persistent crash log for release builds — stderr is invisible to users.
 ///
-/// Writes to `~/.config/candela/crash.log` (the same dir as the config file).
+/// Writes to `<configDir>/crash.log` (the same dir as the config file).
+/// On Linux, `configDir` honors `$XDG_CONFIG_HOME` per the XDG spec.
 /// Each entry is timestamped and capped at 512KB to prevent unbounded growth.
 void _logToFile(String message) {
   try {

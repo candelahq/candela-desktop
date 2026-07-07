@@ -62,18 +62,7 @@ jobs:
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
-        run: |
-          # Remove Microsoft apt sources — their signing is periodically
-          # broken and causes apt-get update to fail with NOSPLIT errors.
-          # These sources are pre-installed on GitHub runners but aren't
-          # needed for Flutter Linux builds.
-          sudo rm -f /etc/apt/sources.list.d/azure-cli.sources \
-                     /etc/apt/sources.list.d/microsoft-prod.list \
-                     /etc/apt/sources.list.d/microsoft-prod.sources
-          sudo apt-get update -y
-          sudo apt-get install -y clang cmake ninja-build pkg-config \
-            libgtk-3-dev liblzma-dev libstdc++-12-dev \
-            libayatana-appindicator3-dev
+        uses: ./.github/actions/setup-linux-deps
 
       - run: flutter pub get
 

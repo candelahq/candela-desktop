@@ -395,7 +395,13 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
     }
   }
 
-  /// Stop a process.
+  /// Stop a process using two-phase graceful shutdown.
+  ///
+  /// Phase 1: Ask nicely — HTTP shutdown for proxy, SIGTERM for others (Unix).
+  ///          On Windows, only the proxy has a graceful path (HTTP); other
+  ///          processes are force-killed immediately since TerminateProcess
+  ///          is the only option and there's nothing to wait for.
+  /// Phase 2: If still alive after 5s, force kill the entire process tree.
   Future<void> stop(String name) async {
     if (state.get(name) == null) return;
 
@@ -405,20 +411,35 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
 
     final handle = _handles[name];
     if (handle != null) {
-      // Graceful shutdown.
-      _killProcess(handle);
-      try {
-        await handle.exitCode.timeout(const Duration(seconds: 5));
-      } catch (_) {
-        // Force kill.
-        _killProcess(handle, force: true);
+      // Phase 1: graceful — try HTTP shutdown for processes that support it.
+      await _requestGracefulShutdown(name);
+      // On Unix, SIGTERM is the graceful signal for all processes.
+      // On Windows, only the proxy has a graceful path (HTTP shutdown).
+      // Other processes have no signal mechanism — force-kill immediately
+      // instead of stalling 5s for a timeout that will always fire.
+      final attemptedGraceful = !Platform.isWindows || name == 'proxy';
+      if (!Platform.isWindows) {
+        _killProcess(handle);
+      }
+
+      if (attemptedGraceful) {
+        // Wait up to 5s for graceful exit.
+        try {
+          await handle.exitCode.timeout(const Duration(seconds: 5));
+        } catch (_) {
+          // Phase 2: force kill entire process tree.
+          await _forceKillTree(handle.pid);
+        }
+      } else {
+        // No graceful path available — force kill immediately.
+        await _forceKillTree(handle.pid);
       }
       _handles.remove(name);
     } else {
       final currentPid = state.get(name)?.pid;
       if (currentPid != null) {
-        // Process we detected but didn't start — kill by PID.
-        _killPid(currentPid);
+        // Process we detected but didn't start — kill by PID tree.
+        await _forceKillTree(currentPid);
       }
     }
 
@@ -472,21 +493,56 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
     );
   }
 
-  /// Kill a process. On Windows, always uses TerminateProcess (no POSIX signals).
+  /// Send a graceful stop signal to a process.
+  ///
+  /// On Windows, `handle.kill()` sends `TerminateProcess` which is a hard
+  /// kill — but we call this only as the SIGTERM equivalent. The actual
+  /// graceful path is `_requestGracefulShutdown()` (HTTP) + this signal.
   void _killProcess(Process handle, {bool force = false}) {
     if (Platform.isWindows) {
-      handle.kill(); // TerminateProcess
+      handle.kill(); // TerminateProcess — best we can do without Job Object
     } else {
       handle.kill(force ? ProcessSignal.sigkill : ProcessSignal.sigterm);
     }
   }
 
-  /// Kill a process by PID. On Windows, uses TerminateProcess.
-  void _killPid(int pid) {
+  /// Try to shut down a process gracefully via HTTP before killing it.
+  ///
+  /// Currently only the proxy has a shutdown endpoint. Other processes
+  /// (Ollama, vLLM) rely on signal-based shutdown.
+  Future<void> _requestGracefulShutdown(String name) async {
+    if (name == 'proxy') {
+      final port = state.get(name)?.port ?? '8181';
+      try {
+        await _client
+            .post(Uri.parse('http://localhost:$port/_local/api/shutdown'))
+            .timeout(const Duration(seconds: 2));
+      } catch (_) {
+        // Shutdown endpoint may not exist — that's fine, we'll signal next.
+      }
+    }
+  }
+
+  /// Force kill an entire process tree by PID.
+  ///
+  /// On Windows, uses `taskkill /T /F /PID` to kill the process and all its
+  /// children (e.g. Ollama GPU workers, proxy subprocesses). On Unix, uses
+  /// SIGKILL on the single PID (process groups are handled by the shell).
+  Future<void> _forceKillTree(int targetPid) async {
     if (Platform.isWindows) {
-      Process.killPid(pid);
+      try {
+        final result =
+            await _runner.run('taskkill', ['/T', '/F', '/PID', '$targetPid']);
+        if (result.exitCode != 0) {
+          // taskkill returned non-zero (e.g. PID not found) — fallback.
+          Process.killPid(targetPid);
+        }
+      } catch (_) {
+        // taskkill command not found — best-effort fallback.
+        Process.killPid(targetPid);
+      }
     } else {
-      Process.killPid(pid, ProcessSignal.sigterm);
+      Process.killPid(targetPid, ProcessSignal.sigkill);
     }
   }
 

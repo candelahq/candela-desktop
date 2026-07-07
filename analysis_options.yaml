@@ -49,3 +49,9 @@ linter:
 
     # ── Type safety ───────────────────────────────────────
     prefer_void_to_null: true
+
+# ── Analyzer Plugins ────────────────────────────────────────
+# riverpod_lint uses the native analysis_server_plugin system
+# (Dart 3.10+). Registered at top level per official docs.
+plugins:
+  riverpod_lint: ^3.1.3

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_local_notifications_windows/flutter_local_notifications_windows.dart';
 
 import '../models/budget_info.dart';
 
@@ -31,11 +32,20 @@ abstract interface class BudgetNotifAdapter {
 
   /// Request macOS notification permissions. No-op on other platforms.
   Future<void> requestMacOSPermissions();
+
+  /// Initialize Windows notifications. No-op on other platforms.
+  Future<void> initializeWindows(WindowsInitializationSettings settings);
+
+  /// Show a Windows-native notification. No-op on other platforms.
+  Future<void> showWindows(
+      int id, String? title, String? body, WindowsNotificationDetails? details);
 }
 
-/// Production adapter — wraps the real FlutterLocalNotificationsPlugin.
+/// Production adapter — wraps the real FlutterLocalNotificationsPlugin
+/// and Windows-specific plugin.
 class _RealAdapter implements BudgetNotifAdapter {
   final FlutterLocalNotificationsPlugin _p;
+  FlutterLocalNotificationsWindows? _windowsPlugin;
   _RealAdapter(this._p);
 
   @override
@@ -55,6 +65,18 @@ class _RealAdapter implements BudgetNotifAdapter {
         .resolvePlatformSpecificImplementation<
             MacOSFlutterLocalNotificationsPlugin>()
         ?.requestPermissions(alert: true, badge: false, sound: false);
+  }
+
+  @override
+  Future<void> initializeWindows(WindowsInitializationSettings settings) async {
+    _windowsPlugin = FlutterLocalNotificationsWindows();
+    await _windowsPlugin!.initialize(settings);
+  }
+
+  @override
+  Future<void> showWindows(int id, String? title, String? body,
+      WindowsNotificationDetails? details) async {
+    await _windowsPlugin?.show(id, title, body, details: details);
   }
 }
 
@@ -90,35 +112,40 @@ class BudgetNotificationService {
 
   /// Initialize the notification plugin. Safe to call multiple times.
   ///
-  /// On Windows, `flutter_local_notifications` has no native support.
-  /// Notifications are silently skipped until a Windows-native notification
-  /// package (e.g. `local_notifier`) is integrated.
+  /// Supports macOS, Linux, and Windows. On Windows, uses the dedicated
+  /// `flutter_local_notifications_windows` plugin directly since the main
+  /// plugin's InitializationSettings doesn't include Windows yet.
+  ///
+  /// Note: On Windows, `cancelAll()` may silently fail without MSIX
+  /// packaging (no package identity), but `show()` works without it.
   Future<void> init() async {
     if (_initialized) return;
 
-    // Windows: flutter_local_notifications has no native support.
-    // Leave _initialized false so evaluate() remains a no-op.
     if (Platform.isWindows) {
-      debugPrint('[BudgetNotificationService] skipped — '
-          'no Windows notification support');
-      return;
+      const windowsSettings = WindowsInitializationSettings(
+        appName: 'Candela Desktop',
+        appUserModelId: 'com.candelahq.candela-desktop',
+        guid: 'd3b07384-d113-4ec8-9d0b-0e8f6d2c5a3b',
+      );
+      await _adapter.initializeWindows(windowsSettings);
+    } else {
+      // macOS: request permission to show banners.
+      if (Platform.isMacOS) {
+        await _adapter.requestMacOSPermissions();
+      }
+
+      const initSettings = InitializationSettings(
+        macOS: DarwinInitializationSettings(
+          requestAlertPermission: true,
+          requestBadgePermission: false,
+          requestSoundPermission: false,
+        ),
+        linux: LinuxInitializationSettings(defaultActionName: 'Open Candela'),
+      );
+
+      await _adapter.initialize(initSettings);
     }
 
-    // macOS: request permission to show banners.
-    if (Platform.isMacOS) {
-      await _adapter.requestMacOSPermissions();
-    }
-
-    const initSettings = InitializationSettings(
-      macOS: DarwinInitializationSettings(
-        requestAlertPermission: true,
-        requestBadgePermission: false,
-        requestSoundPermission: false,
-      ),
-      linux: LinuxInitializationSettings(defaultActionName: 'Open Candela'),
-    );
-
-    await _adapter.initialize(initSettings);
     _initialized = true;
     debugPrint('[BudgetNotificationService] initialized');
   }
@@ -148,20 +175,28 @@ class BudgetNotificationService {
   }
 
   Future<void> _fire(_BudgetThreshold threshold, BudgetInfo budget) async {
-    const details = NotificationDetails(
-      macOS: DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: false,
-        presentSound: false,
+    if (Platform.isWindows) {
+      const windowsDetails = WindowsNotificationDetails(
         subtitle: 'Candela Budget Alert',
-      ),
-      linux: LinuxNotificationDetails(
-        urgency: LinuxNotificationUrgency.normal,
-      ),
-    );
+      );
+      await _adapter.showWindows(
+          threshold.index, threshold.title, threshold.body, windowsDetails);
+    } else {
+      const details = NotificationDetails(
+        macOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: false,
+          presentSound: false,
+          subtitle: 'Candela Budget Alert',
+        ),
+        linux: LinuxNotificationDetails(
+          urgency: LinuxNotificationUrgency.normal,
+        ),
+      );
 
-    await _adapter.show(
-        threshold.index, threshold.title, threshold.body, details);
+      await _adapter.show(
+          threshold.index, threshold.title, threshold.body, details);
+    }
 
     debugPrint('[BudgetNotificationService] fired: ${threshold.name} '
         '(${(budget.usedFraction * 100).round()}% used)');

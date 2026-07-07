@@ -1,4 +1,5 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_local_notifications_windows/flutter_local_notifications_windows.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:candela_desktop/models/budget_info.dart';
@@ -12,6 +13,7 @@ class FakeAdapter implements BudgetNotifAdapter {
   final List<({int id, String? title, String? body})> shown = [];
   int cancelAllCount = 0;
   bool initCalled = false;
+  bool windowsInitCalled = false;
 
   @override
   Future<bool?> initialize(InitializationSettings settings) async {
@@ -32,6 +34,17 @@ class FakeAdapter implements BudgetNotifAdapter {
 
   @override
   Future<void> requestMacOSPermissions() async {}
+
+  @override
+  Future<void> initializeWindows(WindowsInitializationSettings settings) async {
+    windowsInitCalled = true;
+  }
+
+  @override
+  Future<void> showWindows(int id, String? title, String? body,
+      WindowsNotificationDetails? details) async {
+    shown.add((id: id, title: title, body: body));
+  }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

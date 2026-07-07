@@ -806,9 +806,14 @@ class ConfigService {
   /// config.yaml while we're mid-write. On POSIX, rename() is atomic within
   /// the same filesystem. On Windows, File.rename replaces the target.
   Future<void> _atomicWrite(File file, String content) async {
-    final tempFile = File('${file.path}.tmp');
+    // Use PID in the temp name so concurrent writers (CLI + Desktop) don't
+    // collide on the same temp file.
+    final tempFile = File('${file.path}.$pid.tmp');
     try {
       await tempFile.writeAsString(content, flush: true);
+      // Secure permissions before rename so secrets are never briefly
+      // world-readable on disk.
+      await _securePermissions(tempFile);
       await tempFile.rename(file.path);
     } on FileSystemException {
       // Rename failed (e.g. cross-device) — fall back to direct write.

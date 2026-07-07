@@ -1,10 +1,26 @@
 /// Static per-model pricing registry.
 ///
+/// **DEPRECATED** — This entire library is deprecated. Pricing should come
+/// from the catalog RPC ([ModelCatalogService] / `catalogProvider`), which
+/// returns [ModelCatalogEntry.inputPerMillion] / [outputPerMillion] directly.
+///
+/// Migration:
+///   1. Replace `lookupPricing(modelId)` with a lookup into the catalog
+///      state: `ref.read(catalogProvider).models` keyed by model ID.
+///   2. Import cache-efficiency helpers from `cache_efficiency.dart` instead
+///      of this file.
+///   3. Once all call-sites are migrated, this file can be deleted.
+///
 /// SOURCE OF TRUTH: pkg/costcalc/pricing.yaml (in candelahq/candela)
 /// Keep this file in sync whenever model pricing is added or changed.
 ///
 /// Prices are list prices in USD per 1 million tokens.
+@Deprecated('Use catalog RPC pricing (catalogProvider / ModelCatalogEntry) '
+    'instead. See migration notes in the library doc comment.')
 library;
+
+// Re-export cache-efficiency types so existing imports keep working.
+export 'cache_efficiency.dart';
 
 /// Pricing for a single model (input + output per million tokens).
 class ModelPricing {
@@ -13,26 +29,6 @@ class ModelPricing {
   const ModelPricing(
       {required this.inputPerMillion, required this.outputPerMillion});
 }
-
-/// Cache efficiency tier label for UI badges.
-class CacheEfficiencyResult {
-  /// Hit rate 0.0–1.0
-  final double rate;
-
-  /// Human label: "Excellent", "Good", "Low"
-  final String label;
-
-  /// Tier key for styling
-  final CacheEfficiencyTier tier;
-
-  const CacheEfficiencyResult({
-    required this.rate,
-    required this.label,
-    required this.tier,
-  });
-}
-
-enum CacheEfficiencyTier { excellent, good, low }
 
 // ── Registry ──────────────────────────────────────────────────────
 // Keys are lowercase model names (provider-agnostic).
@@ -152,24 +148,4 @@ const Map<String, ModelPricing> _pricingMap = {
     'pricing from the catalog.')
 ModelPricing? lookupPricing(String model) {
   return _pricingMap[model.toLowerCase()];
-}
-
-/// Compute cache efficiency from per-model token counts.
-/// Returns null when there are no cache read tokens.
-CacheEfficiencyResult? cacheEfficiencyLabel(
-    int cacheReadTokens, int inputTokens) {
-  if (inputTokens <= 0 || cacheReadTokens <= 0) return null;
-
-  final rate = (cacheReadTokens / inputTokens).clamp(0.0, 1.0);
-
-  if (rate >= 0.5) {
-    return CacheEfficiencyResult(
-        rate: rate, label: 'Excellent', tier: CacheEfficiencyTier.excellent);
-  }
-  if (rate >= 0.2) {
-    return CacheEfficiencyResult(
-        rate: rate, label: 'Good', tier: CacheEfficiencyTier.good);
-  }
-  return CacheEfficiencyResult(
-      rate: rate, label: 'Low', tier: CacheEfficiencyTier.low);
 }

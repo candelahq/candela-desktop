@@ -479,7 +479,7 @@ class ConfigService {
     try {
       if (previous != null) await previous;
       await file.parent.create(recursive: true);
-      await file.writeAsString(yamlContent);
+      await _atomicWrite(file, yamlContent);
       await _securePermissions(file);
     } finally {
       completer.complete();
@@ -792,11 +792,36 @@ class ConfigService {
     try {
       if (previous != null) await previous;
       await file.parent.create(recursive: true);
-      await file.writeAsString(content);
+      await _atomicWrite(file, content);
       await _securePermissions(file);
     } finally {
       completer.complete();
       if (_writeLock == completer.future) _writeLock = null;
+    }
+  }
+
+  /// Write [content] to [file] atomically via temp-file + rename.
+  ///
+  /// This prevents partial reads if another process (e.g. the CLI) reads
+  /// config.yaml while we're mid-write. On POSIX, rename() is atomic within
+  /// the same filesystem. On Windows, File.rename replaces the target.
+  Future<void> _atomicWrite(File file, String content) async {
+    // Use PID in the temp name so concurrent writers (CLI + Desktop) don't
+    // collide on the same temp file.
+    final tempFile = File('${file.path}.$pid.tmp');
+    try {
+      await tempFile.writeAsString(content, flush: true);
+      // Secure permissions before rename so secrets are never briefly
+      // world-readable on disk.
+      await _securePermissions(tempFile);
+      await tempFile.rename(file.path);
+    } on FileSystemException {
+      // Rename failed (e.g. cross-device) — fall back to direct write.
+      await file.writeAsString(content, flush: true);
+      // Clean up temp file if it still exists.
+      try {
+        if (await tempFile.exists()) await tempFile.delete();
+      } catch (_) {}
     }
   }
 

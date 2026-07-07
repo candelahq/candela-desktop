@@ -511,21 +511,6 @@ void main() {
       expect(paths.candelaConfigDir(), '/home/testuser/.config/candela');
     });
 
-    test('adcCredentialPath ignores relative XDG_CONFIG_HOME on Linux', () {
-      final paths = const PlatformPaths(
-        env: {
-          'HOME': '/home/testuser',
-          'XDG_CONFIG_HOME': 'relative/path',
-        },
-        isWindows: false,
-        isLinux: true,
-      );
-      expect(
-          paths.adcCredentialPath(),
-          '/home/testuser/.config/gcloud/'
-          'application_default_credentials.json');
-    });
-
     test('candelaConfigDir ignores XDG_CONFIG_HOME on macOS', () {
       final paths = const PlatformPaths(
         env: {
@@ -538,7 +523,7 @@ void main() {
       expect(paths.candelaConfigDir(), '/Users/testuser/.config/candela');
     });
 
-    test('adcCredentialPath honors XDG_CONFIG_HOME on Linux', () {
+    test('adcCredentialPath ignores XDG_CONFIG_HOME (Go CLI parity)', () {
       final paths = const PlatformPaths(
         env: {
           'HOME': '/home/testuser',
@@ -547,19 +532,8 @@ void main() {
         isWindows: false,
         isLinux: true,
       );
-      expect(
-          paths.adcCredentialPath(),
-          '/home/testuser/.myconfig/gcloud/'
-          'application_default_credentials.json');
-    });
-
-    test('adcCredentialPath falls back to ~/.config when XDG unset on Linux',
-        () {
-      final paths = const PlatformPaths(
-        env: {'HOME': '/home/testuser'},
-        isWindows: false,
-        isLinux: true,
-      );
+      // ADC always uses ~/.config/gcloud, not $XDG_CONFIG_HOME/gcloud.
+      // Use $CLOUDSDK_CONFIG to override.
       expect(
           paths.adcCredentialPath(),
           '/home/testuser/.config/gcloud/'

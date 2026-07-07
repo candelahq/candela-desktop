@@ -91,6 +91,7 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
           project: project,
           adcInfo: authStatus.adcInfo,
           tokenInfo: authStatus.tokenInfo,
+          credentialOverride: authStatus.credentialOverride,
         );
         _config = config;
         _loading = false;

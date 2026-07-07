@@ -135,6 +135,17 @@ class DiagnosticRunner {
       passed++;
     }
 
+    // 3b. GOOGLE_APPLICATION_CREDENTIALS override check
+    final credOverride = await _candelaAuth.detectCredentialOverride();
+    if (credOverride != null) {
+      _emit(
+          'GOOGLE_APPLICATION_CREDENTIALS is set: ${credOverride.path} — '
+          'client libraries may use different credentials than ADC. '
+          'Run "unset GOOGLE_APPLICATION_CREDENTIALS" to clear.',
+          DiagnosticStatus.warn);
+      warned++;
+    }
+
     // 4. Token (direct OAuth2 refresh — no subprocess)
     if (_disposed) {
       return DiagnosticSummary(passed: passed, failed: failed, warned: warned);

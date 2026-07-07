@@ -44,6 +44,10 @@ class CandelaAuthService {
   ///
   /// Returns email, project, ADC info, and a valid [TokenInfo] — all without
   /// spawning any subprocesses.
+  ///
+  /// Also detects when `GOOGLE_APPLICATION_CREDENTIALS` (GAC) is set to a
+  /// file other than the standard ADC path, which would cause client libraries
+  /// to use different credentials than what the desktop app displays.
   Future<AuthStatus> getStatus() async {
     final adc = await _adcService.readAdcFile();
     final token = await _adcService.refreshAccessToken(adcInfo: adc);
@@ -56,11 +60,15 @@ class CandelaAuthService {
     // Project: use ADC quota_project_id if present.
     final project = adc?.quotaProject;
 
+    // Detect GOOGLE_APPLICATION_CREDENTIALS override.
+    final override = await detectCredentialOverride();
+
     return AuthStatus(
       email: email,
       project: project,
       adcInfo: adc,
       tokenInfo: token,
+      credentialOverride: override,
     );
   }
 
@@ -190,6 +198,48 @@ class CandelaAuthService {
     }
   }
 
+  // ── Credential Override Detection ──────────────────────────────────────
+
+  /// Detect if `GOOGLE_APPLICATION_CREDENTIALS` is set and differs from
+  /// the standard ADC file path.
+  ///
+  /// Google client libraries check `GOOGLE_APPLICATION_CREDENTIALS` first.
+  /// If set to a service account key, the runtime identity differs from
+  /// what the desktop app reads from the ADC file.
+  Future<CredentialOverride?> detectCredentialOverride() async {
+    final gacPath = Platform.environment['GOOGLE_APPLICATION_CREDENTIALS'];
+    if (gacPath == null || gacPath.isEmpty) return null;
+
+    // Compare against the standard ADC path.
+    final String adcPath;
+    try {
+      adcPath = platform_paths.adcCredentialPath();
+    } on StateError {
+      // Can't determine ADC path — treat GAC as an override.
+      return CredentialOverride(path: gacPath);
+    }
+
+    // Normalize for comparison (resolve symlinks, trailing slashes, etc).
+    if (path.canonicalize(gacPath) == path.canonicalize(adcPath)) return null;
+
+    // It's an override — try to read the file to extract type/email.
+    try {
+      final file = File(gacPath);
+      if (!await file.exists()) {
+        return CredentialOverride(path: gacPath);
+      }
+      final content =
+          json.decode(await file.readAsString()) as Map<String, dynamic>;
+      return CredentialOverride(
+        path: gacPath,
+        type: content['type'] as String?,
+        clientEmail: content['client_email'] as String?,
+      );
+    } catch (_) {
+      return CredentialOverride(path: gacPath);
+    }
+  }
+
   // ── Helpers ─────────────────────────────────────────────────────────────
 
   /// Augmented environment with common binary install locations.
@@ -219,11 +269,13 @@ class AuthStatus {
   final String? project;
   final AdcInfo? adcInfo;
   final TokenInfo? tokenInfo;
+  final CredentialOverride? credentialOverride;
 
   const AuthStatus({
     this.email,
     this.project,
     this.adcInfo,
     this.tokenInfo,
+    this.credentialOverride,
   });
 }

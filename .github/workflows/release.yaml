@@ -143,6 +143,45 @@ jobs:
           name: sparkle-meta
           path: sparkle-meta/
 
+  # ── Windows Build ────────────────────────────────────────
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_VERSION }}
+
+      - run: flutter pub get
+
+      - name: Build Windows release
+        run: flutter build windows --release
+
+      # TODO: Authenticode signing — uncomment when code signing cert is available.
+      # - name: Authenticode sign
+      #   env:
+      #     WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+      #     WINDOWS_CERTIFICATE_PWD: ${{ secrets.WINDOWS_CERTIFICATE_PWD }}
+      #   run: |
+      #     signtool sign /f certificate.pfx /p "$env:WINDOWS_CERTIFICATE_PWD" /tr http://timestamp.digicert.com /td sha256 /fd sha256 build\windows\x64\runner\Release\candela_desktop.exe
+
+      - name: Package zip
+        shell: pwsh
+        run: |
+          Compress-Archive -Path build\windows\x64\runner\Release\* `
+            -DestinationPath build\windows\x64\runner\Release\Candela-windows-x64.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: windows-x64
+          path: build\windows\x64\runner\Release\Candela-windows-x64.zip
+
   # ── Linux Build ──────────────────────────────────────────
   build-linux:
     name: Build Linux
@@ -181,7 +220,7 @@ jobs:
   # ── GitHub Release ───────────────────────────────────────
   release:
     name: Create Release
-    needs: [build-macos, build-linux]
+    needs: [build-macos, build-linux, build-windows]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -260,6 +299,7 @@ jobs:
             artifacts/macos-arm64/*.zip
             artifacts/macos-arm64/*.dmg
             artifacts/linux-x64/*.tar.gz
+            artifacts/windows-x64/*.zip
             artifacts/appcast.xml
 
   # ── Update Homebrew Cask ──────────────────────────────────

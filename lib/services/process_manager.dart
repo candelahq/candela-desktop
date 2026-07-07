@@ -410,8 +410,12 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
     if (handle != null) {
       // Phase 1: graceful — try HTTP shutdown for processes that support it.
       await _requestGracefulShutdown(name);
-      // Also send SIGTERM (Unix) / Ctrl+C (Windows) to the process.
-      _killProcess(handle);
+      // On Unix, SIGTERM is the graceful signal. On Windows, handle.kill()
+      // calls TerminateProcess which is a hard kill — skip it here and let
+      // the HTTP shutdown + timeout do the work. Phase 2 handles the force.
+      if (!Platform.isWindows) {
+        _killProcess(handle);
+      }
 
       // Wait up to 5s for graceful exit.
       try {
@@ -501,7 +505,7 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
       final port = state.get(name)?.port ?? '8181';
       try {
         await _client
-            .post(Uri.parse('http://localhost:$port/shutdown'))
+            .post(Uri.parse('http://localhost:$port/_local/api/shutdown'))
             .timeout(const Duration(seconds: 2));
       } catch (_) {
         // Shutdown endpoint may not exist — that's fine, we'll signal next.
@@ -517,9 +521,14 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
   Future<void> _forceKillTree(int targetPid) async {
     if (Platform.isWindows) {
       try {
-        await _runner.run('taskkill', ['/T', '/F', '/PID', '$targetPid']);
+        final result =
+            await _runner.run('taskkill', ['/T', '/F', '/PID', '$targetPid']);
+        if (result.exitCode != 0) {
+          // taskkill returned non-zero (e.g. PID not found) — fallback.
+          Process.killPid(targetPid);
+        }
       } catch (_) {
-        // taskkill failed — best-effort fallback to TerminateProcess.
+        // taskkill command not found — best-effort fallback.
         Process.killPid(targetPid);
       }
     } else {

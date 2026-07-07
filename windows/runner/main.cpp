@@ -32,9 +32,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   if (hJob != NULL) {
     JOBOBJECT_EXTENDED_LIMIT_INFORMATION jeli = {};
     jeli.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
-    ::SetInformationJobObject(hJob, JobObjectExtendedLimitInformation, &jeli,
-                              sizeof(jeli));
-    ::AssignProcessToJobObject(hJob, ::GetCurrentProcess());
+    if (!::SetInformationJobObject(hJob, JobObjectExtendedLimitInformation,
+                                   &jeli, sizeof(jeli)) ||
+        !::AssignProcessToJobObject(hJob, ::GetCurrentProcess())) {
+      // Configuration failed — close the handle to avoid a leak.
+      // Child processes won't be auto-reaped, but the app can still run.
+      ::CloseHandle(hJob);
+    }
+    // On success, hJob intentionally lives for the process lifetime.
+    // OS closes it on exit, triggering child termination.
   }
 
 

@@ -125,11 +125,12 @@ class PlatformPaths {
   /// Returns `$XDG_CONFIG_HOME` if set (Linux only), otherwise `~/.config`.
   ///
   /// Per the XDG Base Directory Specification, `XDG_CONFIG_HOME` defaults
-  /// to `$HOME/.config` when not explicitly set.
+  /// to `$HOME/.config` when not explicitly set. Relative paths are treated
+  /// as invalid and ignored (the spec requires absolute paths).
   String _xdgConfigHome() {
     if (isLinux) {
       final xdg = env['XDG_CONFIG_HOME'];
-      if (xdg != null && xdg.isNotEmpty) return xdg;
+      if (xdg != null && xdg.isNotEmpty && path.isAbsolute(xdg)) return xdg;
     }
     return path.join(homeDir(), '.config');
   }

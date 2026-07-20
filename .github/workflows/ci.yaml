@@ -76,8 +76,10 @@ jobs:
             brew install lcov
           fi
           # Exclude generated proto stubs from coverage calculation.
-          lcov --remove coverage/lcov.info 'lib/gen/*' -o coverage/lcov.info --quiet
-          COVERAGE=$(lcov --summary coverage/lcov.info 2>&1 | grep 'lines' | sed 's/.*: //' | sed 's/%.*//')
+          # --ignore-errors empty: lcov 2.5+ enables function coverage by
+          # default but Flutter's output has no function coverpoints.
+          lcov --remove coverage/lcov.info 'lib/gen/*' -o coverage/lcov.info --quiet --ignore-errors empty
+          COVERAGE=$(lcov --summary coverage/lcov.info --ignore-errors empty 2>&1 | grep 'lines' | sed 's/.*: //' | sed 's/%.*//')
           echo "Line coverage: ${COVERAGE}%"
           # Ratchet: fail if coverage drops below 45%.
           # Raise this as coverage improves.

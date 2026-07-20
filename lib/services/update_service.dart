@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
+import 'brew_service.dart';
 import '../utils/process_runner.dart';
 
 /// How the app was installed — determines update mechanism.
@@ -48,6 +49,7 @@ class UpdateService extends ChangeNotifier {
 
   final http.Client _client;
   final ProcessRunner _runner;
+  final BrewService _brew;
 
   String? _latestVersion;
   InstallChannel? _cachedChannel;
@@ -67,9 +69,10 @@ class UpdateService extends ChangeNotifier {
     }
   }
 
-  UpdateService({http.Client? client, ProcessRunner? runner})
+  UpdateService({http.Client? client, ProcessRunner? runner, BrewService? brew})
       : _client = client ?? http.Client(),
-        _runner = runner ?? const SystemProcessRunner();
+        _runner = runner ?? const SystemProcessRunner(),
+        _brew = brew ?? BrewService();
 
   /// Current update status.
   UpdateStatus get status => _status;
@@ -226,16 +229,15 @@ class UpdateService extends ChangeNotifier {
   /// Perform a Homebrew cask upgrade and relaunch the app.
   ///
   /// This is macOS-only — Homebrew is not available on Windows/Linux.
+  /// Delegates to [BrewService] which correctly resolves the `brew` binary
+  /// path even when the app runs outside a shell environment.
   Future<bool> performBrewUpgrade() async {
     if (!Platform.isMacOS) return false;
     _setStatus(UpdateStatus.checking);
     try {
-      final result = await _runner.run(
-        'brew',
-        ['upgrade', '--cask', 'candelahq/tap/candela-desktop'],
-      );
+      final result = await _brew.upgradeCask('candelahq/tap/candela-desktop');
 
-      if (result.exitCode != 0) {
+      if (!result.success) {
         _setStatus(UpdateStatus.error);
         return false;
       }

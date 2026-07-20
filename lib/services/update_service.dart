@@ -72,7 +72,7 @@ class UpdateService extends ChangeNotifier {
   UpdateService({http.Client? client, ProcessRunner? runner, BrewService? brew})
       : _client = client ?? http.Client(),
         _runner = runner ?? const SystemProcessRunner(),
-        _brew = brew ?? BrewService();
+        _brew = brew ?? BrewService(runner: runner);
 
   /// Current update status.
   UpdateStatus get status => _status;

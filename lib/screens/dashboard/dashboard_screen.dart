@@ -413,7 +413,7 @@ class _StatGrid extends StatelessWidget {
             subtitle: 'Prompt tokens • $cmpLabel',
             accentColor: const Color(0xFF60A5FA),
             icon: Icons.arrow_forward,
-            changePercent: comp?.inputTokensChangePercent,
+            changePercent: comp?.tokensChangePercent,
             sparklineData:
                 s?.tokensOverTime.map((p) => p.value.toDouble()).toList(),
           ),
@@ -423,10 +423,9 @@ class _StatGrid extends StatelessWidget {
           child: StatCard(
             title: 'OUTPUT TOKENS',
             value: s != null ? _fmtTok(s.totalOutputTokens) : '—',
-            subtitle: 'Completion tokens • $cmpLabel',
+            subtitle: 'Completion tokens',
             accentColor: const Color(0xFFA78BFA),
             icon: Icons.arrow_back,
-            changePercent: comp?.outputTokensChangePercent,
           ),
         ),
       ],

@@ -88,13 +88,18 @@ class StatCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: CandelaColors.textMuted,
+              Expanded(
+                child: Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: CandelaColors.textMuted,
+                  ),
                 ),
               ),
+              if (changePercent != null) const SizedBox(width: 6),
               if (changePercent != null) _buildTrendBadge(changePercent!),
             ],
           ),

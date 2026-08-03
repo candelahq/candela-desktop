@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/user_scope.dart';
 import '../../models/span_stats.dart';
+import '../../models/period_comparison.dart';
 import '../../services/budget_notification_service.dart';
 import '../../services/dashboard_notifier.dart';
 import '../../services/telemetry_service.dart';
@@ -130,6 +131,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               semanticCache: config?.optimizations?.semanticCache ?? false,
               contextCompression:
                   config?.optimizations?.contextCompression ?? false,
+              range: state.range,
             ),
           ),
         ],
@@ -301,12 +303,14 @@ class _Body extends StatelessWidget {
   final String cachingMode;
   final bool semanticCache;
   final bool contextCompression;
+  final TokenTimeRange range;
 
   const _Body({
     required this.result,
     required this.filteredSummary,
     required this.loading,
     required this.error,
+    required this.range,
     this.cachingMode = 'off',
     this.semanticCache = false,
     this.contextCompression = false,
@@ -333,7 +337,7 @@ class _Body extends StatelessWidget {
             ),
             const SizedBox(height: 20),
           ],
-          _StatGrid(summary: filteredSummary, loading: loading),
+          _StatGrid(summary: filteredSummary, loading: loading, range: range),
           if (hasOptimizations) ...[
             const SizedBox(height: 12),
             _OptimizationChips(
@@ -357,20 +361,35 @@ class _Body extends StatelessWidget {
 class _StatGrid extends StatelessWidget {
   final UsageSummary? summary;
   final bool loading;
-  const _StatGrid({required this.summary, required this.loading});
+  final TokenTimeRange range;
+
+  const _StatGrid({
+    required this.summary,
+    required this.loading,
+    required this.range,
+  });
 
   @override
   Widget build(BuildContext context) {
     final s = summary;
+    PeriodComparison? comp;
+    if (s != null) {
+      comp = PeriodComparison.fromSummary(s);
+    }
+    final String cmpLabel = PeriodComparison.labelForRange(range);
+
     return Row(
       children: [
         Expanded(
           child: StatCard(
             title: 'TOTAL COST',
             value: s != null ? '\$${s.totalCostUsd.toStringAsFixed(4)}' : '—',
-            subtitle: 'USD spent',
+            subtitle: 'USD spent • $cmpLabel',
             accentColor: const Color(0xFF4ADE80),
             icon: Icons.attach_money,
+            changePercent: comp?.costChangePercent,
+            sparklineData:
+                s?.costOverTime.map((p) => p.value.toDouble()).toList(),
           ),
         ),
         const SizedBox(width: 12),
@@ -378,9 +397,12 @@ class _StatGrid extends StatelessWidget {
           child: StatCard(
             title: 'LLM CALLS',
             value: s != null ? _fmt(s.totalCalls) : '—',
-            subtitle: 'Total requests',
+            subtitle: 'Total requests • $cmpLabel',
             accentColor: CandelaColors.accent,
             icon: Icons.bolt,
+            changePercent: comp?.callsChangePercent,
+            sparklineData:
+                s?.callsOverTime.map((p) => p.value.toDouble()).toList(),
           ),
         ),
         const SizedBox(width: 12),
@@ -388,9 +410,12 @@ class _StatGrid extends StatelessWidget {
           child: StatCard(
             title: 'INPUT TOKENS',
             value: s != null ? _fmtTok(s.totalInputTokens) : '—',
-            subtitle: 'Prompt tokens',
+            subtitle: 'Prompt tokens • $cmpLabel',
             accentColor: const Color(0xFF60A5FA),
             icon: Icons.arrow_forward,
+            changePercent: comp?.inputTokensChangePercent,
+            sparklineData:
+                s?.tokensOverTime.map((p) => p.value.toDouble()).toList(),
           ),
         ),
         const SizedBox(width: 12),
@@ -398,9 +423,10 @@ class _StatGrid extends StatelessWidget {
           child: StatCard(
             title: 'OUTPUT TOKENS',
             value: s != null ? _fmtTok(s.totalOutputTokens) : '—',
-            subtitle: 'Completion tokens',
+            subtitle: 'Completion tokens • $cmpLabel',
             accentColor: const Color(0xFFA78BFA),
             icon: Icons.arrow_back,
+            changePercent: comp?.outputTokensChangePercent,
           ),
         ),
       ],

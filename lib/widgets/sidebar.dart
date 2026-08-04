@@ -43,6 +43,8 @@ class _CandelaSidebarState extends State<CandelaSidebar> {
         activeIcon: Icons.timeline,
         label: 'Traces'),
     _NavItem(
+        icon: Icons.search_outlined, activeIcon: Icons.search, label: 'Search'),
+    _NavItem(
         icon: Icons.memory_outlined, activeIcon: Icons.memory, label: 'Models'),
     _NavItem(
         icon: Icons.menu_book_outlined,

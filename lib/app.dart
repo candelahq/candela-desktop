@@ -17,6 +17,7 @@ import 'screens/today/today_screen.dart';
 import 'screens/traces/traces_screen.dart';
 import 'screens/catalog/catalog_screen.dart';
 import 'screens/models/models_screen.dart';
+import 'screens/search/search_webview_screen.dart';
 import 'screens/settings/settings_screen.dart';
 
 class CandelaApp extends StatefulWidget {
@@ -250,6 +251,7 @@ class _AppShellState extends ConsumerState<AppShell>
         const AuthDebugScreen(),
         const DashboardScreen(),
         const TracesScreen(),
+        const SearchWebViewScreen(),
         const ModelsScreen(),
         const CatalogScreen(),
         SettingsScreen(

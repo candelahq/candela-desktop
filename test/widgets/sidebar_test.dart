@@ -159,7 +159,20 @@ void main() {
       expect(selected, 3);
     });
 
-    testWidgets('tapping Models calls onItemSelected(4)', (tester) async {
+    testWidgets('tapping Search calls onItemSelected(4)', (tester) async {
+      var selected = -1;
+      await _pump(
+          tester,
+          CandelaSidebar(
+            selectedIndex: 0,
+            onItemSelected: (i) => selected = i,
+          ));
+      await tester.tap(find.text('Search'));
+      await tester.pump();
+      expect(selected, 4);
+    });
+
+    testWidgets('tapping Models calls onItemSelected(5)', (tester) async {
       var selected = -1;
       await _pump(
           tester,
@@ -169,7 +182,7 @@ void main() {
           ));
       await tester.tap(find.text('Models'));
       await tester.pump();
-      expect(selected, 4);
+      expect(selected, 5);
     });
   });
 
@@ -198,9 +211,15 @@ void main() {
       expect(find.byIcon(Icons.timeline), findsOneWidget);
     });
 
-    testWidgets('selectedIndex 4 renders with memory active icon',
+    testWidgets('selectedIndex 4 renders with search active icon',
         (tester) async {
       await _pump(tester, _sidebar(selectedIndex: 4));
+      expect(find.byIcon(Icons.search), findsOneWidget);
+    });
+
+    testWidgets('selectedIndex 5 renders with memory active icon',
+        (tester) async {
+      await _pump(tester, _sidebar(selectedIndex: 5));
       expect(find.byIcon(Icons.memory), findsOneWidget);
     });
   });

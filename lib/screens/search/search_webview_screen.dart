@@ -8,11 +8,11 @@ import '../../theme/colors.dart';
 ///
 /// This avoids duplicating the search UI in Dart by reusing the web
 /// implementation. The WebView points at the local Candela server's
-/// Next.js dashboard (default: http://localhost:3000/search).
+/// dashboard (default: http://localhost:8181/search).
 class SearchWebViewScreen extends StatefulWidget {
   final int port;
 
-  const SearchWebViewScreen({super.key, this.port = 3000});
+  const SearchWebViewScreen({super.key, this.port = 8181});
 
   @override
   State<SearchWebViewScreen> createState() => _SearchWebViewScreenState();

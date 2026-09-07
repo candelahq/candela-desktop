@@ -52,7 +52,7 @@ class _SearchWebViewScreenState extends State<SearchWebViewScreen> {
           },
         ),
       )
-      ..loadRequest(Uri.parse('http://localhost:${widget.port}/search'));
+      ..loadRequest(Uri.parse('http://127.0.0.1:${widget.port}/spans'));
   }
 
   @override
@@ -64,13 +64,18 @@ class _SearchWebViewScreenState extends State<SearchWebViewScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.desktop_access_disabled,
-                  size: 48, color: CandelaColors.textMuted),
+              Icon(
+                Icons.desktop_access_disabled,
+                size: 48,
+                color: CandelaColors.textMuted,
+              ),
               SizedBox(height: 16),
               Text(
                 'Search WebView is not available on this platform.',
-                style:
-                    TextStyle(fontSize: 14, color: CandelaColors.textSecondary),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: CandelaColors.textSecondary,
+                ),
               ),
               SizedBox(height: 8),
               Text(
@@ -118,8 +123,11 @@ class _SearchWebViewScreenState extends State<SearchWebViewScreen> {
                 ),
               const SizedBox(width: 8),
               IconButton(
-                icon: const Icon(Icons.refresh,
-                    size: 18, color: CandelaColors.textSecondary),
+                icon: const Icon(
+                  Icons.refresh,
+                  size: 18,
+                  color: CandelaColors.textSecondary,
+                ),
                 tooltip: 'Reload',
                 onPressed: () {
                   setState(() {
@@ -130,20 +138,26 @@ class _SearchWebViewScreenState extends State<SearchWebViewScreen> {
                 },
               ),
               IconButton(
-                icon: const Icon(Icons.open_in_browser,
-                    size: 18, color: CandelaColors.textSecondary),
+                icon: const Icon(
+                  Icons.open_in_browser,
+                  size: 18,
+                  color: CandelaColors.textSecondary,
+                ),
                 tooltip: 'Open in browser',
                 onPressed: () async {
                   final messenger = ScaffoldMessenger.of(context);
                   final url = await _controller!.currentUrl();
                   if (url != null) {
                     final uri = Uri.parse(url);
-                    if (!await launchUrl(uri,
-                        mode: LaunchMode.externalApplication)) {
+                    if (!await launchUrl(
+                      uri,
+                      mode: LaunchMode.externalApplication,
+                    )) {
                       if (mounted) {
                         messenger.showSnackBar(
                           const SnackBar(
-                              content: Text('Could not open browser')),
+                            content: Text('Could not open browser'),
+                          ),
                         );
                       }
                     }
@@ -170,8 +184,11 @@ class _SearchWebViewScreenState extends State<SearchWebViewScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_off,
-                size: 48, color: CandelaColors.textMuted),
+            const Icon(
+              Icons.cloud_off,
+              size: 48,
+              color: CandelaColors.textMuted,
+            ),
             const SizedBox(height: 16),
             const Text(
               'Dashboard not available',

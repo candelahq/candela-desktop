@@ -36,20 +36,20 @@ class SpanRecord {
   });
 
   factory SpanRecord.fromJson(Map<String, dynamic> j) => SpanRecord(
-        spanId: j['span_id'] as String? ?? '',
-        traceId: j['trace_id'] as String? ?? '',
-        model: j['model'] as String? ?? 'unknown',
-        provider: j['provider'] as String? ?? 'local',
-        inputTokens: (j['input_tokens'] as num?)?.toInt() ?? 0,
-        outputTokens: (j['output_tokens'] as num?)?.toInt() ?? 0,
-        totalTokens: (j['total_tokens'] as num?)?.toInt() ?? 0,
-        costUsd: (j['cost_usd'] as num?)?.toDouble() ?? 0.0,
-        durationMs: (j['duration_ms'] as num?)?.toDouble() ?? 0.0,
-        status: j['status'] as String? ?? 'unset',
-        timestamp: DateTime.tryParse(j['timestamp'] as String? ?? '') ??
-            DateTime.now(),
-        name: j['name'] as String? ?? '',
-      );
+    spanId: j['span_id'] as String? ?? '',
+    traceId: j['trace_id'] as String? ?? '',
+    model: j['model'] as String? ?? 'unknown',
+    provider: j['provider'] as String? ?? 'local',
+    inputTokens: (j['input_tokens'] as num?)?.toInt() ?? 0,
+    outputTokens: (j['output_tokens'] as num?)?.toInt() ?? 0,
+    totalTokens: (j['total_tokens'] as num?)?.toInt() ?? 0,
+    costUsd: (j['cost_usd'] as num?)?.toDouble() ?? 0.0,
+    durationMs: (j['duration_ms'] as num?)?.toDouble() ?? 0.0,
+    status: j['status'] as String? ?? 'unset',
+    timestamp:
+        DateTime.tryParse(j['timestamp'] as String? ?? '') ?? DateTime.now(),
+    name: j['name'] as String? ?? '',
+  );
 }
 
 // ── Aggregated summaries ─────────────────────────────────────────────────────
@@ -122,8 +122,10 @@ class ModelBreakdown {
   int get totalTokens => inputTokens + outputTokens;
 
   /// Returns a copy with pricing data enriched from the static registry.
-  ModelBreakdown withPricing(
-      {double? inputPerMillion, double? outputPerMillion}) {
+  ModelBreakdown withPricing({
+    double? inputPerMillion,
+    double? outputPerMillion,
+  }) {
     return ModelBreakdown(
       model: model,
       provider: provider,
@@ -158,8 +160,11 @@ enum TokenTimeRange {
   /// rolling ranges subtract [duration].
   DateTime startFrom(DateTime now) {
     if (this == todayUtc) {
-      final utcMidnight =
-          DateTime.utc(now.toUtc().year, now.toUtc().month, now.toUtc().day);
+      final utcMidnight = DateTime.utc(
+        now.toUtc().year,
+        now.toUtc().month,
+        now.toUtc().day,
+      );
       return utcMidnight.toLocal();
     }
     return now.subtract(duration);

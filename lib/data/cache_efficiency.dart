@@ -27,19 +27,30 @@ enum CacheEfficiencyTier { excellent, good, low }
 /// Compute cache efficiency from per-model token counts.
 /// Returns null when there are no cache read tokens.
 CacheEfficiencyResult? cacheEfficiencyLabel(
-    int cacheReadTokens, int inputTokens) {
+  int cacheReadTokens,
+  int inputTokens,
+) {
   if (inputTokens <= 0 || cacheReadTokens <= 0) return null;
 
   final rate = (cacheReadTokens / inputTokens).clamp(0.0, 1.0);
 
   if (rate >= 0.5) {
     return CacheEfficiencyResult(
-        rate: rate, label: 'Excellent', tier: CacheEfficiencyTier.excellent);
+      rate: rate,
+      label: 'Excellent',
+      tier: CacheEfficiencyTier.excellent,
+    );
   }
   if (rate >= 0.2) {
     return CacheEfficiencyResult(
-        rate: rate, label: 'Good', tier: CacheEfficiencyTier.good);
+      rate: rate,
+      label: 'Good',
+      tier: CacheEfficiencyTier.good,
+    );
   }
   return CacheEfficiencyResult(
-      rate: rate, label: 'Low', tier: CacheEfficiencyTier.low);
+    rate: rate,
+    label: 'Low',
+    tier: CacheEfficiencyTier.low,
+  );
 }

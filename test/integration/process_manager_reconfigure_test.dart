@@ -17,10 +17,7 @@ void main() {
 
     test('configure → reconfigure preserves no stale state', () {
       // Initial config with ollama + vllm.
-      notifier.configure(
-        providerNames: ['ollama', 'vllm'],
-        proxyPort: '8181',
-      );
+      notifier.configure(providerNames: ['ollama', 'vllm'], proxyPort: '8181');
       final state1 = container.read(processManagerProvider);
       expect(state1.all.length, 3); // proxy + ollama + vllm
       expect(state1.get('ollama'), isNotNull);

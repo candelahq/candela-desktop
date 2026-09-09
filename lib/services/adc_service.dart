@@ -55,15 +55,17 @@ class AdcService {
     if (adc == null || !adc.canDirectRefresh) return null;
 
     try {
-      final response = await _client.post(
-        Uri.parse(_tokenEndpoint),
-        body: {
-          'client_id': adc.clientId!,
-          'client_secret': adc.clientSecret!,
-          'refresh_token': adc.refreshToken!,
-          'grant_type': 'refresh_token',
-        },
-      ).timeout(const Duration(seconds: 10));
+      final response = await _client
+          .post(
+            Uri.parse(_tokenEndpoint),
+            body: {
+              'client_id': adc.clientId!,
+              'client_secret': adc.clientSecret!,
+              'refresh_token': adc.refreshToken!,
+              'grant_type': 'refresh_token',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode != 200) return null;
 
@@ -76,8 +78,8 @@ class AdcService {
 
       // Compute the real expiry from expires_in (typically 3599 seconds).
       final expiresAt = DateTime.now().toUtc().add(
-            Duration(seconds: expiresIn ?? 3600),
-          );
+        Duration(seconds: expiresIn ?? 3600),
+      );
 
       // Try to extract email from the ID token if present.
       String? email;
@@ -100,9 +102,11 @@ class AdcService {
     try {
       final parts = idToken.split('.');
       if (parts.length < 2) return null;
-      final payload = json.decode(
-              utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))))
-          as Map<String, dynamic>;
+      final payload =
+          json.decode(
+                utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
+              )
+              as Map<String, dynamic>;
       final email = payload['email'];
       return email is String && email.length <= 254 ? email : null;
     } catch (_) {

@@ -10,9 +10,13 @@ void main() {
 
     test('rejects non-https scheme', () {
       expect(
-          UrlValidator.validate('http://example.com'), 'URL must use https://');
+        UrlValidator.validate('http://example.com'),
+        'URL must use https://',
+      );
       expect(
-          UrlValidator.validate('ftp://example.com'), 'URL must use https://');
+        UrlValidator.validate('ftp://example.com'),
+        'URL must use https://',
+      );
     });
 
     test('rejects URLs without host', () {
@@ -37,7 +41,9 @@ void main() {
     test('rejects private 172.16-31.x.x', () {
       expect(UrlValidator.validate('https://172.16.0.1'), contains('Private'));
       expect(
-          UrlValidator.validate('https://172.31.255.1'), contains('Private'));
+        UrlValidator.validate('https://172.31.255.1'),
+        contains('Private'),
+      );
       // 172.32 is NOT private
       expect(UrlValidator.validate('https://172.32.0.1'), isNull);
     });
@@ -71,20 +77,23 @@ void main() {
   group('UrlValidator.validateWithDnsCheck', () {
     test('rejects unresolvable hostname', () async {
       final result = await UrlValidator.validateWithDnsCheck(
-          'https://this-definitely-does-not-exist-xyz123.invalid');
+        'https://this-definitely-does-not-exist-xyz123.invalid',
+      );
       expect(result, contains('Could not resolve'));
     });
 
     test('passes basic sync validation first', () async {
-      final result =
-          await UrlValidator.validateWithDnsCheck('http://example.com');
+      final result = await UrlValidator.validateWithDnsCheck(
+        'http://example.com',
+      );
       expect(result, 'URL must use https://');
     });
 
     test('resolves and validates real hostname', () async {
       // google.com should resolve to a public IP
-      final result =
-          await UrlValidator.validateWithDnsCheck('https://google.com');
+      final result = await UrlValidator.validateWithDnsCheck(
+        'https://google.com',
+      );
       expect(result, isNull);
     });
   });

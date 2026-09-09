@@ -180,13 +180,13 @@ class CatalogNotifier extends _$CatalogNotifier {
 @Riverpod(keepAlive: true)
 void processManagerSetup(Ref ref) {
   void configure(CandelaConfig config) {
-    ref.read(processManagerProvider.notifier).configure(
-      providerNames: config.providers.map((p) => p.name).toList(),
-      proxyPort: config.port.toString(),
-      portOverrides: {
-        'lmstudio': config.lmStudioPort.toString(),
-      },
-    );
+    ref
+        .read(processManagerProvider.notifier)
+        .configure(
+          providerNames: config.providers.map((p) => p.name).toList(),
+          proxyPort: config.port.toString(),
+          portOverrides: {'lmstudio': config.lmStudioPort.toString()},
+        );
   }
 
   // Configure with current value if already available (prevents missed

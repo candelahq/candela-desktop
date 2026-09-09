@@ -34,9 +34,7 @@ void main() {
 
       await modernFile.parent.create(recursive: true);
       await legacyFile.copy(modernFile.path);
-      await legacyFile.writeAsString(
-        '# Config has moved\n# Safe to delete.\n',
-      );
+      await legacyFile.writeAsString('# Config has moved\n# Safe to delete.\n');
 
       // Assert: modern file exists with original content.
       expect(await modernFile.exists(), isTrue);

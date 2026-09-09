@@ -40,9 +40,10 @@ void main() {
       final lastTwo = runner.history.sublist(runner.history.length - 2);
       expect(lastTwo[0].status, DiagnosticStatus.info); // separator line
       expect(
-          lastTwo[1].status == DiagnosticStatus.pass ||
-              lastTwo[1].status == DiagnosticStatus.fail,
-          isTrue);
+        lastTwo[1].status == DiagnosticStatus.pass ||
+            lastTwo[1].status == DiagnosticStatus.fail,
+        isTrue,
+      );
     });
 
     test('concurrent runAll returns same future', () async {

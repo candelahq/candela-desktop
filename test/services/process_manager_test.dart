@@ -40,8 +40,10 @@ void main() {
       expect(readState().all.length, 2); // proxy + ollama
       expect(readState().get('ollama'), isNotNull);
       expect(readState().get('ollama')!.port, '11434');
-      expect(readState().get('google'),
-          isNull); // cloud providers are not processes
+      expect(
+        readState().get('google'),
+        isNull,
+      ); // cloud providers are not processes
     });
 
     test('configure registers multiple local providers', () {
@@ -104,8 +106,9 @@ void main() {
         name: 'test',
         displayName: 'Test',
         icon: 'T',
-        startedAt:
-            DateTime.now().subtract(const Duration(hours: 2, minutes: 30)),
+        startedAt: DateTime.now().subtract(
+          const Duration(hours: 2, minutes: 30),
+        ),
       );
       expect(p.uptimeString, contains('h'));
     });
@@ -168,10 +171,7 @@ void main() {
     });
 
     test('configure uses defaults when no override', () {
-      notifier.configure(
-        providerNames: ['ollama'],
-        portOverrides: {},
-      );
+      notifier.configure(providerNames: ['ollama'], portOverrides: {});
       expect(readState().get('ollama')!.port, '11434');
     });
   });
@@ -229,8 +229,9 @@ void main() {
         name: 'test',
         displayName: 'Test',
         icon: 'T',
-        startedAt:
-            DateTime.now().subtract(const Duration(minutes: 12, seconds: 30)),
+        startedAt: DateTime.now().subtract(
+          const Duration(minutes: 12, seconds: 30),
+        ),
       );
       expect(p3.uptimeString, '12m');
 
@@ -238,8 +239,9 @@ void main() {
         name: 'test',
         displayName: 'Test',
         icon: 'T',
-        startedAt:
-            DateTime.now().subtract(const Duration(hours: 2, minutes: 15)),
+        startedAt: DateTime.now().subtract(
+          const Duration(hours: 2, minutes: 15),
+        ),
       );
       expect(p4.uptimeString, '2h 15m');
     });
@@ -332,8 +334,7 @@ void main() {
       await expectLater(notifier.start('nonexistent'), completes);
     });
 
-    test('start lmstudio (null binary) returns without changing state',
-        () async {
+    test('start lmstudio (null binary) returns without changing state', () async {
       notifier.configure(providerNames: ['lmstudio']);
       final lmstudio = readState().get('lmstudio')!;
       expect(lmstudio.state, ProcessState.detecting);
@@ -348,14 +349,16 @@ void main() {
       await expectLater(notifier.stop('nonexistent'), completes);
     });
 
-    test('stop stopped process with no handle and no PID clears state',
-        () async {
-      notifier.configure(providerNames: ['ollama']);
-      // No handle, no PID — stop() should transition to stopped cleanly.
-      await notifier.stop('ollama');
-      expect(readState().get('ollama')!.state, ProcessState.stopped);
-      expect(readState().get('ollama')!.pid, isNull);
-    });
+    test(
+      'stop stopped process with no handle and no PID clears state',
+      () async {
+        notifier.configure(providerNames: ['ollama']);
+        // No handle, no PID — stop() should transition to stopped cleanly.
+        await notifier.stop('ollama');
+        expect(readState().get('ollama')!.state, ProcessState.stopped);
+        expect(readState().get('ollama')!.pid, isNull);
+      },
+    );
 
     test('restart unknown key is a no-op', () async {
       notifier.configure(providerNames: []);
@@ -375,9 +378,14 @@ void main() {
       // Only proxy is configured — proxy binary won't be installed in CI,
       // but on dev machines it may actually start.
       expect(
-          readState().get('proxy')!.state,
-          anyOf(ProcessState.detecting, ProcessState.stopped,
-              ProcessState.notInstalled, ProcessState.running));
+        readState().get('proxy')!.state,
+        anyOf(
+          ProcessState.detecting,
+          ProcessState.stopped,
+          ProcessState.notInstalled,
+          ProcessState.running,
+        ),
+      );
     });
 
     test('isInstalled returns false for unknown binary name', () async {
@@ -388,14 +396,16 @@ void main() {
       expect(result, isFalse);
     });
 
-    test('isInstalled returns false for unregistered name (null binary)',
-        () async {
-      notifier.configure(providerNames: []);
-      // 'proxy' has a binary ('candela') but it won't be on PATH in tests.
-      final result = await notifier.isInstalled('proxy');
-      // Either false (not installed) or the binary exists on dev machine — both are valid.
-      expect(result, isA<bool>());
-    });
+    test(
+      'isInstalled returns false for unregistered name (null binary)',
+      () async {
+        notifier.configure(providerNames: []);
+        // 'proxy' has a binary ('candela') but it won't be on PATH in tests.
+        final result = await notifier.isInstalled('proxy');
+        // Either false (not installed) or the binary exists on dev machine — both are valid.
+        expect(result, isA<bool>());
+      },
+    );
 
     test('configure then startAll completes without throwing', () async {
       notifier.configure(providerNames: ['lmstudio', 'vllm']);
@@ -408,8 +418,10 @@ void main() {
       notifier.configure(providerNames: ['ollama']);
       // stopAll should complete without error even if nothing is running.
       await notifier.stopAll();
-      expect(readState().get('ollama')!.state,
-          anyOf(ProcessState.detecting, ProcessState.stopped));
+      expect(
+        readState().get('ollama')!.state,
+        anyOf(ProcessState.detecting, ProcessState.stopped),
+      );
     });
 
     test('startAll skips processes that are not stopped', () async {
@@ -418,9 +430,13 @@ void main() {
       await notifier.startAll();
       // State should still be detecting (startAll skips non-stopped processes).
       expect(
-          readState().get('ollama')!.state,
-          anyOf(ProcessState.detecting, ProcessState.stopped,
-              ProcessState.notInstalled));
+        readState().get('ollama')!.state,
+        anyOf(
+          ProcessState.detecting,
+          ProcessState.stopped,
+          ProcessState.notInstalled,
+        ),
+      );
     });
   });
 
@@ -437,46 +453,60 @@ void main() {
 
     tearDown(() => container.dispose());
 
-    test('detectRunning completes without error when no processes configured',
-        () async {
-      notifier.configure(providerNames: []);
-      await expectLater(notifier.detectRunning(), completes);
-    });
+    test(
+      'detectRunning completes without error when no processes configured',
+      () async {
+        notifier.configure(providerNames: []);
+        await expectLater(notifier.detectRunning(), completes);
+      },
+    );
 
-    test('detectRunning marks lmstudio as notInstalled when binary missing',
-        () async {
-      notifier.configure(providerNames: ['lmstudio']);
-      await notifier.detectRunning();
-      // lmstudio has no CLI binary, but its health endpoint may respond
-      // if LM Studio is running on this machine.
-      expect(
-        readState().get('lmstudio')!.state,
-        anyOf(ProcessState.notInstalled, ProcessState.running),
-      );
-    });
+    test(
+      'detectRunning marks lmstudio as notInstalled when binary missing',
+      () async {
+        notifier.configure(providerNames: ['lmstudio']);
+        await notifier.detectRunning();
+        // lmstudio has no CLI binary, but its health endpoint may respond
+        // if LM Studio is running on this machine.
+        expect(
+          readState().get('lmstudio')!.state,
+          anyOf(ProcessState.notInstalled, ProcessState.running),
+        );
+      },
+    );
 
-    test('detectRunning with ollama configured resolves to a valid state',
-        () async {
-      notifier.configure(providerNames: ['ollama']);
-      await notifier.detectRunning();
-      // On dev machines ollama may be running; in CI it won't be.
-      expect(
-        readState().get('ollama')!.state,
-        anyOf(ProcessState.stopped, ProcessState.notInstalled,
-            ProcessState.running),
-      );
-    });
+    test(
+      'detectRunning with ollama configured resolves to a valid state',
+      () async {
+        notifier.configure(providerNames: ['ollama']);
+        await notifier.detectRunning();
+        // On dev machines ollama may be running; in CI it won't be.
+        expect(
+          readState().get('ollama')!.state,
+          anyOf(
+            ProcessState.stopped,
+            ProcessState.notInstalled,
+            ProcessState.running,
+          ),
+        );
+      },
+    );
 
-    test('detectRunning with proxy configured resolves to a valid state',
-        () async {
-      notifier.configure(providerNames: []);
-      await notifier.detectRunning();
-      expect(
-        readState().get('proxy')!.state,
-        anyOf(ProcessState.stopped, ProcessState.notInstalled,
-            ProcessState.running),
-      );
-    });
+    test(
+      'detectRunning with proxy configured resolves to a valid state',
+      () async {
+        notifier.configure(providerNames: []);
+        await notifier.detectRunning();
+        expect(
+          readState().get('proxy')!.state,
+          anyOf(
+            ProcessState.stopped,
+            ProcessState.notInstalled,
+            ProcessState.running,
+          ),
+        );
+      },
+    );
   });
 
   // ── Immutable state transition tests ─────────────────────────────────────
@@ -484,9 +514,11 @@ void main() {
   group('ProcessManagerState immutability', () {
     test('ProcessManagerState.copyWith creates a new instance', () {
       const original = ProcessManagerState();
-      final updated = original.copyWith(processes: [
-        const ManagedProcess(name: 'proxy', displayName: 'Proxy', icon: 'P'),
-      ]);
+      final updated = original.copyWith(
+        processes: [
+          const ManagedProcess(name: 'proxy', displayName: 'Proxy', icon: 'P'),
+        ],
+      );
       expect(original.processes, isEmpty);
       expect(updated.processes.length, 1);
     });
@@ -508,18 +540,22 @@ void main() {
     });
 
     test('ProcessManagerState.get returns null for unknown process', () {
-      const s = ProcessManagerState(processes: [
-        ManagedProcess(name: 'proxy', displayName: 'Proxy', icon: 'P'),
-      ]);
+      const s = ProcessManagerState(
+        processes: [
+          ManagedProcess(name: 'proxy', displayName: 'Proxy', icon: 'P'),
+        ],
+      );
       expect(s.get('proxy'), isNotNull);
       expect(s.get('unknown'), isNull);
     });
 
     test('ProcessManagerState.all returns all processes', () {
-      const s = ProcessManagerState(processes: [
-        ManagedProcess(name: 'a', displayName: 'A', icon: 'A'),
-        ManagedProcess(name: 'b', displayName: 'B', icon: 'B'),
-      ]);
+      const s = ProcessManagerState(
+        processes: [
+          ManagedProcess(name: 'a', displayName: 'A', icon: 'A'),
+          ManagedProcess(name: 'b', displayName: 'B', icon: 'B'),
+        ],
+      );
       expect(s.all.length, 2);
     });
   });

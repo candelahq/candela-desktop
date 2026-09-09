@@ -29,7 +29,7 @@ class BrewService {
   Future<void>? _resolveFuture;
 
   BrewService({ProcessRunner? runner})
-      : _runner = runner ?? const SystemProcessRunner();
+    : _runner = runner ?? const SystemProcessRunner();
 
   Future<void> _resolveBrewPath() {
     if (_resolveFuture != null) return _resolveFuture!;
@@ -66,8 +66,11 @@ class BrewService {
   Future<bool> isFormulaInstalled(String formula) async {
     await _resolveBrewPath();
     try {
-      final result =
-          await _runner.run(_brewPath, ['list', '--formula', formula]);
+      final result = await _runner.run(_brewPath, [
+        'list',
+        '--formula',
+        formula,
+      ]);
       return result.exitCode == 0;
     } catch (_) {
       return false;
@@ -78,10 +81,11 @@ class BrewService {
   Future<String?> installedVersion(String formula) async {
     await _resolveBrewPath();
     try {
-      final result = await _runner.run(
-        _brewPath,
-        ['info', '--json=v2', formula],
-      );
+      final result = await _runner.run(_brewPath, [
+        'info',
+        '--json=v2',
+        formula,
+      ]);
       if (result.exitCode != 0) return null;
 
       final json = jsonDecode(result.stdout as String) as Map<String, dynamic>;
@@ -109,10 +113,11 @@ class BrewService {
   Future<String?> latestVersion(String formula) async {
     await _resolveBrewPath();
     try {
-      final result = await _runner.run(
-        _brewPath,
-        ['info', '--json=v2', formula],
-      );
+      final result = await _runner.run(_brewPath, [
+        'info',
+        '--json=v2',
+        formula,
+      ]);
       if (result.exitCode != 0) return null;
 
       final json = jsonDecode(result.stdout as String) as Map<String, dynamic>;
@@ -138,7 +143,8 @@ class BrewService {
   /// Exposed for testing — production code calls this from [formulaVersions].
   @visibleForTesting
   static (String?, String?) parseFormulaVersionsFromJson(
-      Map<String, dynamic> json) {
+    Map<String, dynamic> json,
+  ) {
     final formulae = json['formulae'] as List<dynamic>?;
     if (formulae != null && formulae.isNotEmpty) {
       final f = formulae[0];
@@ -166,10 +172,11 @@ class BrewService {
   Future<(String?, String?)> formulaVersions(String formula) async {
     await _resolveBrewPath();
     try {
-      final result = await _runner.run(
-        _brewPath,
-        ['info', '--json=v2', formula],
-      );
+      final result = await _runner.run(_brewPath, [
+        'info',
+        '--json=v2',
+        formula,
+      ]);
       if (result.exitCode != 0) return (null, null);
 
       final json = jsonDecode(result.stdout as String) as Map<String, dynamic>;
@@ -212,15 +219,13 @@ class BrewService {
         return BrewResult(
           success: false,
           output: stdout,
-          errorMessage:
-              stderr.isNotEmpty ? stderr : 'Exit code ${result.exitCode}',
+          errorMessage: stderr.isNotEmpty
+              ? stderr
+              : 'Exit code ${result.exitCode}',
         );
       }
     } catch (e) {
-      return BrewResult(
-        success: false,
-        errorMessage: e.toString(),
-      );
+      return BrewResult(success: false, errorMessage: e.toString());
     }
   }
 }

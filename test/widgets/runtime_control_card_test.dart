@@ -7,12 +7,12 @@ import 'package:candela_desktop/theme/colors.dart';
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 Widget _wrap(Widget child) => MaterialApp(
-      theme: ThemeData.dark(),
-      home: Scaffold(
-        backgroundColor: CandelaColors.bgPrimary,
-        body: SizedBox(width: 500, child: child),
-      ),
-    );
+  theme: ThemeData.dark(),
+  home: Scaffold(
+    backgroundColor: CandelaColors.bgPrimary,
+    body: SizedBox(width: 500, child: child),
+  ),
+);
 
 ManagedProcess _process({
   String name = 'ollama',
@@ -39,77 +39,93 @@ ManagedProcess _process({
 void main() {
   group('RuntimeControlCard — basic rendering', () {
     testWidgets('shows process display name', (tester) async {
-      await tester.pumpWidget(_wrap(RuntimeControlCard(
-        process: _process(displayName: 'Ollama'),
-      )));
+      await tester.pumpWidget(
+        _wrap(RuntimeControlCard(process: _process(displayName: 'Ollama'))),
+      );
       expect(find.text('Ollama'), findsOneWidget);
     });
 
     testWidgets('shows process icon', (tester) async {
-      await tester.pumpWidget(_wrap(RuntimeControlCard(
-        process: _process(icon: '🦙'),
-      )));
+      await tester.pumpWidget(
+        _wrap(RuntimeControlCard(process: _process(icon: '🦙'))),
+      );
       expect(find.text('🦙'), findsOneWidget);
     });
 
     testWidgets('renders with port configured', (tester) async {
-      await tester.pumpWidget(_wrap(RuntimeControlCard(
-        process: _process(port: '11434'),
-      )));
+      await tester.pumpWidget(
+        _wrap(RuntimeControlCard(process: _process(port: '11434'))),
+      );
       expect(tester.takeException(), isNull);
     });
 
     testWidgets('renders without callbacks', (tester) async {
-      await tester.pumpWidget(_wrap(RuntimeControlCard(
-        process: _process(),
-      )));
+      await tester.pumpWidget(_wrap(RuntimeControlCard(process: _process())));
       expect(tester.takeException(), isNull);
     });
   });
 
   group('RuntimeControlCard — state display', () {
     testWidgets('stopped state renders without crash', (tester) async {
-      await tester.pumpWidget(_wrap(RuntimeControlCard(
-        process: _process(state: ProcessState.stopped),
-      )));
+      await tester.pumpWidget(
+        _wrap(
+          RuntimeControlCard(process: _process(state: ProcessState.stopped)),
+        ),
+      );
       expect(tester.takeException(), isNull);
     });
 
     testWidgets('running state renders without crash', (tester) async {
-      await tester.pumpWidget(_wrap(RuntimeControlCard(
-        process: _process(state: ProcessState.running, pid: 1234),
-      )));
+      await tester.pumpWidget(
+        _wrap(
+          RuntimeControlCard(
+            process: _process(state: ProcessState.running, pid: 1234),
+          ),
+        ),
+      );
       expect(tester.takeException(), isNull);
     });
 
     testWidgets('starting state renders without crash', (tester) async {
-      await tester.pumpWidget(_wrap(RuntimeControlCard(
-        process: _process(state: ProcessState.starting),
-      )));
+      await tester.pumpWidget(
+        _wrap(
+          RuntimeControlCard(process: _process(state: ProcessState.starting)),
+        ),
+      );
       expect(tester.takeException(), isNull);
     });
 
     testWidgets('error state shows error message', (tester) async {
-      await tester.pumpWidget(_wrap(RuntimeControlCard(
-        process: _process(
-          state: ProcessState.error,
-          errorMessage: 'Health check failed',
+      await tester.pumpWidget(
+        _wrap(
+          RuntimeControlCard(
+            process: _process(
+              state: ProcessState.error,
+              errorMessage: 'Health check failed',
+            ),
+          ),
         ),
-      )));
+      );
       expect(find.text('Health check failed'), findsOneWidget);
     });
 
     testWidgets('notInstalled state renders without crash', (tester) async {
-      await tester.pumpWidget(_wrap(RuntimeControlCard(
-        process: _process(state: ProcessState.notInstalled),
-      )));
+      await tester.pumpWidget(
+        _wrap(
+          RuntimeControlCard(
+            process: _process(state: ProcessState.notInstalled),
+          ),
+        ),
+      );
       expect(tester.takeException(), isNull);
     });
 
     testWidgets('stopping state renders without crash', (tester) async {
-      await tester.pumpWidget(_wrap(RuntimeControlCard(
-        process: _process(state: ProcessState.stopping),
-      )));
+      await tester.pumpWidget(
+        _wrap(
+          RuntimeControlCard(process: _process(state: ProcessState.stopping)),
+        ),
+      );
       expect(tester.takeException(), isNull);
     });
   });
@@ -117,10 +133,14 @@ void main() {
   group('RuntimeControlCard — callbacks', () {
     testWidgets('onStart is called when Start tapped', (tester) async {
       var called = false;
-      await tester.pumpWidget(_wrap(RuntimeControlCard(
-        process: _process(state: ProcessState.stopped),
-        onStart: () => called = true,
-      )));
+      await tester.pumpWidget(
+        _wrap(
+          RuntimeControlCard(
+            process: _process(state: ProcessState.stopped),
+            onStart: () => called = true,
+          ),
+        ),
+      );
 
       // Find and tap Start button.
       final startBtn = find.widgetWithText(TextButton, 'Start');
@@ -135,10 +155,14 @@ void main() {
 
     testWidgets('onStop is called when Stop tapped', (tester) async {
       var called = false;
-      await tester.pumpWidget(_wrap(RuntimeControlCard(
-        process: _process(state: ProcessState.running),
-        onStop: () => called = true,
-      )));
+      await tester.pumpWidget(
+        _wrap(
+          RuntimeControlCard(
+            process: _process(state: ProcessState.running),
+            onStop: () => called = true,
+          ),
+        ),
+      );
 
       final stopBtn = find.widgetWithText(TextButton, 'Stop');
       if (stopBtn.evaluate().isNotEmpty) {
@@ -150,10 +174,14 @@ void main() {
     });
 
     testWidgets('onRemove callback is wired', (tester) async {
-      await tester.pumpWidget(_wrap(RuntimeControlCard(
-        process: _process(state: ProcessState.stopped),
-        onRemove: () {},
-      )));
+      await tester.pumpWidget(
+        _wrap(
+          RuntimeControlCard(
+            process: _process(state: ProcessState.stopped),
+            onRemove: () {},
+          ),
+        ),
+      );
       // Widget renders with remove callback — no crash.
       expect(tester.takeException(), isNull);
     });
@@ -161,15 +189,19 @@ void main() {
 
   group('RuntimeControlCard — vLLM process', () {
     testWidgets('renders vLLM process', (tester) async {
-      await tester.pumpWidget(_wrap(RuntimeControlCard(
-        process: _process(
-          name: 'vllm',
-          displayName: 'vLLM',
-          icon: 'V',
-          port: '8000',
-          state: ProcessState.running,
+      await tester.pumpWidget(
+        _wrap(
+          RuntimeControlCard(
+            process: _process(
+              name: 'vllm',
+              displayName: 'vLLM',
+              icon: 'V',
+              port: '8000',
+              state: ProcessState.running,
+            ),
+          ),
         ),
-      )));
+      );
       expect(find.text('vLLM'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
@@ -177,16 +209,20 @@ void main() {
 
   group('RuntimeControlCard — proxy process', () {
     testWidgets('renders proxy process', (tester) async {
-      await tester.pumpWidget(_wrap(RuntimeControlCard(
-        process: _process(
-          name: 'proxy',
-          displayName: 'Candela Proxy',
-          icon: '🕯️',
-          port: '8181',
-          state: ProcessState.running,
-          pid: 5678,
+      await tester.pumpWidget(
+        _wrap(
+          RuntimeControlCard(
+            process: _process(
+              name: 'proxy',
+              displayName: 'Candela Proxy',
+              icon: '🕯️',
+              port: '8181',
+              state: ProcessState.running,
+              pid: 5678,
+            ),
+          ),
         ),
-      )));
+      );
       expect(find.text('Candela Proxy'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });

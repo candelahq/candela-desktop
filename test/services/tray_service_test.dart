@@ -29,8 +29,10 @@ void main() {
 
       test('accepts optional UpdateService parameter', () {
         // updateService is optional, so passing null should work.
-        final service =
-            TrayService(processManager: notifier, updateService: null);
+        final service = TrayService(
+          processManager: notifier,
+          updateService: null,
+        );
         expect(service.updateService, isNull);
       });
     });

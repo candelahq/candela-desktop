@@ -41,9 +41,7 @@ void main() {
     test('configServiceProvider can be overridden in tests', () {
       final mockService = ConfigService(configPath: '/tmp/test-override.yaml');
       final overridden = ProviderContainer(
-        overrides: [
-          configServiceProvider.overrideWithValue(mockService),
-        ],
+        overrides: [configServiceProvider.overrideWithValue(mockService)],
       );
       addTearDown(overridden.dispose);
 
@@ -63,17 +61,13 @@ void main() {
     test('configProvider emits CandelaConfig via stream', () async {
       // Listen for the first data emission.
       final completer = Completer<CandelaConfig>();
-      container.listen<AsyncValue<CandelaConfig>>(
-        configProvider,
-        (prev, next) {
-          next.whenData((config) {
-            if (!completer.isCompleted) {
-              completer.complete(config);
-            }
-          });
-        },
-        fireImmediately: true,
-      );
+      container.listen<AsyncValue<CandelaConfig>>(configProvider, (prev, next) {
+        next.whenData((config) {
+          if (!completer.isCompleted) {
+            completer.complete(config);
+          }
+        });
+      }, fireImmediately: true);
 
       // The stream should eventually emit a default config (no config file).
       final config = await completer.future.timeout(
@@ -100,9 +94,7 @@ void main() {
     test('brewServiceProvider can be overridden in tests', () {
       final mockBrew = BrewService();
       final overridden = ProviderContainer(
-        overrides: [
-          brewServiceProvider.overrideWithValue(mockBrew),
-        ],
+        overrides: [brewServiceProvider.overrideWithValue(mockBrew)],
       );
       addTearDown(overridden.dispose);
       expect(identical(overridden.read(brewServiceProvider), mockBrew), isTrue);
@@ -127,17 +119,13 @@ void main() {
     });
 
     test('processManagerProvider can be overridden with state value', () {
-      const mockState = ProcessManagerState(processes: [
-        ManagedProcess(
-          name: 'test',
-          displayName: 'Test',
-          icon: 'T',
-        ),
-      ]);
-      final overridden = ProviderContainer(
-        overrides: [
-          processManagerProvider.overrideWithValue(mockState),
+      const mockState = ProcessManagerState(
+        processes: [
+          ManagedProcess(name: 'test', displayName: 'Test', icon: 'T'),
         ],
+      );
+      final overridden = ProviderContainer(
+        overrides: [processManagerProvider.overrideWithValue(mockState)],
       );
       addTearDown(overridden.dispose);
 
@@ -178,15 +166,11 @@ void main() {
 
       // Wait for configProvider to emit and trigger the listen callback.
       final completer = Completer<void>();
-      container.listen<AsyncValue<CandelaConfig>>(
-        configProvider,
-        (prev, next) {
-          next.whenData((_) {
-            if (!completer.isCompleted) completer.complete();
-          });
-        },
-        fireImmediately: true,
-      );
+      container.listen<AsyncValue<CandelaConfig>>(configProvider, (prev, next) {
+        next.whenData((_) {
+          if (!completer.isCompleted) completer.complete();
+        });
+      }, fireImmediately: true);
 
       await completer.future.timeout(
         const Duration(seconds: 5),

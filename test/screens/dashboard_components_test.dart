@@ -13,12 +13,12 @@ import 'package:candela_desktop/widgets/time_range_selector.dart';
 // ── Reusable test scaffold ────────────────────────────────────────────────────
 
 Widget _wrap(Widget child) => MaterialApp(
-      theme: ThemeData.dark(),
-      home: Scaffold(
-        backgroundColor: CandelaColors.bgPrimary,
-        body: SizedBox(width: 900, height: 700, child: child),
-      ),
-    );
+  theme: ThemeData.dark(),
+  home: Scaffold(
+    backgroundColor: CandelaColors.bgPrimary,
+    body: SizedBox(width: 900, height: 700, child: child),
+  ),
+);
 
 const _emptyTs = <TimeSeriesPoint>[];
 
@@ -28,22 +28,25 @@ UsageSummary _summary({
   int outputTok = 500,
   double cost = 0.05,
   double latency = 600,
-}) =>
-    UsageSummary(
-      totalCalls: calls,
-      totalInputTokens: inputTok,
-      totalOutputTokens: outputTok,
-      totalCostUsd: cost,
-      avgLatencyMs: latency,
-      costOverTime: List.generate(
-          24, (i) => TimeSeriesPoint(label: '${i}h', value: cost / 24)),
-      tokensOverTime: List.generate(
-          24,
-          (i) => TimeSeriesPoint(
-              label: '${i}h', value: (inputTok + outputTok) / 24)),
-      callsOverTime: List.generate(
-          24, (i) => TimeSeriesPoint(label: '${i}h', value: calls / 24)),
-    );
+}) => UsageSummary(
+  totalCalls: calls,
+  totalInputTokens: inputTok,
+  totalOutputTokens: outputTok,
+  totalCostUsd: cost,
+  avgLatencyMs: latency,
+  costOverTime: List.generate(
+    24,
+    (i) => TimeSeriesPoint(label: '${i}h', value: cost / 24),
+  ),
+  tokensOverTime: List.generate(
+    24,
+    (i) => TimeSeriesPoint(label: '${i}h', value: (inputTok + outputTok) / 24),
+  ),
+  callsOverTime: List.generate(
+    24,
+    (i) => TimeSeriesPoint(label: '${i}h', value: calls / 24),
+  ),
+);
 
 // ── _StatGrid (via building the same layout inline) ───────────────────────────
 
@@ -51,34 +54,46 @@ UsageSummary _summary({
 void main() {
   group('Dashboard — StatCard values (mirrors _StatGrid logic)', () {
     testWidgets('shows cost formatted to 4 decimal places', (tester) async {
-      await tester.pumpWidget(_wrap(StatCard(
-        title: 'TOTAL COST',
-        value: '\$${0.0512.toStringAsFixed(4)}',
-        subtitle: 'USD spent',
-        accentColor: const Color(0xFF4ADE80),
-        icon: Icons.attach_money,
-      )));
+      await tester.pumpWidget(
+        _wrap(
+          StatCard(
+            title: 'TOTAL COST',
+            value: '\$${0.0512.toStringAsFixed(4)}',
+            subtitle: 'USD spent',
+            accentColor: const Color(0xFF4ADE80),
+            icon: Icons.attach_money,
+          ),
+        ),
+      );
       expect(find.text('\$0.0512'), findsOneWidget);
     });
 
     testWidgets('shows em-dash when no data', (tester) async {
-      await tester.pumpWidget(_wrap(const StatCard(
-        title: 'LLM CALLS',
-        value: '—',
-        subtitle: 'Total requests',
-        icon: Icons.bolt,
-      )));
+      await tester.pumpWidget(
+        _wrap(
+          const StatCard(
+            title: 'LLM CALLS',
+            value: '—',
+            subtitle: 'Total requests',
+            icon: Icons.bolt,
+          ),
+        ),
+      );
       expect(find.text('—'), findsOneWidget);
     });
 
     testWidgets('formats 1500 calls as 1.5k', (tester) async {
       final v = 1500 >= 1000 ? '${(1500 / 1000).toStringAsFixed(1)}k' : '1500';
-      await tester.pumpWidget(_wrap(StatCard(
-        title: 'LLM CALLS',
-        value: v,
-        subtitle: 'requests',
-        icon: Icons.bolt,
-      )));
+      await tester.pumpWidget(
+        _wrap(
+          StatCard(
+            title: 'LLM CALLS',
+            value: v,
+            subtitle: 'requests',
+            icon: Icons.bolt,
+          ),
+        ),
+      );
       expect(find.text('1.5k'), findsOneWidget);
     });
   });
@@ -120,7 +135,9 @@ void main() {
 
     test('authExpired error → candela auth login message', () {
       final result = const TelemetryResult.withError(
-          isTeamMode: true, error: TelemetryErrorKind.authExpired);
+        isTeamMode: true,
+        error: TelemetryErrorKind.authExpired,
+      );
       final state = DashboardState(
         result: result,
         loading: false,
@@ -134,7 +151,9 @@ void main() {
 
     test('unreachable in team mode → backend unreachable message', () {
       final result = const TelemetryResult.withError(
-          isTeamMode: true, error: TelemetryErrorKind.unreachable);
+        isTeamMode: true,
+        error: TelemetryErrorKind.unreachable,
+      );
       final state = DashboardState(
         result: result,
         loading: false,
@@ -148,7 +167,9 @@ void main() {
 
     test('unreachable in local mode → proxy unreachable message', () {
       final result = const TelemetryResult.withError(
-          isTeamMode: false, error: TelemetryErrorKind.unreachable);
+        isTeamMode: false,
+        error: TelemetryErrorKind.unreachable,
+      );
       final state = DashboardState(
         result: result,
         loading: false,
@@ -211,32 +232,39 @@ void main() {
 
   group('Dashboard — chart card layout', () {
     testWidgets('chart card renders title and chart', (tester) async {
-      await tester.pumpWidget(_wrap(Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: CandelaColors.bgSecondary,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: CandelaColors.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Cost Over Time',
-                style: TextStyle(
+      await tester.pumpWidget(
+        _wrap(
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: CandelaColors.bgSecondary,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: CandelaColors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Cost Over Time',
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: CandelaColors.textPrimary)),
-            const SizedBox(height: 16),
-            CandelaAreaChart(
-              data: _emptyTs,
-              height: 200,
-              color: const Color(0xFF4ADE80),
-              formatValue: (v) => '\$${v.toStringAsFixed(4)}',
-              emptyMessage: 'No cost data yet',
+                    color: CandelaColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                CandelaAreaChart(
+                  data: _emptyTs,
+                  height: 200,
+                  color: const Color(0xFF4ADE80),
+                  formatValue: (v) => '\$${v.toStringAsFixed(4)}',
+                  emptyMessage: 'No cost data yet',
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      )));
+      );
 
       expect(find.text('Cost Over Time'), findsOneWidget);
       expect(find.text('No cost data yet'), findsOneWidget);
@@ -244,27 +272,35 @@ void main() {
 
     testWidgets('chart card with subtitle renders subtitle', (tester) async {
       const subtitle = '\$0.0512 total';
-      await tester.pumpWidget(_wrap(Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: CandelaColors.bgSecondary,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      await tester.pumpWidget(
+        _wrap(
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: CandelaColors.bgSecondary,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Cost Over Time'),
-                Text(subtitle,
-                    style: TextStyle(
-                        fontSize: 11, color: CandelaColors.textMuted)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Cost Over Time'),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: CandelaColors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
-          ],
+          ),
         ),
-      )));
+      );
       expect(find.text(subtitle), findsOneWidget);
     });
   });
@@ -272,52 +308,67 @@ void main() {
   // ── Full body integration (no configService dependency) ───────────────────
 
   group('Dashboard — body integration', () {
-    testWidgets('ModelBreakdownTable empty state visible when no model data',
-        (tester) async {
-      await tester.pumpWidget(_wrap(SingleChildScrollView(
-        child: Column(
-          children: [
-            TimeRangeSelector(value: TokenTimeRange.d7, onChanged: (_) {}),
-            const SizedBox(height: 20),
-            const ModelBreakdownTable(models: []),
-          ],
+    testWidgets('ModelBreakdownTable empty state visible when no model data', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          SingleChildScrollView(
+            child: Column(
+              children: [
+                TimeRangeSelector(value: TokenTimeRange.d7, onChanged: (_) {}),
+                const SizedBox(height: 20),
+                const ModelBreakdownTable(models: []),
+              ],
+            ),
+          ),
         ),
-      )));
+      );
       expect(find.text('No model data yet'), findsOneWidget);
       expect(find.text('7d'), findsOneWidget);
     });
 
     testWidgets('stat cards + area chart render without data', (tester) async {
-      await tester.pumpWidget(_wrap(SingleChildScrollView(
-        child: Column(
-          children: [
-            const Row(children: [
-              Expanded(
-                  child: StatCard(
-                      title: 'TOTAL COST',
-                      value: '—',
-                      subtitle: 'USD spent',
-                      accentColor: Color(0xFF4ADE80),
-                      icon: Icons.attach_money)),
-              SizedBox(width: 12),
-              Expanded(
-                  child: StatCard(
-                      title: 'LLM CALLS',
-                      value: '—',
-                      subtitle: 'Total requests',
-                      icon: Icons.bolt)),
-            ]),
-            const SizedBox(height: 20),
-            CandelaAreaChart(
-              data: _emptyTs,
-              height: 160,
-              color: const Color(0xFF4ADE80),
-              formatValue: (v) => '\$${v.toStringAsFixed(4)}',
-              emptyMessage: 'No cost data yet',
+      await tester.pumpWidget(
+        _wrap(
+          SingleChildScrollView(
+            child: Column(
+              children: [
+                const Row(
+                  children: [
+                    Expanded(
+                      child: StatCard(
+                        title: 'TOTAL COST',
+                        value: '—',
+                        subtitle: 'USD spent',
+                        accentColor: Color(0xFF4ADE80),
+                        icon: Icons.attach_money,
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: StatCard(
+                        title: 'LLM CALLS',
+                        value: '—',
+                        subtitle: 'Total requests',
+                        icon: Icons.bolt,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                CandelaAreaChart(
+                  data: _emptyTs,
+                  height: 160,
+                  color: const Color(0xFF4ADE80),
+                  formatValue: (v) => '\$${v.toStringAsFixed(4)}',
+                  emptyMessage: 'No cost data yet',
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      )));
+      );
       expect(find.text('TOTAL COST'), findsOneWidget);
       expect(find.text('LLM CALLS'), findsOneWidget);
       expect(find.text('No cost data yet'), findsOneWidget);
@@ -325,26 +376,38 @@ void main() {
     });
 
     testWidgets('stat cards render with real summary values', (tester) async {
-      final s =
-          _summary(calls: 42, cost: 0.1234, inputTok: 8000, outputTok: 3000);
-      await tester.pumpWidget(_wrap(Row(children: [
-        Expanded(
-            child: StatCard(
-          title: 'TOTAL COST',
-          value: '\$${s.totalCostUsd.toStringAsFixed(4)}',
-          subtitle: 'USD spent',
-          accentColor: const Color(0xFF4ADE80),
-          icon: Icons.attach_money,
-        )),
-        const SizedBox(width: 12),
-        Expanded(
-            child: StatCard(
-          title: 'LLM CALLS',
-          value: '${s.totalCalls}',
-          subtitle: 'Total requests',
-          icon: Icons.bolt,
-        )),
-      ])));
+      final s = _summary(
+        calls: 42,
+        cost: 0.1234,
+        inputTok: 8000,
+        outputTok: 3000,
+      );
+      await tester.pumpWidget(
+        _wrap(
+          Row(
+            children: [
+              Expanded(
+                child: StatCard(
+                  title: 'TOTAL COST',
+                  value: '\$${s.totalCostUsd.toStringAsFixed(4)}',
+                  subtitle: 'USD spent',
+                  accentColor: const Color(0xFF4ADE80),
+                  icon: Icons.attach_money,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: StatCard(
+                  title: 'LLM CALLS',
+                  value: '${s.totalCalls}',
+                  subtitle: 'Total requests',
+                  icon: Icons.bolt,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
 
       expect(find.text('\$0.1234'), findsOneWidget);
       expect(find.text('42'), findsOneWidget);

@@ -67,19 +67,26 @@ class _DiagnosticLogState extends State<DiagnosticLog> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: const BoxDecoration(
-              border:
-                  Border(bottom: BorderSide(color: CandelaColors.borderSubtle)),
+              border: Border(
+                bottom: BorderSide(color: CandelaColors.borderSubtle),
+              ),
             ),
             child: Row(
               children: [
-                const Icon(Icons.terminal,
-                    size: 14, color: CandelaColors.textMuted),
+                const Icon(
+                  Icons.terminal,
+                  size: 14,
+                  color: CandelaColors.textMuted,
+                ),
                 const SizedBox(width: 8),
-                const Text('Output',
-                    style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: CandelaColors.textMuted)),
+                const Text(
+                  'Output',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: CandelaColors.textMuted,
+                  ),
+                ),
                 const Spacer(),
                 InkWell(
                   onTap: _entries.isEmpty
@@ -91,17 +98,29 @@ class _DiagnosticLogState extends State<DiagnosticLog> {
                           Clipboard.setData(ClipboardData(text: text));
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                                content:
-                                    Text('Diagnostic log copied to clipboard')),
+                              content: Text(
+                                'Diagnostic log copied to clipboard',
+                              ),
+                            ),
                           );
                         },
-                  child: const Row(children: [
-                    Icon(Icons.copy, size: 12, color: CandelaColors.textMuted),
-                    SizedBox(width: 4),
-                    Text('Copy',
+                  child: const Row(
+                    children: [
+                      Icon(
+                        Icons.copy,
+                        size: 12,
+                        color: CandelaColors.textMuted,
+                      ),
+                      SizedBox(width: 4),
+                      Text(
+                        'Copy',
                         style: TextStyle(
-                            fontSize: 11, color: CandelaColors.textMuted)),
-                  ]),
+                          fontSize: 11,
+                          color: CandelaColors.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -110,9 +129,14 @@ class _DiagnosticLogState extends State<DiagnosticLog> {
           Expanded(
             child: _entries.isEmpty
                 ? const Center(
-                    child: Text('Click "Run All Tests" to start diagnostics',
-                        style: TextStyle(
-                            fontSize: 12, color: CandelaColors.textMuted)))
+                    child: Text(
+                      'Click "Run All Tests" to start diagnostics',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: CandelaColors.textMuted,
+                      ),
+                    ),
+                  )
                 : ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.all(12),
@@ -139,15 +163,23 @@ class _DiagnosticLogState extends State<DiagnosticLog> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('[${_fmt(entry.timestamp)}] ',
-              style: const TextStyle(
-                  fontSize: 12,
-                  fontFamily: 'monospace',
-                  color: CandelaColors.textMuted)),
+          Text(
+            '[${_fmt(entry.timestamp)}] ',
+            style: const TextStyle(
+              fontSize: 12,
+              fontFamily: 'monospace',
+              color: CandelaColors.textMuted,
+            ),
+          ),
           Expanded(
-            child: Text(entry.message,
-                style: TextStyle(
-                    fontSize: 12, fontFamily: 'monospace', color: color)),
+            child: Text(
+              entry.message,
+              style: TextStyle(
+                fontSize: 12,
+                fontFamily: 'monospace',
+                color: color,
+              ),
+            ),
           ),
         ],
       ),

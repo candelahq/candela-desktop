@@ -15,22 +15,20 @@ SpanRecord _span({
   double costUsd = 0.01,
   double durationMs = 500.0,
   DateTime? timestamp,
-}) =>
-    SpanRecord(
-      spanId:
-          'span-${model.hashCode}-${timestamp?.millisecondsSinceEpoch ?? 0}',
-      traceId: 'trace-1',
-      model: model,
-      provider: provider,
-      inputTokens: inputTokens,
-      outputTokens: outputTokens,
-      totalTokens: inputTokens + outputTokens,
-      costUsd: costUsd,
-      durationMs: durationMs,
-      status: 'ok',
-      timestamp: timestamp ?? DateTime.now(),
-      name: 'chat',
-    );
+}) => SpanRecord(
+  spanId: 'span-${model.hashCode}-${timestamp?.millisecondsSinceEpoch ?? 0}',
+  traceId: 'trace-1',
+  model: model,
+  provider: provider,
+  inputTokens: inputTokens,
+  outputTokens: outputTokens,
+  totalTokens: inputTokens + outputTokens,
+  costUsd: costUsd,
+  durationMs: durationMs,
+  status: 'ok',
+  timestamp: timestamp ?? DateTime.now(),
+  name: 'chat',
+);
 
 void main() {
   group('buildSummaryFromSpans', () {
@@ -46,11 +44,12 @@ void main() {
     test('single span aggregates correctly', () {
       final summary = buildSummaryFromSpans([
         _span(
-            model: 'gpt-4o',
-            inputTokens: 200,
-            outputTokens: 100,
-            costUsd: 0.05,
-            durationMs: 800.0),
+          model: 'gpt-4o',
+          inputTokens: 200,
+          outputTokens: 100,
+          costUsd: 0.05,
+          durationMs: 800.0,
+        ),
       ]);
       expect(summary.totalCalls, 1);
       expect(summary.totalInputTokens, 200);
@@ -62,23 +61,26 @@ void main() {
     test('multiple spans aggregate totals and average latency', () {
       final summary = buildSummaryFromSpans([
         _span(
-            model: 'gpt-4o',
-            inputTokens: 100,
-            outputTokens: 50,
-            costUsd: 0.01,
-            durationMs: 400.0),
+          model: 'gpt-4o',
+          inputTokens: 100,
+          outputTokens: 50,
+          costUsd: 0.01,
+          durationMs: 400.0,
+        ),
         _span(
-            model: 'claude-sonnet-4',
-            inputTokens: 200,
-            outputTokens: 100,
-            costUsd: 0.03,
-            durationMs: 600.0),
+          model: 'claude-sonnet-4',
+          inputTokens: 200,
+          outputTokens: 100,
+          costUsd: 0.03,
+          durationMs: 600.0,
+        ),
         _span(
-            model: 'gpt-4o',
-            inputTokens: 300,
-            outputTokens: 150,
-            costUsd: 0.05,
-            durationMs: 800.0),
+          model: 'gpt-4o',
+          inputTokens: 300,
+          outputTokens: 150,
+          costUsd: 0.05,
+          durationMs: 800.0,
+        ),
       ]);
       expect(summary.totalCalls, 3);
       expect(summary.totalInputTokens, 600);
@@ -103,11 +105,12 @@ void main() {
     test('single model single span', () {
       final models = buildModelBreakdownFromSpans([
         _span(
-            model: 'gpt-4o',
-            provider: 'openai',
-            inputTokens: 100,
-            outputTokens: 50,
-            costUsd: 0.01),
+          model: 'gpt-4o',
+          provider: 'openai',
+          inputTokens: 100,
+          outputTokens: 50,
+          costUsd: 0.01,
+        ),
       ]);
       expect(models.length, 1);
       expect(models[0].model, 'gpt-4o');
@@ -121,23 +124,26 @@ void main() {
     test('groups spans by model and aggregates', () {
       final models = buildModelBreakdownFromSpans([
         _span(
-            model: 'gpt-4o',
-            provider: 'openai',
-            costUsd: 0.02,
-            inputTokens: 100,
-            outputTokens: 50),
+          model: 'gpt-4o',
+          provider: 'openai',
+          costUsd: 0.02,
+          inputTokens: 100,
+          outputTokens: 50,
+        ),
         _span(
-            model: 'gpt-4o',
-            provider: 'openai',
-            costUsd: 0.03,
-            inputTokens: 200,
-            outputTokens: 100),
+          model: 'gpt-4o',
+          provider: 'openai',
+          costUsd: 0.03,
+          inputTokens: 200,
+          outputTokens: 100,
+        ),
         _span(
-            model: 'claude-sonnet-4',
-            provider: 'anthropic',
-            costUsd: 0.10,
-            inputTokens: 500,
-            outputTokens: 250),
+          model: 'claude-sonnet-4',
+          provider: 'anthropic',
+          costUsd: 0.10,
+          inputTokens: 500,
+          outputTokens: 250,
+        ),
       ]);
       expect(models.length, 2);
 
@@ -159,8 +165,11 @@ void main() {
         _span(model: 'expensive', costUsd: 1.50),
         _span(model: 'medium', costUsd: 0.10),
       ]);
-      expect(models.map((m) => m.model).toList(),
-          ['expensive', 'medium', 'cheap']);
+      expect(models.map((m) => m.model).toList(), [
+        'expensive',
+        'medium',
+        'cheap',
+      ]);
     });
 
     test('preserves provider from first span in group', () {
@@ -188,8 +197,11 @@ void main() {
     test('cutoff is at UTC midnight today', () {
       final now = DateTime.now();
       final cutoff = TokenTimeRange.todayUtc.startFrom(now);
-      final utcMidnight =
-          DateTime.utc(now.toUtc().year, now.toUtc().month, now.toUtc().day);
+      final utcMidnight = DateTime.utc(
+        now.toUtc().year,
+        now.toUtc().month,
+        now.toUtc().day,
+      );
       expect(cutoff.toUtc(), utcMidnight);
     });
 
@@ -200,9 +212,10 @@ void main() {
       final todaySpan = _span(model: 'x', timestamp: now);
       final yesterdaySpan = _span(model: 'x', timestamp: yesterday);
 
-      final todayOnly = [todaySpan, yesterdaySpan]
-          .where((s) => s.timestamp.isAfter(cutoff))
-          .toList();
+      final todayOnly = [
+        todaySpan,
+        yesterdaySpan,
+      ].where((s) => s.timestamp.isAfter(cutoff)).toList();
       expect(todayOnly.length, 1);
       expect(todayOnly[0].timestamp, now);
     });

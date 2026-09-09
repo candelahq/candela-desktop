@@ -21,9 +21,7 @@ void main() {
     test('hasErrors is true when error exists', () {
       const config = CandelaConfig(
         path: '/test',
-        issues: [
-          ConfigIssue(severity: IssueSeverity.error, message: 'err'),
-        ],
+        issues: [ConfigIssue(severity: IssueSeverity.error, message: 'err')],
       );
       expect(config.hasErrors, isTrue);
     });
@@ -111,12 +109,19 @@ void main() {
       );
       expect(connected.isHealthy, isTrue);
 
-      for (final state
-          in ProviderState.values.where((s) => s != ProviderState.connected)) {
-        final status =
-            ProviderStatus(name: 'test', displayName: 'Test', state: state);
-        expect(status.isHealthy, isFalse,
-            reason: 'Expected $state to not be healthy');
+      for (final state in ProviderState.values.where(
+        (s) => s != ProviderState.connected,
+      )) {
+        final status = ProviderStatus(
+          name: 'test',
+          displayName: 'Test',
+          state: state,
+        );
+        expect(
+          status.isHealthy,
+          isFalse,
+          reason: 'Expected $state to not be healthy',
+        );
       }
     });
 

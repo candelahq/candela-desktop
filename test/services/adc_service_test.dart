@@ -93,8 +93,9 @@ void main() {
 
     test('expiryDisplay shows hours and minutes for long-lived token', () {
       final token = TokenInfo(
-        expiresAt:
-            DateTime.now().toUtc().add(const Duration(hours: 1, minutes: 15)),
+        expiresAt: DateTime.now().toUtc().add(
+          const Duration(hours: 1, minutes: 15),
+        ),
       );
       expect(token.expiryDisplay, contains('h'));
     });
@@ -125,10 +126,7 @@ void main() {
     test('returns null when AdcInfo has no credentials', () async {
       final service = AdcService();
       final result = await service.refreshAccessToken(
-        adcInfo: const AdcInfo(
-          path: '/tmp/fake.json',
-          type: 'authorized_user',
-        ),
+        adcInfo: const AdcInfo(path: '/tmp/fake.json', type: 'authorized_user'),
       );
       expect(result, isNull);
     });

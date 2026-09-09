@@ -58,7 +58,8 @@ class _TracesScreenState extends ConsumerState<TracesScreen> {
     final config = await ref.read(configServiceProvider).load();
     if (!mounted) return;
 
-    final isTeam = config.mode == CandelaMode.team &&
+    final isTeam =
+        config.mode == CandelaMode.team &&
         config.remote != null &&
         config.remote!.isNotEmpty;
 
@@ -83,9 +84,10 @@ class _TracesScreenState extends ConsumerState<TracesScreen> {
     if (!mounted || _svc == null) return;
     setState(() => _loading = true);
     try {
-      final result = await _svc!.fetch(_range,
-          userScope:
-              _isTeamMode ? ref.read(dashboardProvider).userScope : null);
+      final result = await _svc!.fetch(
+        _range,
+        userScope: _isTeamMode ? ref.read(dashboardProvider).userScope : null,
+      );
       if (!mounted) return;
       setState(() {
         _spans = result?.spans ?? [];
@@ -95,8 +97,8 @@ class _TracesScreenState extends ConsumerState<TracesScreen> {
         _error = result == null
             ? 'Could not reach the Candela proxy. Is it running?'
             : result.error != null
-                ? 'Connection error'
-                : null;
+            ? 'Connection error'
+            : null;
         _applyFilters();
       });
     } catch (e) {
@@ -204,7 +206,9 @@ class _TracesScreenState extends ConsumerState<TracesScreen> {
               Text(
                 '${_filtered.length} span${_filtered.length != 1 ? 's' : ''}',
                 style: const TextStyle(
-                    fontSize: 11, color: CandelaColors.textMuted),
+                  fontSize: 11,
+                  color: CandelaColors.textMuted,
+                ),
               ),
             ],
           ),
@@ -246,13 +250,20 @@ class _TracesScreenState extends ConsumerState<TracesScreen> {
                   _applyFilters();
                 }),
                 style: const TextStyle(
-                    fontSize: 13, color: CandelaColors.textPrimary),
+                  fontSize: 13,
+                  color: CandelaColors.textPrimary,
+                ),
                 decoration: InputDecoration(
                   hintText: 'Search by model, provider, trace ID…',
                   hintStyle: const TextStyle(
-                      fontSize: 12, color: CandelaColors.textMuted),
-                  prefixIcon: const Icon(Icons.search,
-                      size: 16, color: CandelaColors.textMuted),
+                    fontSize: 12,
+                    color: CandelaColors.textMuted,
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    size: 16,
+                    color: CandelaColors.textMuted,
+                  ),
                   filled: true,
                   fillColor: CandelaColors.bgTertiary,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12),
@@ -303,11 +314,16 @@ class _TracesScreenState extends ConsumerState<TracesScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.warning_amber_rounded,
-                size: 48, color: CandelaColors.textMuted),
+            const Icon(
+              Icons.warning_amber_rounded,
+              size: 48,
+              color: CandelaColors.textMuted,
+            ),
             const SizedBox(height: 12),
-            Text(_error!,
-                style: const TextStyle(color: CandelaColors.textSecondary)),
+            Text(
+              _error!,
+              style: const TextStyle(color: CandelaColors.textSecondary),
+            ),
           ],
         ),
       );
@@ -327,15 +343,18 @@ class _TracesScreenState extends ConsumerState<TracesScreen> {
                   ? 'No spans match your filters'
                   : 'No traces yet',
               style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: CandelaColors.textPrimary),
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: CandelaColors.textPrimary,
+              ),
             ),
             const SizedBox(height: 8),
             const Text(
               'Traces appear once LLM calls flow through the proxy.',
-              style:
-                  TextStyle(fontSize: 13, color: CandelaColors.textSecondary),
+              style: TextStyle(
+                fontSize: 13,
+                color: CandelaColors.textSecondary,
+              ),
             ),
           ],
         ),
@@ -401,18 +420,24 @@ class _TracesScreenState extends ConsumerState<TracesScreen> {
         }),
         child: Row(
           children: [
-            Text(label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color:
-                      isActive ? CandelaColors.accent : CandelaColors.textMuted,
-                  letterSpacing: 0.4,
-                )),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: isActive
+                    ? CandelaColors.accent
+                    : CandelaColors.textMuted,
+                letterSpacing: 0.4,
+              ),
+            ),
             if (isActive) ...[
               const SizedBox(width: 3),
-              Icon(_ascending ? Icons.arrow_upward : Icons.arrow_downward,
-                  size: 10, color: CandelaColors.accent),
+              Icon(
+                _ascending ? Icons.arrow_upward : Icons.arrow_downward,
+                size: 10,
+                color: CandelaColors.accent,
+              ),
             ],
           ],
         ),
@@ -432,13 +457,15 @@ class _HeaderLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       flex: flex,
-      child: Text(text,
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: CandelaColors.textMuted,
-            letterSpacing: 0.4,
-          )),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: CandelaColors.textMuted,
+          letterSpacing: 0.4,
+        ),
+      ),
     );
   }
 }
@@ -447,8 +474,11 @@ class _SpanRow extends StatefulWidget {
   final SpanRecord span;
   final bool isExpanded;
   final VoidCallback onTap;
-  const _SpanRow(
-      {required this.span, required this.isExpanded, required this.onTap});
+  const _SpanRow({
+    required this.span,
+    required this.isExpanded,
+    required this.onTap,
+  });
   @override
   State<_SpanRow> createState() => _SpanRowState();
 }
@@ -471,47 +501,63 @@ class _SpanRowState extends State<_SpanRow> {
               color: widget.isExpanded
                   ? CandelaColors.bgTertiary
                   : _hovered
-                      ? CandelaColors.bgHover
-                      : Colors.transparent,
+                  ? CandelaColors.bgHover
+                  : Colors.transparent,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
               child: Row(
                 children: [
                   Expanded(
-                      flex: 2,
-                      child: Text(_formatTime(s.timestamp), style: _cellStyle)),
+                    flex: 2,
+                    child: Text(_formatTime(s.timestamp), style: _cellStyle),
+                  ),
                   Expanded(
-                      flex: 3,
-                      child: Text(s.model,
-                          style: _cellStyle.copyWith(
-                              fontFamily: 'monospace',
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white),
-                          overflow: TextOverflow.ellipsis)),
+                    flex: 3,
+                    child: Text(
+                      s.model,
+                      style: _cellStyle.copyWith(
+                        fontFamily: 'monospace',
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                   Expanded(flex: 2, child: Text(s.provider, style: _cellStyle)),
                   Expanded(flex: 1, child: _StatusBadge(status: s.status)),
                   Expanded(
-                      flex: 2,
-                      child: Text(
-                          '${_fmtTokens(s.inputTokens)} → ${_fmtTokens(s.outputTokens)}',
-                          style: _cellStyle.copyWith(fontFamily: 'monospace'))),
+                    flex: 2,
+                    child: Text(
+                      '${_fmtTokens(s.inputTokens)} → ${_fmtTokens(s.outputTokens)}',
+                      style: _cellStyle.copyWith(fontFamily: 'monospace'),
+                    ),
+                  ),
                   Expanded(
-                      flex: 1,
-                      child: Text('\$${s.costUsd.toStringAsFixed(4)}',
-                          style: _cellStyle.copyWith(
-                              fontFamily: 'monospace',
-                              fontWeight: FontWeight.w600))),
+                    flex: 1,
+                    child: Text(
+                      '\$${s.costUsd.toStringAsFixed(4)}',
+                      style: _cellStyle.copyWith(
+                        fontFamily: 'monospace',
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
                   Expanded(
-                      flex: 1,
-                      child: Text('${s.durationMs.toStringAsFixed(0)}ms',
-                          style: _cellStyle.copyWith(fontFamily: 'monospace'))),
+                    flex: 1,
+                    child: Text(
+                      '${s.durationMs.toStringAsFixed(0)}ms',
+                      style: _cellStyle.copyWith(fontFamily: 'monospace'),
+                    ),
+                  ),
                   SizedBox(
-                      width: 32,
-                      child: Icon(
-                          widget.isExpanded
-                              ? Icons.keyboard_arrow_up
-                              : Icons.keyboard_arrow_down,
-                          size: 16,
-                          color: CandelaColors.textMuted)),
+                    width: 32,
+                    child: Icon(
+                      widget.isExpanded
+                          ? Icons.keyboard_arrow_up
+                          : Icons.keyboard_arrow_down,
+                      size: 16,
+                      color: CandelaColors.textMuted,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -542,36 +588,43 @@ class _SpanDetail extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                  child: _infoCol('Identifiers', [
-                ('Span ID', span.spanId),
-                ('Trace ID', span.traceId),
-                ('Name', span.name),
-              ])),
+                child: _infoCol('Identifiers', [
+                  ('Span ID', span.spanId),
+                  ('Trace ID', span.traceId),
+                  ('Name', span.name),
+                ]),
+              ),
               Expanded(
-                  child: _infoCol('Tokens', [
-                ('Input', '${span.inputTokens}'),
-                ('Output', '${span.outputTokens}'),
-                ('Total', '${span.totalTokens}'),
-              ])),
+                child: _infoCol('Tokens', [
+                  ('Input', '${span.inputTokens}'),
+                  ('Output', '${span.outputTokens}'),
+                  ('Total', '${span.totalTokens}'),
+                ]),
+              ),
               Expanded(
-                  child: _infoCol('Performance', [
-                ('Latency', '${span.durationMs.toStringAsFixed(1)}ms'),
-                ('Cost', '\$${span.costUsd.toStringAsFixed(6)}'),
-                ('Status', span.status),
-              ])),
+                child: _infoCol('Performance', [
+                  ('Latency', '${span.durationMs.toStringAsFixed(1)}ms'),
+                  ('Cost', '\$${span.costUsd.toStringAsFixed(6)}'),
+                  ('Status', span.status),
+                ]),
+              ),
               Expanded(
-                  child: _infoCol('Timing', [
-                ('Timestamp', span.timestamp.toIso8601String()),
-                ('Provider', span.provider),
-                ('Model', span.model),
-              ])),
+                child: _infoCol('Timing', [
+                  ('Timestamp', span.timestamp.toIso8601String()),
+                  ('Provider', span.provider),
+                  ('Model', span.model),
+                ]),
+              ),
             ],
           ),
           const SizedBox(height: 12),
-          Row(children: [
-            const Text('Duration: ',
-                style: TextStyle(fontSize: 11, color: CandelaColors.textMuted)),
-            SizedBox(
+          Row(
+            children: [
+              const Text(
+                'Duration: ',
+                style: TextStyle(fontSize: 11, color: CandelaColors.textMuted),
+              ),
+              SizedBox(
                 width: 200,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(3),
@@ -580,16 +633,22 @@ class _SpanDetail extends StatelessWidget {
                     minHeight: 4,
                     backgroundColor: CandelaColors.bgElevated,
                     valueColor: AlwaysStoppedAnimation<Color>(
-                        _latencyColor(span.durationMs)),
+                      _latencyColor(span.durationMs),
+                    ),
                   ),
-                )),
-            const SizedBox(width: 8),
-            Text('${span.durationMs.toStringAsFixed(0)}ms',
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '${span.durationMs.toStringAsFixed(0)}ms',
                 style: TextStyle(
-                    fontSize: 11,
-                    fontFamily: 'monospace',
-                    color: _latencyColor(span.durationMs))),
-          ]),
+                  fontSize: 11,
+                  fontFamily: 'monospace',
+                  color: _latencyColor(span.durationMs),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -599,30 +658,45 @@ class _SpanDetail extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title,
-            style: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: CandelaColors.textMuted,
-                letterSpacing: 0.5)),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: CandelaColors.textMuted,
+            letterSpacing: 0.5,
+          ),
+        ),
         const SizedBox(height: 6),
         for (final (label, value) in items)
           Padding(
-              padding: const EdgeInsets.only(bottom: 3),
-              child: Row(children: [
+            padding: const EdgeInsets.only(bottom: 3),
+            child: Row(
+              children: [
                 SizedBox(
-                    width: 65,
-                    child: Text(label,
-                        style: const TextStyle(
-                            fontSize: 11, color: CandelaColors.textMuted))),
+                  width: 65,
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: CandelaColors.textMuted,
+                    ),
+                  ),
+                ),
                 Expanded(
-                    child: Text(value,
-                        style: const TextStyle(
-                            fontSize: 11,
-                            fontFamily: 'monospace',
-                            color: CandelaColors.textPrimary),
-                        overflow: TextOverflow.ellipsis)),
-              ])),
+                  child: Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontFamily: 'monospace',
+                      color: CandelaColors.textPrimary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }
@@ -652,9 +726,14 @@ class _StatusBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
         border: Border.all(color: color.withAlpha(80)),
       ),
-      child: Text(label,
-          style: TextStyle(
-              fontSize: 10, fontWeight: FontWeight.w600, color: color)),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
     );
   }
 }
@@ -664,11 +743,12 @@ class _FilterDropdown extends StatelessWidget {
   final String? value;
   final List<String> options;
   final ValueChanged<String?> onChanged;
-  const _FilterDropdown(
-      {required this.label,
-      required this.value,
-      required this.options,
-      required this.onChanged});
+  const _FilterDropdown({
+    required this.label,
+    required this.value,
+    required this.options,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -683,14 +763,23 @@ class _FilterDropdown extends StatelessWidget {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String?>(
           value: value,
-          hint: Text(label,
-              style: const TextStyle(
-                  fontSize: 12, color: CandelaColors.textMuted)),
+          hint: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: CandelaColors.textMuted,
+            ),
+          ),
           dropdownColor: CandelaColors.bgSecondary,
-          style:
-              const TextStyle(fontSize: 12, color: CandelaColors.textPrimary),
-          icon: const Icon(Icons.arrow_drop_down,
-              size: 16, color: CandelaColors.textMuted),
+          style: const TextStyle(
+            fontSize: 12,
+            color: CandelaColors.textPrimary,
+          ),
+          icon: const Icon(
+            Icons.arrow_drop_down,
+            size: 16,
+            color: CandelaColors.textMuted,
+          ),
           items: [
             DropdownMenuItem<String?>(value: null, child: Text('All $label')),
             ...options.map((o) => DropdownMenuItem(value: o, child: Text(o))),
@@ -719,29 +808,36 @@ class _TimeRangeChips extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: TokenTimeRange.values
-            .map((r) => GestureDetector(
-                  onTap: () => onChanged(r),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: r == value
-                          ? CandelaColors.accent
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                    child: Text(r.label,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight:
-                              r == value ? FontWeight.w600 : FontWeight.w400,
-                          color: r == value
-                              ? Colors.white
-                              : CandelaColors.textMuted,
-                        )),
+            .map(
+              (r) => GestureDetector(
+                onTap: () => onChanged(r),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 5,
                   ),
-                ))
+                  decoration: BoxDecoration(
+                    color: r == value
+                        ? CandelaColors.accent
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: Text(
+                    r.label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: r == value
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                      color: r == value
+                          ? Colors.white
+                          : CandelaColors.textMuted,
+                    ),
+                  ),
+                ),
+              ),
+            )
             .toList(),
       ),
     );
@@ -772,9 +868,15 @@ class _RefreshButton extends StatelessWidget {
                   width: 14,
                   height: 14,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: CandelaColors.accent))
-              : const Icon(Icons.refresh,
-                  size: 16, color: CandelaColors.textMuted),
+                    strokeWidth: 2,
+                    color: CandelaColors.accent,
+                  ),
+                )
+              : const Icon(
+                  Icons.refresh,
+                  size: 16,
+                  color: CandelaColors.textMuted,
+                ),
         ),
       ),
     );

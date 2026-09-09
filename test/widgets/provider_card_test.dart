@@ -6,20 +6,14 @@ import 'package:candela_desktop/screens/auth_debug/provider_card.dart';
 
 void main() {
   group('ProviderCard', () {
-    Widget buildApp(
-      ProviderStatus status, {
-      VoidCallback? onRemove,
-    }) {
+    Widget buildApp(ProviderStatus status, {VoidCallback? onRemove}) {
       return MaterialApp(
         theme: CandelaTheme.dark,
         home: Scaffold(
           body: SizedBox(
             width: 400,
             height: 300,
-            child: ProviderCard(
-              status: status,
-              onRemove: onRemove,
-            ),
+            child: ProviderCard(status: status, onRemove: onRemove),
           ),
         ),
       );
@@ -98,7 +92,7 @@ void main() {
           'claude-sonnet-4',
           'llama3',
           'gpt-4o',
-          'mistral'
+          'mistral',
         ],
       );
       await tester.pumpWidget(buildApp(status));
@@ -117,8 +111,9 @@ void main() {
       expect(find.text('G'), findsAtLeast(1));
     });
 
-    testWidgets('shows remove button when onRemove provided',
-        (WidgetTester tester) async {
+    testWidgets('shows remove button when onRemove provided', (
+      WidgetTester tester,
+    ) async {
       const status = ProviderStatus(
         name: 'anthropic',
         displayName: 'Anthropic',
@@ -129,8 +124,9 @@ void main() {
       expect(find.byIcon(Icons.close), findsOneWidget);
     });
 
-    testWidgets('hides remove button when onRemove is null',
-        (WidgetTester tester) async {
+    testWidgets('hides remove button when onRemove is null', (
+      WidgetTester tester,
+    ) async {
       const status = ProviderStatus(
         name: 'proxy',
         displayName: 'Proxy',
@@ -153,8 +149,9 @@ void main() {
       expect(find.text('export OPENAI_API_KEY=...'), findsOneWidget);
     });
 
-    testWidgets('shows Fix → button when fixUrl is set',
-        (WidgetTester tester) async {
+    testWidgets('shows Fix → button when fixUrl is set', (
+      WidgetTester tester,
+    ) async {
       const status = ProviderStatus(
         name: 'anthropic',
         displayName: 'Anthropic',
@@ -167,8 +164,9 @@ void main() {
       expect(find.text('Fix →'), findsOneWidget);
     });
 
-    testWidgets('tapping card with models opens detail dialog',
-        (WidgetTester tester) async {
+    testWidgets('tapping card with models opens detail dialog', (
+      WidgetTester tester,
+    ) async {
       const status = ProviderStatus(
         name: 'google',
         displayName: 'Google / Vertex AI',
@@ -234,8 +232,9 @@ void main() {
       expect(find.textContaining('us-east1'), findsAtLeast(1));
     });
 
-    testWidgets('proxy detail dialog lists models without verification UI',
-        (tester) async {
+    testWidgets('proxy detail dialog lists models without verification UI', (
+      tester,
+    ) async {
       const status = ProviderStatus(
         name: 'proxy',
         displayName: 'Candela Proxy',
@@ -245,7 +244,7 @@ void main() {
         rawModels: [
           'claude-sonnet-4-20250514',
           'gemini-2.0-flash-001',
-          'llama3'
+          'llama3',
         ],
         icon: '🕯',
         port: 8181,

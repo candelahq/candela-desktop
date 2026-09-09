@@ -84,15 +84,18 @@ class CatalogModelView {
       displayName: e.displayName.isNotEmpty ? e.displayName : e.modelId,
       provider: e.provider,
       category: e.category.isNotEmpty ? e.category : null,
-      contextWindow:
-          e.contextWindow != Int64.ZERO ? e.contextWindow.toInt() : null,
+      contextWindow: e.contextWindow != Int64.ZERO
+          ? e.contextWindow.toInt()
+          : null,
       enabled: e.enabled,
       inputPerMillion: e.inputPerMillion > 0 ? e.inputPerMillion : null,
       outputPerMillion: e.outputPerMillion > 0 ? e.outputPerMillion : null,
-      inputPerMillionHigh:
-          e.inputPerMillionHigh > 0 ? e.inputPerMillionHigh : null,
-      outputPerMillionHigh:
-          e.outputPerMillionHigh > 0 ? e.outputPerMillionHigh : null,
+      inputPerMillionHigh: e.inputPerMillionHigh > 0
+          ? e.inputPerMillionHigh
+          : null,
+      outputPerMillionHigh: e.outputPerMillionHigh > 0
+          ? e.outputPerMillionHigh
+          : null,
       discountPercent: e.discountPercent > 0 ? e.discountPercent : null,
     );
   }

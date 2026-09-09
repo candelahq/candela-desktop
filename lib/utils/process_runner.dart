@@ -58,14 +58,13 @@ class SystemProcessRunner implements ProcessRunner {
     Map<String, String>? environment,
     String? workingDirectory,
     bool runInShell = false,
-  }) =>
-      Process.run(
-        executable,
-        arguments,
-        environment: environment,
-        workingDirectory: workingDirectory,
-        runInShell: runInShell,
-      );
+  }) => Process.run(
+    executable,
+    arguments,
+    environment: environment,
+    workingDirectory: workingDirectory,
+    runInShell: runInShell,
+  );
 
   @override
   Future<Process> start(
@@ -75,13 +74,12 @@ class SystemProcessRunner implements ProcessRunner {
     String? workingDirectory,
     bool runInShell = false,
     ProcessStartMode mode = ProcessStartMode.normal,
-  }) =>
-      Process.start(
-        executable,
-        arguments,
-        environment: environment,
-        workingDirectory: workingDirectory,
-        runInShell: runInShell,
-        mode: mode,
-      );
+  }) => Process.start(
+    executable,
+    arguments,
+    environment: environment,
+    workingDirectory: workingDirectory,
+    runInShell: runInShell,
+    mode: mode,
+  );
 }

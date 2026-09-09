@@ -57,8 +57,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           child: _step == 0
               ? _buildModeStep()
               : _step == 1
-                  ? _buildDetailsStep()
-                  : _buildProviderStep(),
+              ? _buildDetailsStep()
+              : _buildProviderStep(),
         ),
       ),
     );
@@ -109,7 +109,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           const Text(
             'How will you use Candela?',
             style: TextStyle(
-                fontSize: 15, color: CandelaColors.textSecondary, height: 1.5),
+              fontSize: 15,
+              color: CandelaColors.textSecondary,
+              height: 1.5,
+            ),
           ),
           const SizedBox(height: 32),
           _ModeCard(
@@ -318,9 +321,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _saving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save config: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to save config: $e')));
       }
     }
   }
@@ -335,8 +338,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       if (_selectedMode == 'team') {
         config['remote'] = _remoteController.text.trim();
         final audience = _audienceController.text.trim();
-        config['audience'] =
-            audience.isNotEmpty ? audience : _remoteController.text.trim();
+        config['audience'] = audience.isNotEmpty
+            ? audience
+            : _remoteController.text.trim();
       }
 
       // Port.
@@ -345,8 +349,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
       // Providers.
       if (_selectedProviders.isNotEmpty) {
-        config['providers'] =
-            _selectedProviders.map((name) => {'name': name}).toList();
+        config['providers'] = _selectedProviders
+            .map((name) => {'name': name})
+            .toList();
       }
 
       // Single atomic write.
@@ -356,9 +361,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _saving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save config: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to save config: $e')));
       }
     }
   }
@@ -373,9 +378,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(
-                fontSize: 13, color: CandelaColors.textSecondary)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            color: CandelaColors.textSecondary,
+          ),
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
@@ -398,8 +407,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: CandelaColors.accent),
             ),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
           ),
         ),
       ],
@@ -408,44 +419,50 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   static const _cloudProviders = [
     _ProviderInfo(
-        id: 'google',
-        icon: 'G',
-        displayName: 'Google / Gemini',
-        subtitle: 'Vertex AI — Gemini models',
-        isLocal: false),
+      id: 'google',
+      icon: 'G',
+      displayName: 'Google / Gemini',
+      subtitle: 'Vertex AI — Gemini models',
+      isLocal: false,
+    ),
     _ProviderInfo(
-        id: 'anthropic',
-        icon: 'A',
-        displayName: 'Anthropic / Claude',
-        subtitle: 'Vertex AI — Claude models',
-        isLocal: false),
+      id: 'anthropic',
+      icon: 'A',
+      displayName: 'Anthropic / Claude',
+      subtitle: 'Vertex AI — Claude models',
+      isLocal: false,
+    ),
     _ProviderInfo(
-        id: 'openai',
-        icon: 'O',
-        displayName: 'OpenAI',
-        subtitle: 'Direct API — requires API key',
-        isLocal: false),
+      id: 'openai',
+      icon: 'O',
+      displayName: 'OpenAI',
+      subtitle: 'Direct API — requires API key',
+      isLocal: false,
+    ),
   ];
 
   static const _localProviders = [
     _ProviderInfo(
-        id: 'ollama',
-        icon: '🦙',
-        displayName: 'Ollama',
-        subtitle: 'Local runtime — llama, mistral, etc.',
-        isLocal: true),
+      id: 'ollama',
+      icon: '🦙',
+      displayName: 'Ollama',
+      subtitle: 'Local runtime — llama, mistral, etc.',
+      isLocal: true,
+    ),
     _ProviderInfo(
-        id: 'vllm',
-        icon: 'V',
-        displayName: 'vLLM',
-        subtitle: 'High-performance local/remote serving',
-        isLocal: true),
+      id: 'vllm',
+      icon: 'V',
+      displayName: 'vLLM',
+      subtitle: 'High-performance local/remote serving',
+      isLocal: true,
+    ),
     _ProviderInfo(
-        id: 'lmstudio',
-        icon: 'L',
-        displayName: 'LM Studio',
-        subtitle: 'Desktop app — OpenAI-compatible API',
-        isLocal: true),
+      id: 'lmstudio',
+      icon: 'L',
+      displayName: 'LM Studio',
+      subtitle: 'Desktop app — OpenAI-compatible API',
+      isLocal: true,
+    ),
   ];
 }
 
@@ -494,19 +511,30 @@ class _ModeCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title,
-                        style: const TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.w600)),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     const SizedBox(height: 2),
-                    Text(subtitle,
-                        style: const TextStyle(
-                            fontSize: 13, color: CandelaColors.textSecondary)),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: CandelaColors.textSecondary,
+                      ),
+                    ),
                   ],
                 ),
               ),
               if (isSelected)
-                const Icon(Icons.check_circle,
-                    color: CandelaColors.accent, size: 20),
+                const Icon(
+                  Icons.check_circle,
+                  color: CandelaColors.accent,
+                  size: 20,
+                ),
             ],
           ),
         ),
@@ -558,9 +586,13 @@ class _ProviderTile extends StatelessWidget {
                 backgroundColor: isLocal
                     ? CandelaColors.bgTertiary
                     : CandelaColors.accentDim,
-                child: Text(icon,
-                    style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w700)),
+                child: Text(
+                  icon,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -569,30 +601,43 @@ class _ProviderTile extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Text(name,
-                            style: const TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.w500)),
+                        Text(
+                          name,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                         if (isLocal) ...[
                           const SizedBox(width: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 5, vertical: 1),
+                              horizontal: 5,
+                              vertical: 1,
+                            ),
                             decoration: BoxDecoration(
                               color: CandelaColors.bgTertiary,
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: const Text('LOCAL',
-                                style: TextStyle(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w600,
-                                    color: CandelaColors.textMuted)),
+                            child: const Text(
+                              'LOCAL',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                                color: CandelaColors.textMuted,
+                              ),
+                            ),
                           ),
                         ],
                       ],
                     ),
-                    Text(subtitle,
-                        style: const TextStyle(
-                            fontSize: 12, color: CandelaColors.textSecondary)),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: CandelaColors.textSecondary,
+                      ),
+                    ),
                   ],
                 ),
               ),

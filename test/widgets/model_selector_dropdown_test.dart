@@ -4,31 +4,41 @@ import 'package:candela_desktop/widgets/model_selector_dropdown.dart';
 import 'package:candela_desktop/theme/candela_theme.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
-      theme: CandelaTheme.dark,
-      home: Scaffold(body: Center(child: child)),
-    );
+  theme: CandelaTheme.dark,
+  home: Scaffold(body: Center(child: child)),
+);
 
 void main() {
   group('ModelSelectorDropdown', () {
-    testWidgets('shows "All Models" hint when selected is null',
-        (tester) async {
-      await tester.pumpWidget(_wrap(ModelSelectorDropdown(
-        models: const ['gpt-4', 'claude-3'],
-        selected: null,
-        onChanged: (_) {},
-      )));
+    testWidgets('shows "All Models" hint when selected is null', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          ModelSelectorDropdown(
+            models: const ['gpt-4', 'claude-3'],
+            selected: null,
+            onChanged: (_) {},
+          ),
+        ),
+      );
 
       // The hint "All Models" is shown
       expect(find.text('All Models'), findsOneWidget);
     });
 
-    testWidgets('shows selected model name when selected is non-null',
-        (tester) async {
-      await tester.pumpWidget(_wrap(ModelSelectorDropdown(
-        models: const ['gpt-4', 'claude-3'],
-        selected: 'gpt-4',
-        onChanged: (_) {},
-      )));
+    testWidgets('shows selected model name when selected is non-null', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          ModelSelectorDropdown(
+            models: const ['gpt-4', 'claude-3'],
+            selected: 'gpt-4',
+            onChanged: (_) {},
+          ),
+        ),
+      );
 
       // The selected value is displayed (may appear twice — once as the
       // dropdown button text and once in the hidden menu item).
@@ -36,26 +46,35 @@ void main() {
     });
 
     testWidgets('works with empty models list', (tester) async {
-      await tester.pumpWidget(_wrap(ModelSelectorDropdown(
-        models: const [],
-        selected: null,
-        onChanged: (_) {},
-      )));
+      await tester.pumpWidget(
+        _wrap(
+          ModelSelectorDropdown(
+            models: const [],
+            selected: null,
+            onChanged: (_) {},
+          ),
+        ),
+      );
 
       // Should still render without error
       expect(find.byType(ModelSelectorDropdown), findsOneWidget);
       expect(find.text('All Models'), findsOneWidget);
     });
 
-    testWidgets('calls onChanged with model name when a model is tapped',
-        (tester) async {
+    testWidgets('calls onChanged with model name when a model is tapped', (
+      tester,
+    ) async {
       String? changedValue = 'sentinel';
 
-      await tester.pumpWidget(_wrap(ModelSelectorDropdown(
-        models: const ['gpt-4', 'claude-3'],
-        selected: null,
-        onChanged: (value) => changedValue = value,
-      )));
+      await tester.pumpWidget(
+        _wrap(
+          ModelSelectorDropdown(
+            models: const ['gpt-4', 'claude-3'],
+            selected: null,
+            onChanged: (value) => changedValue = value,
+          ),
+        ),
+      );
 
       // Open the dropdown
       await tester.tap(find.byType(ModelSelectorDropdown));
@@ -68,15 +87,20 @@ void main() {
       expect(changedValue, 'claude-3');
     });
 
-    testWidgets('calls onChanged(null) when "All Models" is tapped',
-        (tester) async {
+    testWidgets('calls onChanged(null) when "All Models" is tapped', (
+      tester,
+    ) async {
       String? changedValue = 'sentinel';
 
-      await tester.pumpWidget(_wrap(ModelSelectorDropdown(
-        models: const ['gpt-4', 'claude-3'],
-        selected: 'gpt-4',
-        onChanged: (value) => changedValue = value,
-      )));
+      await tester.pumpWidget(
+        _wrap(
+          ModelSelectorDropdown(
+            models: const ['gpt-4', 'claude-3'],
+            selected: 'gpt-4',
+            onChanged: (value) => changedValue = value,
+          ),
+        ),
+      );
 
       // Open the dropdown
       await tester.tap(find.byType(ModelSelectorDropdown));

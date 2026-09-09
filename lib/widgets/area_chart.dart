@@ -72,8 +72,9 @@ class _CandelaAreaChartState extends State<CandelaAreaChart> {
                   _Tooltip(
                     pos: _hoverPos!,
                     label: widget.data[_hoveredIndex!].label,
-                    value:
-                        widget.formatValue(widget.data[_hoveredIndex!].value),
+                    value: widget.formatValue(
+                      widget.data[_hoveredIndex!].value,
+                    ),
                     containerWidth: width,
                     containerHeight: widget.height,
                   ),
@@ -201,18 +202,13 @@ class _AreaPainter extends CustomPainter {
         ..color = color.withAlpha(128)
         ..strokeWidth = 1;
       canvas.drawLine(
-          Offset(hp.dx, _padT), Offset(hp.dx, _padT + chartH), vlinePaint);
+        Offset(hp.dx, _padT),
+        Offset(hp.dx, _padT + chartH),
+        vlinePaint,
+      );
 
-      canvas.drawCircle(
-        hp,
-        5,
-        Paint()..color = CandelaColors.bgPrimary,
-      );
-      canvas.drawCircle(
-        hp,
-        4,
-        Paint()..color = color,
-      );
+      canvas.drawCircle(hp, 5, Paint()..color = CandelaColors.bgPrimary);
+      canvas.drawCircle(hp, 4, Paint()..color = color);
     }
   }
 
@@ -238,7 +234,12 @@ class _AreaPainter extends CustomPainter {
   }
 
   Offset _controlPoint(
-      Offset p, Offset prev, Offset next, bool reverse, double smoothing) {
+    Offset p,
+    Offset prev,
+    Offset next,
+    bool reverse,
+    double smoothing,
+  ) {
     final dx = next.dx - prev.dx;
     final dy = next.dy - prev.dy;
     final len = math.sqrt(dx * dx + dy * dy) * smoothing;
@@ -274,10 +275,14 @@ class _Tooltip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const w = 110.0, h = 46.0;
-    final left =
-        (pos.dx - w / 2).clamp(0.0, math.max<double>(0.0, containerWidth - w));
-    final top = (pos.dy - h - 10)
-        .clamp(0.0, math.max<double>(0.0, containerHeight - h));
+    final left = (pos.dx - w / 2).clamp(
+      0.0,
+      math.max<double>(0.0, containerWidth - w),
+    );
+    final top = (pos.dy - h - 10).clamp(
+      0.0,
+      math.max<double>(0.0, containerHeight - h),
+    );
 
     return Positioned(
       left: left,

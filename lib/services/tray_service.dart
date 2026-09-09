@@ -31,13 +31,16 @@ class TrayService with TrayListener {
     await _updateMenu();
 
     // Refresh menu every 10s to reflect process state.
-    _updateTimer =
-        Timer.periodic(const Duration(seconds: 10), (_) => _updateMenu());
+    _updateTimer = Timer.periodic(
+      const Duration(seconds: 10),
+      (_) => _updateMenu(),
+    );
   }
 
   String? _trayIconPath() {
     final devPng = File(
-        '${Directory.current.path}/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_32.png');
+      '${Directory.current.path}/macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_32.png',
+    );
 
     if (Platform.isMacOS) {
       // In production .app bundles, resolve relative to the executable.
@@ -62,13 +65,15 @@ class TrayService with TrayListener {
 
       // Fallback: dev mode — use Windows runner resources.
       final devIcon = File(
-          '${Directory.current.path}/windows/runner/resources/app_icon.ico');
+        '${Directory.current.path}/windows/runner/resources/app_icon.ico',
+      );
       if (devIcon.existsSync()) return devIcon.path;
     } else if (Platform.isLinux) {
       // Production: resolve relative to the executable directory.
       final exeDir = File(Platform.resolvedExecutable).parent.path;
-      final bundledIcon =
-          File('$exeDir/data/flutter_assets/assets/app_icon.png');
+      final bundledIcon = File(
+        '$exeDir/data/flutter_assets/assets/app_icon.png',
+      );
       if (bundledIcon.existsSync()) return bundledIcon.path;
 
       // Fallback: dev mode.
@@ -92,10 +97,12 @@ class TrayService with TrayListener {
         ProcessState.notInstalled => '○ Not installed',
         ProcessState.stopped => '○ Stopped',
       };
-      items.add(MenuItem(
-        label: '${p.icon}  ${p.displayName}   $stateStr',
-        disabled: true,
-      ));
+      items.add(
+        MenuItem(
+          label: '${p.icon}  ${p.displayName}   $stateStr',
+          disabled: true,
+        ),
+      );
     }
 
     items.add(MenuItem.separator());
@@ -105,16 +112,10 @@ class TrayService with TrayListener {
     final hasStopped = processes.any((p) => p.state == ProcessState.stopped);
 
     if (hasStopped) {
-      items.add(MenuItem(
-        key: 'start_all',
-        label: '▶  Start All',
-      ));
+      items.add(MenuItem(key: 'start_all', label: '▶  Start All'));
     }
     if (hasRunning) {
-      items.add(MenuItem(
-        key: 'stop_all',
-        label: '■  Stop All',
-      ));
+      items.add(MenuItem(key: 'stop_all', label: '■  Stop All'));
     }
 
     items.add(MenuItem.separator());
@@ -123,25 +124,21 @@ class TrayService with TrayListener {
     if (updateService != null &&
         updateService!.status == UpdateStatus.available &&
         updateService!.latestVersion != null) {
-      items.add(MenuItem(
-        key: 'update',
-        label: '↑  Update Available (${updateService!.latestVersion})',
-      ));
+      items.add(
+        MenuItem(
+          key: 'update',
+          label: '↑  Update Available (${updateService!.latestVersion})',
+        ),
+      );
     }
 
     items.add(MenuItem.separator());
 
-    items.add(MenuItem(
-      key: 'show',
-      label: 'Show Window',
-    ));
+    items.add(MenuItem(key: 'show', label: 'Show Window'));
 
     items.add(MenuItem.separator());
 
-    items.add(MenuItem(
-      key: 'quit',
-      label: 'Quit Candela',
-    ));
+    items.add(MenuItem(key: 'quit', label: 'Quit Candela'));
 
     await trayManager.setContextMenu(Menu(items: items));
   }

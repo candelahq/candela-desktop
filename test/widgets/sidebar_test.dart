@@ -7,12 +7,17 @@ import 'package:candela_desktop/theme/colors.dart';
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 Widget _wrap(Widget child) => MaterialApp(
-      theme: ThemeData.dark(),
-      home: Scaffold(
-        backgroundColor: CandelaColors.bgPrimary,
-        body: Row(children: [child, const Expanded(child: SizedBox())]),
-      ),
-    );
+  theme: ThemeData.dark(),
+  home: Scaffold(
+    backgroundColor: CandelaColors.bgPrimary,
+    body: Row(
+      children: [
+        child,
+        const Expanded(child: SizedBox()),
+      ],
+    ),
+  ),
+);
 
 /// Pumps the sidebar and silences RenderFlex overflow errors.
 /// The sidebar is a fixed 220px width; the test harness triggers overflow
@@ -38,11 +43,10 @@ Future<void> _pump(WidgetTester tester, Widget sidebar) async {
 CandelaSidebar _sidebar({
   int selectedIndex = 0,
   ValueChanged<int>? onItemSelected,
-}) =>
-    CandelaSidebar(
-      selectedIndex: selectedIndex,
-      onItemSelected: onItemSelected ?? (_) {},
-    );
+}) => CandelaSidebar(
+  selectedIndex: selectedIndex,
+  onItemSelected: onItemSelected ?? (_) {},
+);
 
 // ── Tests ────────────────────────────────────────────────────────────────────
 
@@ -110,11 +114,9 @@ void main() {
     testWidgets('tapping Today calls onItemSelected(0)', (tester) async {
       var selected = -1;
       await _pump(
-          tester,
-          CandelaSidebar(
-            selectedIndex: 1,
-            onItemSelected: (i) => selected = i,
-          ));
+        tester,
+        CandelaSidebar(selectedIndex: 1, onItemSelected: (i) => selected = i),
+      );
       await tester.tap(find.text('Today'));
       await tester.pump();
       expect(selected, 0);
@@ -123,11 +125,9 @@ void main() {
     testWidgets('tapping Diagnostics calls onItemSelected(1)', (tester) async {
       var selected = -1;
       await _pump(
-          tester,
-          CandelaSidebar(
-            selectedIndex: 0,
-            onItemSelected: (i) => selected = i,
-          ));
+        tester,
+        CandelaSidebar(selectedIndex: 0, onItemSelected: (i) => selected = i),
+      );
       await tester.tap(find.text('Diagnostics'));
       await tester.pump();
       expect(selected, 1);
@@ -136,11 +136,9 @@ void main() {
     testWidgets('tapping Dashboard calls onItemSelected(2)', (tester) async {
       var selected = -1;
       await _pump(
-          tester,
-          CandelaSidebar(
-            selectedIndex: 0,
-            onItemSelected: (i) => selected = i,
-          ));
+        tester,
+        CandelaSidebar(selectedIndex: 0, onItemSelected: (i) => selected = i),
+      );
       await tester.tap(find.text('Dashboard'));
       await tester.pump();
       expect(selected, 2);
@@ -149,11 +147,9 @@ void main() {
     testWidgets('tapping Traces calls onItemSelected(3)', (tester) async {
       var selected = -1;
       await _pump(
-          tester,
-          CandelaSidebar(
-            selectedIndex: 0,
-            onItemSelected: (i) => selected = i,
-          ));
+        tester,
+        CandelaSidebar(selectedIndex: 0, onItemSelected: (i) => selected = i),
+      );
       await tester.tap(find.text('Traces'));
       await tester.pump();
       expect(selected, 3);
@@ -162,11 +158,9 @@ void main() {
     testWidgets('tapping Search calls onItemSelected(4)', (tester) async {
       var selected = -1;
       await _pump(
-          tester,
-          CandelaSidebar(
-            selectedIndex: 0,
-            onItemSelected: (i) => selected = i,
-          ));
+        tester,
+        CandelaSidebar(selectedIndex: 0, onItemSelected: (i) => selected = i),
+      );
       await tester.tap(find.text('Search'));
       await tester.pump();
       expect(selected, 4);
@@ -175,11 +169,9 @@ void main() {
     testWidgets('tapping Models calls onItemSelected(5)', (tester) async {
       var selected = -1;
       await _pump(
-          tester,
-          CandelaSidebar(
-            selectedIndex: 0,
-            onItemSelected: (i) => selected = i,
-          ));
+        tester,
+        CandelaSidebar(selectedIndex: 0, onItemSelected: (i) => selected = i),
+      );
       await tester.tap(find.text('Models'));
       await tester.pump();
       expect(selected, 5);
@@ -187,38 +179,44 @@ void main() {
   });
 
   group('CandelaSidebar — active selection', () {
-    testWidgets('selectedIndex 0 renders with today active icon',
-        (tester) async {
+    testWidgets('selectedIndex 0 renders with today active icon', (
+      tester,
+    ) async {
       await _pump(tester, _sidebar(selectedIndex: 0));
       expect(find.byIcon(Icons.today), findsOneWidget);
     });
 
-    testWidgets('selectedIndex 1 renders with shield active icon',
-        (tester) async {
+    testWidgets('selectedIndex 1 renders with shield active icon', (
+      tester,
+    ) async {
       await _pump(tester, _sidebar(selectedIndex: 1));
       expect(find.byIcon(Icons.shield), findsOneWidget);
     });
 
-    testWidgets('selectedIndex 2 renders with dashboard active icon',
-        (tester) async {
+    testWidgets('selectedIndex 2 renders with dashboard active icon', (
+      tester,
+    ) async {
       await _pump(tester, _sidebar(selectedIndex: 2));
       expect(find.byIcon(Icons.dashboard), findsOneWidget);
     });
 
-    testWidgets('selectedIndex 3 renders with timeline active icon',
-        (tester) async {
+    testWidgets('selectedIndex 3 renders with timeline active icon', (
+      tester,
+    ) async {
       await _pump(tester, _sidebar(selectedIndex: 3));
       expect(find.byIcon(Icons.timeline), findsOneWidget);
     });
 
-    testWidgets('selectedIndex 4 renders with search active icon',
-        (tester) async {
+    testWidgets('selectedIndex 4 renders with search active icon', (
+      tester,
+    ) async {
       await _pump(tester, _sidebar(selectedIndex: 4));
       expect(find.byIcon(Icons.search), findsOneWidget);
     });
 
-    testWidgets('selectedIndex 5 renders with memory active icon',
-        (tester) async {
+    testWidgets('selectedIndex 5 renders with memory active icon', (
+      tester,
+    ) async {
       await _pump(tester, _sidebar(selectedIndex: 5));
       expect(find.byIcon(Icons.memory), findsOneWidget);
     });

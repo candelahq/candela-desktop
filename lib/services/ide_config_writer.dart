@@ -89,8 +89,8 @@ class IdeConfigWriter {
     }
 
     // Deep-merge language_models.openai block.
-    final lm =
-        ((settings['language_models'] as Map?) ?? {}).cast<String, dynamic>();
+    final lm = ((settings['language_models'] as Map?) ?? {})
+        .cast<String, dynamic>();
     final openai = ((lm['openai'] as Map?) ?? {}).cast<String, dynamic>();
 
     // Merge available_models — upsert by name.
@@ -115,7 +115,8 @@ class IdeConfigWriter {
       final appData = Platform.environment['APPDATA'];
       if (appData == null || appData.isEmpty) {
         throw StateError(
-            'Unable to determine Zed config path: %APPDATA% is not set');
+          'Unable to determine Zed config path: %APPDATA% is not set',
+        );
       }
       return p.join(appData, 'Zed', 'settings.json');
     }
@@ -153,14 +154,11 @@ class IdeConfigWriter {
       }
     }
 
-    final providers =
-        ((config['providers'] as Map?) ?? {}).cast<String, dynamic>();
+    final providers = ((config['providers'] as Map?) ?? {})
+        .cast<String, dynamic>();
 
     // Upsert the openai provider slot.
-    providers['openai'] = {
-      'apiKey': 'candela',
-      'baseUrl': endpointUrl,
-    };
+    providers['openai'] = {'apiKey': 'candela', 'baseUrl': endpointUrl};
 
     config['providers'] = providers;
     await _writeJson(file, config);
@@ -260,37 +258,34 @@ class IdeConfigWriter {
 
   /// Generate the Continue config.json snippet for display.
   static String continueSnippet(String endpointUrl) => jsonEncode({
-        'models': [
-          {
-            'title': 'Candela (local proxy)',
-            'provider': 'openai',
-            'model': 'candela',
-            'apiBase': endpointUrl,
-          }
-        ],
-      });
+    'models': [
+      {
+        'title': 'Candela (local proxy)',
+        'provider': 'openai',
+        'model': 'candela',
+        'apiBase': endpointUrl,
+      },
+    ],
+  });
 
   /// Generate the Zed settings.json snippet for display.
   static String zedSnippet(String endpointUrl) => jsonEncode({
-        'language_models': {
-          'openai': {
-            'api_url': endpointUrl,
-            'available_models': [
-              {'name': 'candela', 'max_tokens': 8192},
-            ],
-          },
-        },
-      });
+    'language_models': {
+      'openai': {
+        'api_url': endpointUrl,
+        'available_models': [
+          {'name': 'candela', 'max_tokens': 8192},
+        ],
+      },
+    },
+  });
 
   /// Generate the Open Design media-config.json snippet for display.
   static String openDesignSnippet(String endpointUrl) => jsonEncode({
-        'providers': {
-          'openai': {
-            'apiKey': 'candela',
-            'baseUrl': endpointUrl,
-          },
-        },
-      });
+    'providers': {
+      'openai': {'apiKey': 'candela', 'baseUrl': endpointUrl},
+    },
+  });
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 

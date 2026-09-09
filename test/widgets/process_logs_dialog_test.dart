@@ -11,8 +11,10 @@ import 'package:candela_desktop/theme/candela_theme.dart';
 
 /// Build a test harness with a real [ProcessManagerNotifier] so that the
 /// dialog can call `notifier.getLogs()` (logs are no longer stored in state).
-Widget _buildHarness(ProviderContainer container,
-    {String processName = 'proxy'}) {
+Widget _buildHarness(
+  ProviderContainer container, {
+  String processName = 'proxy',
+}) {
   return UncontrolledProviderScope(
     container: container,
     child: MaterialApp(
@@ -38,22 +40,25 @@ Widget _buildHarness(ProviderContainer container,
 
 void main() {
   group('ProcessLogsDialog', () {
-    testWidgets('shows "Process no longer exists." when process is null',
-        (tester) async {
+    testWidgets('shows "Process no longer exists." when process is null', (
+      tester,
+    ) async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
       // Don't configure — looking up 'nonexistent' returns null.
 
-      await tester
-          .pumpWidget(_buildHarness(container, processName: 'nonexistent'));
+      await tester.pumpWidget(
+        _buildHarness(container, processName: 'nonexistent'),
+      );
       await tester.tap(find.text('Open'));
       await tester.pump();
 
       expect(find.text('Process no longer exists.'), findsOneWidget);
     });
 
-    testWidgets('shows "No logs available yet." when logs are empty',
-        (tester) async {
+    testWidgets('shows "No logs available yet." when logs are empty', (
+      tester,
+    ) async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
       container

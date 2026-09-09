@@ -8,11 +8,7 @@ class ProviderCard extends StatelessWidget {
   final ProviderStatus status;
   final VoidCallback? onRemove;
 
-  const ProviderCard({
-    super.key,
-    required this.status,
-    this.onRemove,
-  });
+  const ProviderCard({super.key, required this.status, this.onRemove});
 
   @override
   Widget build(BuildContext context) {
@@ -26,53 +22,81 @@ class ProviderCard extends StatelessWidget {
           border: Border.all(color: _borderColor),
         ),
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _header(),
-          const SizedBox(height: 8),
-          if (status.state == ProviderState.loading)
-            const Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _header(),
+            const SizedBox(height: 8),
+            if (status.state == ProviderState.loading)
+              const Expanded(
                 child: Center(
-                    child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: CandelaColors.accent))))
-          else ...[
-            if (status.project != null) _row('Project', status.project!),
-            if (status.region != null) _row('Region', status.region!),
-            if (status.models.isNotEmpty)
-              Row(children: [
-                Expanded(
-                    child: Text(
-                  'Models: ${status.models.take(3).join(", ")}',
-                  style: const TextStyle(
-                      fontSize: 11, color: CandelaColors.textSecondary),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                )),
-                if (status.models.length > 3)
-                  Text(' +${status.models.length - 3}',
-                      style: const TextStyle(
-                          fontSize: 10, color: CandelaColors.textMuted)),
-              ]),
-            if (status.errorDetail != null)
-              Padding(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: CandelaColors.accent,
+                    ),
+                  ),
+                ),
+              )
+            else ...[
+              if (status.project != null) _row('Project', status.project!),
+              if (status.region != null) _row('Region', status.region!),
+              if (status.models.isNotEmpty)
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Models: ${status.models.take(3).join(", ")}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: CandelaColors.textSecondary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (status.models.length > 3)
+                      Text(
+                        ' +${status.models.length - 3}',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: CandelaColors.textMuted,
+                        ),
+                      ),
+                  ],
+                ),
+              if (status.errorDetail != null)
+                Padding(
                   padding: const EdgeInsets.only(top: 4),
-                  child: Row(children: [
-                    const Icon(Icons.warning_amber,
-                        size: 12, color: CandelaColors.warning),
-                    const SizedBox(width: 4),
-                    Flexible(
-                        child: Text(status.errorDetail!,
-                            style: const TextStyle(
-                                fontSize: 11, color: CandelaColors.warning),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis)),
-                  ])),
-            const Spacer(),
-            _action(context),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.warning_amber,
+                        size: 12,
+                        color: CandelaColors.warning,
+                      ),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          status.errorDetail!,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: CandelaColors.warning,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              const Spacer(),
+              _action(context),
+            ],
           ],
-        ]),
+        ),
       ),
     );
   }
@@ -85,10 +109,10 @@ class ProviderCard extends StatelessWidget {
   }
 
   Color get _borderColor => switch (status.state) {
-        ProviderState.connected => CandelaColors.success.withValues(alpha: 0.3),
-        ProviderState.error => CandelaColors.error.withValues(alpha: 0.3),
-        _ => CandelaColors.borderSubtle,
-      };
+    ProviderState.connected => CandelaColors.success.withValues(alpha: 0.3),
+    ProviderState.error => CandelaColors.error.withValues(alpha: 0.3),
+    _ => CandelaColors.borderSubtle,
+  };
 
   Widget _header() {
     final color = switch (status.state) {
@@ -96,68 +120,87 @@ class ProviderCard extends StatelessWidget {
       ProviderState.error => CandelaColors.error,
       _ => CandelaColors.textMuted,
     };
-    return Row(children: [
-      Text(status.icon ?? '', style: const TextStyle(fontSize: 16)),
-      const SizedBox(width: 8),
-      Expanded(
-          child: Text(status.displayName,
-              style:
-                  const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
-      Text(status.statusMessage ?? '',
-          style: TextStyle(
-              fontSize: 11, fontWeight: FontWeight.w500, color: color)),
-      if (onRemove != null) ...[
-        const SizedBox(width: 6),
-        Tooltip(
-          message: 'Remove from config',
-          child: InkWell(
-            borderRadius: BorderRadius.circular(4),
-            onTap: onRemove,
-            child: Container(
-              padding: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4),
-                color: CandelaColors.bgTertiary,
-              ),
-              child: const Icon(Icons.close,
-                  size: 12, color: CandelaColors.textMuted),
-            ),
+    return Row(
+      children: [
+        Text(status.icon ?? '', style: const TextStyle(fontSize: 16)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            status.displayName,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
           ),
         ),
+        Text(
+          status.statusMessage ?? '',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: color,
+          ),
+        ),
+        if (onRemove != null) ...[
+          const SizedBox(width: 6),
+          Tooltip(
+            message: 'Remove from config',
+            child: InkWell(
+              borderRadius: BorderRadius.circular(4),
+              onTap: onRemove,
+              child: Container(
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  color: CandelaColors.bgTertiary,
+                ),
+                child: const Icon(
+                  Icons.close,
+                  size: 12,
+                  color: CandelaColors.textMuted,
+                ),
+              ),
+            ),
+          ),
+        ],
       ],
-    ]);
+    );
   }
 
   Widget _row(String label, String value) => Padding(
-        padding: const EdgeInsets.only(bottom: 2),
-        child: Text('$label: $value',
-            style: const TextStyle(
-                fontSize: 11, color: CandelaColors.textSecondary),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis),
-      );
+    padding: const EdgeInsets.only(bottom: 2),
+    child: Text(
+      '$label: $value',
+      style: const TextStyle(fontSize: 11, color: CandelaColors.textSecondary),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    ),
+  );
 
   Widget _action(BuildContext context) {
     if (status.fixUrl != null) {
       return Align(
-          alignment: Alignment.centerRight,
-          child: ElevatedButton(
-              onPressed: () => launchUrl(Uri.parse(status.fixUrl!)),
-              child: const Text('Fix →')));
+        alignment: Alignment.centerRight,
+        child: ElevatedButton(
+          onPressed: () => launchUrl(Uri.parse(status.fixUrl!)),
+          child: const Text('Fix →'),
+        ),
+      );
     }
     if (status.fixCommand != null) {
       return Align(
-          alignment: Alignment.centerRight,
-          child: OutlinedButton.icon(
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: status.fixCommand!));
-                ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Copied: ${status.fixCommand}')));
-              },
-              icon: const Icon(Icons.copy, size: 14),
-              label: Text(status.fixCommand!,
-                  style:
-                      const TextStyle(fontSize: 11, fontFamily: 'monospace'))));
+        alignment: Alignment.centerRight,
+        child: OutlinedButton.icon(
+          onPressed: () {
+            Clipboard.setData(ClipboardData(text: status.fixCommand!));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Copied: ${status.fixCommand}')),
+            );
+          },
+          icon: const Icon(Icons.copy, size: 14),
+          label: Text(
+            status.fixCommand!,
+            style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+          ),
+        ),
+      );
     }
     return const SizedBox.shrink();
   }
@@ -176,11 +219,13 @@ class _ProviderDetailDialog extends StatelessWidget {
     final s = status;
     return AlertDialog(
       backgroundColor: CandelaColors.bgSecondary,
-      title: Row(children: [
-        Text(s.icon ?? '', style: const TextStyle(fontSize: 18)),
-        const SizedBox(width: 8),
-        Text(s.displayName),
-      ]),
+      title: Row(
+        children: [
+          Text(s.icon ?? '', style: const TextStyle(fontSize: 18)),
+          const SizedBox(width: 8),
+          Text(s.displayName),
+        ],
+      ),
       content: SizedBox(
         width: 420,
         child: Column(
@@ -192,14 +237,22 @@ class _ProviderDetailDialog extends StatelessWidget {
             if (s.latency != null)
               _infoRow('Latency', '${s.latency!.inMilliseconds}ms'),
             const SizedBox(height: 12),
-            Row(children: [
-              const Text('Available Models',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-              const Spacer(),
-              Text('${s.models.length} models',
+            Row(
+              children: [
+                const Text(
+                  'Available Models',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                const Spacer(),
+                Text(
+                  '${s.models.length} models',
                   style: const TextStyle(
-                      fontSize: 11, color: CandelaColors.textMuted)),
-            ]),
+                    fontSize: 11,
+                    color: CandelaColors.textMuted,
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 8),
             ...s.models.map((m) => _modelRow(m)),
           ],
@@ -207,8 +260,9 @@ class _ProviderDetailDialog extends StatelessWidget {
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close')),
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Close'),
+        ),
       ],
     );
   }
@@ -216,22 +270,32 @@ class _ProviderDetailDialog extends StatelessWidget {
   Widget _modelRow(String model) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: Row(children: [
-        Expanded(
-            child: Text(model,
-                style: const TextStyle(
-                    fontSize: 12, fontFamily: 'SF Mono, monospace'))),
-      ]),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              model,
+              style: const TextStyle(
+                fontSize: 12,
+                fontFamily: 'SF Mono, monospace',
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _infoRow(String label, String value) => Padding(
-        padding: const EdgeInsets.only(bottom: 4),
-        child: Row(children: [
-          Text('$label: ',
-              style: const TextStyle(
-                  fontSize: 12, color: CandelaColors.textMuted)),
-          Text(value, style: const TextStyle(fontSize: 12)),
-        ]),
-      );
+    padding: const EdgeInsets.only(bottom: 4),
+    child: Row(
+      children: [
+        Text(
+          '$label: ',
+          style: const TextStyle(fontSize: 12, color: CandelaColors.textMuted),
+        ),
+        Text(value, style: const TextStyle(fontSize: 12)),
+      ],
+    ),
+  );
 }

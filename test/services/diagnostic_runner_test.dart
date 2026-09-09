@@ -58,23 +58,23 @@ CandelaConfig _soloConfig({List<ConfigIssue> issues = const []}) {
 }
 
 AdcInfo _fakeAdc({String? quotaProject}) => AdcInfo(
-      path: '/tmp/adc.json',
-      type: 'authorized_user',
-      clientEmail: null,
-      quotaProject: quotaProject,
-    );
+  path: '/tmp/adc.json',
+  type: 'authorized_user',
+  clientEmail: null,
+  quotaProject: quotaProject,
+);
 
 TokenInfo _validToken() => TokenInfo(
-      accessToken: 'fake-token-abc',
-      email: 'user@example.com',
-      expiresAt: DateTime.now().toUtc().add(const Duration(hours: 1)),
-    );
+  accessToken: 'fake-token-abc',
+  email: 'user@example.com',
+  expiresAt: DateTime.now().toUtc().add(const Duration(hours: 1)),
+);
 
 TokenInfo _expiredToken() => TokenInfo(
-      accessToken: 'old-token',
-      email: 'user@example.com',
-      expiresAt: DateTime.now().toUtc().subtract(const Duration(hours: 1)),
-    );
+  accessToken: 'old-token',
+  email: 'user@example.com',
+  expiresAt: DateTime.now().toUtc().subtract(const Duration(hours: 1)),
+);
 
 // Helper: build a runner with all parts controllable.
 DiagnosticRunner _runner({
@@ -84,7 +84,8 @@ DiagnosticRunner _runner({
   AdcInfo? adc,
   http.Client? httpClient,
 }) {
-  final proxyAndMockClient = httpClient ??
+  final proxyAndMockClient =
+      httpClient ??
       http_testing.MockClient((_) async => http.Response('ok', 200));
 
   return DiagnosticRunner(
@@ -199,9 +200,11 @@ void main() {
     test('emits warning (not failure) for missing CLI', () async {
       await runner.runAll();
       expect(
-        runner.history.any((e) =>
-            e.status == DiagnosticStatus.warn &&
-            e.message.contains('Candela CLI not found')),
+        runner.history.any(
+          (e) =>
+              e.status == DiagnosticStatus.warn &&
+              e.message.contains('Candela CLI not found'),
+        ),
         isTrue,
       );
     });
@@ -226,19 +229,19 @@ void main() {
 
   group('DiagnosticRunner runAll — no ADC', () {
     late DiagnosticRunner runner;
-    setUp(() => runner = _runner(
-          candelaInstalled: true,
-          token: null,
-          adc: null,
-        ));
+    setUp(
+      () => runner = _runner(candelaInstalled: true, token: null, adc: null),
+    );
     tearDown(() => runner.dispose());
 
     test('emits fail for missing ADC', () async {
       await runner.runAll();
       expect(
-        runner.history.any((e) =>
-            e.status == DiagnosticStatus.fail &&
-            (e.message.contains('ADC') || e.message.contains('No ADC'))),
+        runner.history.any(
+          (e) =>
+              e.status == DiagnosticStatus.fail &&
+              (e.message.contains('ADC') || e.message.contains('No ADC')),
+        ),
         isTrue,
       );
     });
@@ -246,9 +249,11 @@ void main() {
     test('emits fail for missing token', () async {
       await runner.runAll();
       expect(
-        runner.history.any((e) =>
-            e.status == DiagnosticStatus.fail &&
-            (e.message.contains('token') || e.message.contains('Token'))),
+        runner.history.any(
+          (e) =>
+              e.status == DiagnosticStatus.fail &&
+              (e.message.contains('token') || e.message.contains('Token')),
+        ),
         isTrue,
       );
     });
@@ -256,18 +261,23 @@ void main() {
 
   group('DiagnosticRunner runAll — expired token', () {
     late DiagnosticRunner runner;
-    setUp(() => runner = _runner(
-          candelaInstalled: true,
-          token: _expiredToken(),
-          adc: _fakeAdc(),
-        ));
+    setUp(
+      () => runner = _runner(
+        candelaInstalled: true,
+        token: _expiredToken(),
+        adc: _fakeAdc(),
+      ),
+    );
     tearDown(() => runner.dispose());
 
     test('emits token-expired fail', () async {
       await runner.runAll();
       expect(
-        runner.history.any((e) =>
-            e.status == DiagnosticStatus.fail && e.message.contains('expired')),
+        runner.history.any(
+          (e) =>
+              e.status == DiagnosticStatus.fail &&
+              e.message.contains('expired'),
+        ),
         isTrue,
       );
     });
@@ -275,20 +285,19 @@ void main() {
 
   group('DiagnosticRunner runAll — valid token, proxy up', () {
     late DiagnosticRunner runner;
-    setUp(() => runner = _runner(
-          candelaInstalled: true,
-          token: _validToken(),
-          adc: _fakeAdc(quotaProject: 'my-gcp-project'),
-          httpClient: http_testing.MockClient((req) async {
-            if (req.url.path == '/v1/models') {
-              return http.Response(
-                '{"data":[{"id":"gemini-2.0-flash"}]}',
-                200,
-              );
-            }
-            return http.Response('ok', 200);
-          }),
-        ));
+    setUp(
+      () => runner = _runner(
+        candelaInstalled: true,
+        token: _validToken(),
+        adc: _fakeAdc(quotaProject: 'my-gcp-project'),
+        httpClient: http_testing.MockClient((req) async {
+          if (req.url.path == '/v1/models') {
+            return http.Response('{"data":[{"id":"gemini-2.0-flash"}]}', 200);
+          }
+          return http.Response('ok', 200);
+        }),
+      ),
+    );
     tearDown(() => runner.dispose());
 
     test('runAll completes without throwing', () async {
@@ -348,18 +357,23 @@ void main() {
 
   group('DiagnosticRunner runAll — no project configured', () {
     late DiagnosticRunner runner;
-    setUp(() => runner = _runner(
-          candelaInstalled: true,
-          token: _validToken(),
-          adc: _fakeAdc(), // no quotaProject
-        ));
+    setUp(
+      () => runner = _runner(
+        candelaInstalled: true,
+        token: _validToken(),
+        adc: _fakeAdc(), // no quotaProject
+      ),
+    );
     tearDown(() => runner.dispose());
 
     test('emits project warning', () async {
       await runner.runAll();
       expect(
-        runner.history.any((e) =>
-            e.status == DiagnosticStatus.warn && e.message.contains('project')),
+        runner.history.any(
+          (e) =>
+              e.status == DiagnosticStatus.warn &&
+              e.message.contains('project'),
+        ),
         isTrue,
       );
     });
@@ -402,8 +416,10 @@ void main() {
       );
       await runner.runAll();
       expect(
-        runner.history.any((e) =>
-            e.status == DiagnosticStatus.fail && e.message.contains('Config')),
+        runner.history.any(
+          (e) =>
+              e.status == DiagnosticStatus.fail && e.message.contains('Config'),
+        ),
         isTrue,
       );
       runner.dispose();

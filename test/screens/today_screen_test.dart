@@ -8,14 +8,11 @@ import 'package:candela_desktop/theme/colors.dart';
 /// correctness of the Today page at different data states.
 
 Widget _wrap(Widget child) => ProviderScope(
-      child: MaterialApp(
-        theme: ThemeData.dark(),
-        home: Scaffold(
-          backgroundColor: CandelaColors.bgPrimary,
-          body: child,
-        ),
-      ),
-    );
+  child: MaterialApp(
+    theme: ThemeData.dark(),
+    home: Scaffold(backgroundColor: CandelaColors.bgPrimary, body: child),
+  ),
+);
 
 void main() {
   group('TodayScreen', () {

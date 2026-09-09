@@ -13,16 +13,15 @@ ModelCatalogEntry _entry({
   String category = 'flagship',
   double inputPerMillion = 5.0,
   double outputPerMillion = 15.0,
-}) =>
-    ModelCatalogEntry(
-      modelId: modelId,
-      provider: provider,
-      displayName: displayName,
-      enabled: enabled,
-      category: category,
-      inputPerMillion: inputPerMillion,
-      outputPerMillion: outputPerMillion,
-    );
+}) => ModelCatalogEntry(
+  modelId: modelId,
+  provider: provider,
+  displayName: displayName,
+  enabled: enabled,
+  category: category,
+  inputPerMillion: inputPerMillion,
+  outputPerMillion: outputPerMillion,
+);
 
 void main() {
   // ── CatalogState ──────────────────────────────────────────────────────────
@@ -55,14 +54,16 @@ void main() {
     });
 
     test('copyWith can clear error', () {
-      final state =
-          const CatalogState(error: 'fail').copyWith(clearError: true);
+      final state = const CatalogState(
+        error: 'fail',
+      ).copyWith(clearError: true);
       expect(state.error, isNull);
     });
 
     test('copyWith clearError takes precedence over error', () {
-      final state = const CatalogState(error: 'old')
-          .copyWith(error: 'new', clearError: true);
+      final state = const CatalogState(
+        error: 'old',
+      ).copyWith(error: 'new', clearError: true);
       expect(state.error, isNull);
     });
   });
@@ -72,11 +73,13 @@ void main() {
   group('CatalogController — configure', () {
     test('configure sets up client (solo mode)', () {
       final controller = CatalogController();
-      controller.configure(const CandelaConfig(
-        path: '/tmp/test',
-        mode: CandelaMode.solo,
-        port: 8181,
-      ));
+      controller.configure(
+        const CandelaConfig(
+          path: '/tmp/test',
+          mode: CandelaMode.solo,
+          port: 8181,
+        ),
+      );
       // After configure, the controller should have a client — verify by
       // checking that fetch() doesn't bail early (it would if _client == null).
       // We can only indirectly test this since _client is private.
@@ -92,12 +95,14 @@ void main() {
 
     test('configure sets up client (team mode)', () {
       final controller = CatalogController();
-      controller.configure(const CandelaConfig(
-        path: '/tmp/test',
-        mode: CandelaMode.team,
-        remote: 'https://candela.example.com',
-        port: 9090,
-      ));
+      controller.configure(
+        const CandelaConfig(
+          path: '/tmp/test',
+          mode: CandelaMode.team,
+          remote: 'https://candela.example.com',
+          port: 9090,
+        ),
+      );
       // Should not throw and should allow fetch to proceed.
       final states = <CatalogState>[];
       controller.onStateChanged = (s) => states.add(s);
@@ -109,12 +114,14 @@ void main() {
     test('configure with team mode and empty remote works like solo', () {
       final controller = CatalogController();
       // Empty remote → still configures via localhost.
-      controller.configure(const CandelaConfig(
-        path: '/tmp/test',
-        mode: CandelaMode.team,
-        remote: '',
-        port: 8181,
-      ));
+      controller.configure(
+        const CandelaConfig(
+          path: '/tmp/test',
+          mode: CandelaMode.team,
+          remote: '',
+          port: 8181,
+        ),
+      );
       final states = <CatalogState>[];
       controller.onStateChanged = (s) => states.add(s);
       controller.fetch();
@@ -149,16 +156,15 @@ void main() {
 
     test('optimistic update clears previous errors', () async {
       final controller = CatalogController();
-      controller.configure(const CandelaConfig(
-        path: '/tmp/test',
-        mode: CandelaMode.solo,
-        port: 49999, // Use a port where no server is running.
-      ));
-      final entry = _entry(enabled: true);
-      controller.state = CatalogState(
-        models: [entry],
-        error: 'previous error',
+      controller.configure(
+        const CandelaConfig(
+          path: '/tmp/test',
+          mode: CandelaMode.solo,
+          port: 49999, // Use a port where no server is running.
+        ),
       );
+      final entry = _entry(enabled: true);
+      controller.state = CatalogState(models: [entry], error: 'previous error');
 
       // toggleEnabled will apply optimistic update then fail at the RPC call
       // (no server running), but the optimistic update should clear the error.
@@ -170,35 +176,36 @@ void main() {
       expect(states.isNotEmpty, isTrue);
       final optimisticState = states.first;
       expect(optimisticState.error, isNull);
-      expect(
-        optimisticState.models.first.enabled,
-        isFalse,
-      );
+      expect(optimisticState.models.first.enabled, isFalse);
       controller.dispose();
     });
 
-    test('rollback on failure re-fetches (which errors without server)',
-        () async {
-      final controller = CatalogController();
-      controller.configure(const CandelaConfig(
-        path: '/tmp/test',
-        mode: CandelaMode.solo,
-        port: 49999, // Use a port where no server is running.
-      ));
+    test(
+      'rollback on failure re-fetches (which errors without server)',
+      () async {
+        final controller = CatalogController();
+        controller.configure(
+          const CandelaConfig(
+            path: '/tmp/test',
+            mode: CandelaMode.solo,
+            port: 49999, // Use a port where no server is running.
+          ),
+        );
 
-      final entry = _entry(enabled: true);
-      controller.state = CatalogState(models: [entry]);
+        final entry = _entry(enabled: true);
+        controller.state = CatalogState(models: [entry]);
 
-      final states = <CatalogState>[];
-      controller.onStateChanged = (s) => states.add(s);
+        final states = <CatalogState>[];
+        controller.onStateChanged = (s) => states.add(s);
 
-      await controller.toggleEnabled('openai', 'gpt-4o', false);
+        await controller.toggleEnabled('openai', 'gpt-4o', false);
 
-      // After failure, fetch() is called which also fails (no server).
-      // At least one state change should have occurred (optimistic + fetch loading + fetch error).
-      expect(states, isNotEmpty);
-      controller.dispose();
-    });
+        // After failure, fetch() is called which also fails (no server).
+        // At least one state change should have occurred (optimistic + fetch loading + fetch error).
+        expect(states, isNotEmpty);
+        controller.dispose();
+      },
+    );
   });
 
   // ── CatalogController — deleteEntry ───────────────────────────────────────
@@ -206,11 +213,13 @@ void main() {
   group('CatalogController — deleteEntry', () {
     test('sets error on failure', () async {
       final controller = CatalogController();
-      controller.configure(const CandelaConfig(
-        path: '/tmp/test',
-        mode: CandelaMode.solo,
-        port: 49999, // Use a port where no server is running.
-      ));
+      controller.configure(
+        const CandelaConfig(
+          path: '/tmp/test',
+          mode: CandelaMode.solo,
+          port: 49999, // Use a port where no server is running.
+        ),
+      );
 
       final entry = _entry();
       controller.state = CatalogState(models: [entry]);
@@ -241,11 +250,13 @@ void main() {
 
     test('error message includes model ID', () async {
       final controller = CatalogController();
-      controller.configure(const CandelaConfig(
-        path: '/tmp/test',
-        mode: CandelaMode.solo,
-        port: 49999, // Use a port where no server is running.
-      ));
+      controller.configure(
+        const CandelaConfig(
+          path: '/tmp/test',
+          mode: CandelaMode.solo,
+          port: 49999, // Use a port where no server is running.
+        ),
+      );
 
       controller.state = CatalogState(models: [_entry()]);
 
@@ -303,10 +314,9 @@ void main() {
 
     test('fetch after dispose does not crash', () async {
       final controller = CatalogController();
-      controller.configure(const CandelaConfig(
-        path: '/tmp/test',
-        mode: CandelaMode.solo,
-      ));
+      controller.configure(
+        const CandelaConfig(path: '/tmp/test', mode: CandelaMode.solo),
+      );
       controller.dispose();
 
       // fetch() should return without crashing (state setter is guarded).
@@ -315,10 +325,9 @@ void main() {
 
     test('toggleEnabled after dispose does not crash', () async {
       final controller = CatalogController();
-      controller.configure(const CandelaConfig(
-        path: '/tmp/test',
-        mode: CandelaMode.solo,
-      ));
+      controller.configure(
+        const CandelaConfig(path: '/tmp/test', mode: CandelaMode.solo),
+      );
       controller.dispose();
 
       await controller.toggleEnabled('openai', 'gpt-4o', false);

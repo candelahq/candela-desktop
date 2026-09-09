@@ -8,8 +8,11 @@ class IdentityCard extends StatefulWidget {
   final IdentityState identity;
   final VoidCallback onRefresh;
 
-  const IdentityCard(
-      {super.key, required this.identity, required this.onRefresh});
+  const IdentityCard({
+    super.key,
+    required this.identity,
+    required this.onRefresh,
+  });
 
   @override
   State<IdentityCard> createState() => _IdentityCardState();
@@ -29,15 +32,15 @@ class _IdentityCardState extends State<IdentityCard> {
     final statusColor = token == null
         ? CandelaColors.error
         : token.isValid
-            ? (token.timeRemaining.inMinutes < 5
-                ? CandelaColors.warning
-                : CandelaColors.success)
-            : CandelaColors.error;
+        ? (token.timeRemaining.inMinutes < 5
+              ? CandelaColors.warning
+              : CandelaColors.success)
+        : CandelaColors.error;
     final statusText = token == null
         ? '❌ No token'
         : token.isValid
-            ? '✅ Valid — expires in ${token.expiryDisplay}'
-            : '❌ Token expired';
+        ? '✅ Valid — expires in ${token.expiryDisplay}'
+        : '❌ Token expired';
 
     return Card(
       child: Padding(
@@ -72,15 +75,18 @@ class _IdentityCardState extends State<IdentityCard> {
                   const Text(
                     'Primary Team Identity (GCP)',
                     style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: CandelaColors.accent),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: CandelaColors.accent,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     identity.email ?? 'Not authenticated',
                     style: const TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w600),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   if (identity.adcInfo != null) ...[
@@ -88,12 +94,18 @@ class _IdentityCardState extends State<IdentityCard> {
                     const SizedBox(height: 4),
                   ],
                   if (identity.project != null)
-                    Text('GCP Project: ${identity.project}',
-                        style: const TextStyle(
-                            fontSize: 12, color: CandelaColors.textSecondary)),
+                    Text(
+                      'GCP Project: ${identity.project}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: CandelaColors.textSecondary,
+                      ),
+                    ),
                   const SizedBox(height: 4),
-                  Text(statusText,
-                      style: TextStyle(fontSize: 12, color: statusColor)),
+                  Text(
+                    statusText,
+                    style: TextStyle(fontSize: 12, color: statusColor),
+                  ),
                   if (identity.credentialOverride != null) ...[
                     const SizedBox(height: 6),
                     _credentialOverrideBanner(identity.credentialOverride!),
@@ -121,11 +133,15 @@ class _IdentityCardState extends State<IdentityCard> {
                       child: OutlinedButton.icon(
                         onPressed: _runAdcLogin,
                         icon: const Icon(Icons.key, size: 14),
-                        label: const Text('ADC Login',
-                            style: TextStyle(fontSize: 11)),
+                        label: const Text(
+                          'ADC Login',
+                          style: TextStyle(fontSize: 11),
+                        ),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           visualDensity: VisualDensity.compact,
                         ),
                       ),
@@ -137,14 +153,19 @@ class _IdentityCardState extends State<IdentityCard> {
                     child: OutlinedButton.icon(
                       onPressed: _cancelAdcLogin,
                       icon: const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 1.5)),
-                      label:
-                          const Text('Cancel', style: TextStyle(fontSize: 11)),
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 1.5),
+                      ),
+                      label: const Text(
+                        'Cancel',
+                        style: TextStyle(fontSize: 11),
+                      ),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         visualDensity: VisualDensity.compact,
                         foregroundColor: CandelaColors.error,
                       ),
@@ -166,15 +187,19 @@ class _IdentityCardState extends State<IdentityCard> {
     try {
       // Use `candela auth login` (native OAuth, no gcloud needed).
       try {
-        _adcProcess = await Process.start('candela', ['auth', 'login'],
-            environment: CandelaAuthService().augmentedEnv);
+        _adcProcess = await Process.start('candela', [
+          'auth',
+          'login',
+        ], environment: CandelaAuthService().augmentedEnv);
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-                content: Text(
-                    'Candela CLI not found — install via: brew install candelahq/tap/candela'),
-                backgroundColor: CandelaColors.warning),
+              content: Text(
+                'Candela CLI not found — install via: brew install candelahq/tap/candela',
+              ),
+              backgroundColor: CandelaColors.warning,
+            ),
           );
         }
         _adcProcess = null;
@@ -189,22 +214,25 @@ class _IdentityCardState extends State<IdentityCard> {
       if (exitCode == 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('ADC credentials refreshed'),
-              backgroundColor: CandelaColors.success),
+            content: Text('ADC credentials refreshed'),
+            backgroundColor: CandelaColors.success,
+          ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('ADC login exited with code $exitCode'),
-              backgroundColor: CandelaColors.error),
+            content: Text('ADC login exited with code $exitCode'),
+            backgroundColor: CandelaColors.error,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Failed to start login: $e'),
-              backgroundColor: CandelaColors.error),
+            content: Text('Failed to start login: $e'),
+            backgroundColor: CandelaColors.error,
+          ),
         );
       }
     }
@@ -220,9 +248,9 @@ class _IdentityCardState extends State<IdentityCard> {
     _adcProcess = null;
     if (!mounted) return;
     setState(() {});
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('ADC login cancelled')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('ADC login cancelled')));
   }
 
   Widget _credentialOverrideBanner(CredentialOverride override) {
@@ -231,15 +259,16 @@ class _IdentityCardState extends State<IdentityCard> {
       decoration: BoxDecoration(
         color: CandelaColors.warning.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: CandelaColors.warning.withValues(alpha: 0.4),
-        ),
+        border: Border.all(color: CandelaColors.warning.withValues(alpha: 0.4)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.warning_amber_rounded,
-              size: 14, color: CandelaColors.warning),
+          const Icon(
+            Icons.warning_amber_rounded,
+            size: 14,
+            color: CandelaColors.warning,
+          ),
           const SizedBox(width: 6),
           Expanded(
             child: Column(
@@ -267,11 +296,11 @@ class _IdentityCardState extends State<IdentityCard> {
                 Text(
                   override.isServiceAccount
                       ? 'Client libraries will authenticate as this SA, '
-                          'not your ADC identity. '
-                          'Run: unset GOOGLE_APPLICATION_CREDENTIALS'
+                            'not your ADC identity. '
+                            'Run: unset GOOGLE_APPLICATION_CREDENTIALS'
                       : 'Client libraries may use different credentials '
-                          'than shown above. '
-                          'Run: unset GOOGLE_APPLICATION_CREDENTIALS',
+                            'than shown above. '
+                            'Run: unset GOOGLE_APPLICATION_CREDENTIALS',
                   style: const TextStyle(
                     fontSize: 10,
                     color: CandelaColors.textSecondary,
@@ -293,9 +322,13 @@ class _IdentityCardState extends State<IdentityCard> {
         borderRadius: BorderRadius.circular(100),
         border: Border.all(color: CandelaColors.border),
       ),
-      child: Text(text,
-          style: const TextStyle(
-              fontSize: 11, color: CandelaColors.textSecondary)),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 11,
+          color: CandelaColors.textSecondary,
+        ),
+      ),
     );
   }
 

@@ -119,8 +119,11 @@ class _BudgetWaterfallCardState extends State<BudgetWaterfallCard> {
                   if (_pinnedGrantId == g.id)
                     const Text('⭐ ', style: TextStyle(fontSize: 12)),
                   Expanded(
-                      child: Text(g.displayLabel,
-                          overflow: TextOverflow.ellipsis)),
+                    child: Text(
+                      g.displayLabel,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -139,11 +142,16 @@ class _BudgetWaterfallCardState extends State<BudgetWaterfallCard> {
               Text(
                 _pinnedGrantId != null ? '⭐ Pin' : '⭐ Pin grant',
                 style: const TextStyle(
-                    fontSize: 11, color: CandelaColors.textSecondary),
+                  fontSize: 11,
+                  color: CandelaColors.textSecondary,
+                ),
               ),
               const SizedBox(width: 4),
-              const Icon(Icons.arrow_drop_down,
-                  size: 14, color: CandelaColors.textMuted),
+              const Icon(
+                Icons.arrow_drop_down,
+                size: 14,
+                color: CandelaColors.textMuted,
+              ),
             ],
           ),
         ),
@@ -156,16 +164,16 @@ class _BudgetWaterfallCardState extends State<BudgetWaterfallCard> {
     final barColor = b.isExhausted
         ? CandelaColors.error
         : b.isNearLimit
-            ? CandelaColors.warning
-            : CandelaColors.success;
+        ? CandelaColors.warning
+        : CandelaColors.success;
 
     // Compute resetLabel with the build-time clock to stay in sync with grants.
     final diff = b.periodEnd.toUtc().difference(now);
     final resetLabel = diff.isNegative
         ? 'resetting'
         : diff.inHours >= 1
-            ? 'resets in ${diff.inHours}h ${diff.inMinutes % 60}m'
-            : 'resets in ${diff.inMinutes}m';
+        ? 'resets in ${diff.inHours}h ${diff.inMinutes % 60}m'
+        : 'resets in ${diff.inMinutes}m';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,20 +184,21 @@ class _BudgetWaterfallCardState extends State<BudgetWaterfallCard> {
               width: 80,
               child: Text(
                 'Daily Budget',
-                style:
-                    TextStyle(fontSize: 12, color: CandelaColors.textSecondary),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: CandelaColors.textSecondary,
+                ),
               ),
             ),
-            Expanded(
-              child: _progressBar(b.usedFraction, barColor),
-            ),
+            Expanded(child: _progressBar(b.usedFraction, barColor)),
             const SizedBox(width: 8),
             Text(
               '\$${b.spentUsd.toStringAsFixed(2)} / \$${b.limitUsd.toStringAsFixed(2)}',
               style: const TextStyle(
-                  fontSize: 11,
-                  fontFamily: 'SF Mono, monospace',
-                  color: CandelaColors.textSecondary),
+                fontSize: 11,
+                fontFamily: 'SF Mono, monospace',
+                color: CandelaColors.textSecondary,
+              ),
             ),
             const SizedBox(width: 6),
             Text(
@@ -207,8 +216,10 @@ class _BudgetWaterfallCardState extends State<BudgetWaterfallCard> {
           padding: const EdgeInsets.only(left: 88),
           child: Text(
             resetLabel,
-            style:
-                const TextStyle(fontSize: 10, color: CandelaColors.textMuted),
+            style: const TextStyle(
+              fontSize: 10,
+              color: CandelaColors.textMuted,
+            ),
           ),
         ),
       ],
@@ -250,7 +261,9 @@ class _BudgetWaterfallCardState extends State<BudgetWaterfallCard> {
                 child: Text(
                   g.displayLabel,
                   style: const TextStyle(
-                      fontSize: 11, color: CandelaColors.textSecondary),
+                    fontSize: 11,
+                    color: CandelaColors.textSecondary,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -264,9 +277,10 @@ class _BudgetWaterfallCardState extends State<BudgetWaterfallCard> {
               Text(
                 '\$${g.spentUsd.toStringAsFixed(2)} / \$${g.amountUsd.toStringAsFixed(2)}',
                 style: const TextStyle(
-                    fontSize: 11,
-                    fontFamily: 'SF Mono, monospace',
-                    color: CandelaColors.textSecondary),
+                  fontSize: 11,
+                  fontFamily: 'SF Mono, monospace',
+                  color: CandelaColors.textSecondary,
+                ),
               ),
               if (expiringSoon) ...[
                 const SizedBox(width: 6),
@@ -275,20 +289,24 @@ class _BudgetWaterfallCardState extends State<BudgetWaterfallCard> {
                       ? 'Expires ${_daysLabel(g.expiresAt!, now)}'
                       : 'Expiring soon',
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 1,
+                    ),
                     decoration: BoxDecoration(
                       color: CandelaColors.warning.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(
-                          color: CandelaColors.warning.withValues(alpha: 0.4)),
+                        color: CandelaColors.warning.withValues(alpha: 0.4),
+                      ),
                     ),
                     child: const Text(
                       '⚠ expiring',
                       style: TextStyle(
-                          fontSize: 9,
-                          color: CandelaColors.warning,
-                          fontWeight: FontWeight.w500),
+                        fontSize: 9,
+                        color: CandelaColors.warning,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ),
@@ -297,16 +315,19 @@ class _BudgetWaterfallCardState extends State<BudgetWaterfallCard> {
           ),
           const SizedBox(height: 2),
           Padding(
-            padding:
-                const EdgeInsets.only(left: 80), // aligns with bar (16 + 64)
+            padding: const EdgeInsets.only(
+              left: 80,
+            ), // aligns with bar (16 + 64)
             child: Text(
               g.grantedBy.isNotEmpty
                   ? 'by ${g.grantedBy}${_expirySubtitle(g, now)}'
                   : g.expiresAt != null
-                      ? 'expires ${_daysLabel(g.expiresAt!, now)}'
-                      : '',
-              style:
-                  const TextStyle(fontSize: 10, color: CandelaColors.textMuted),
+                  ? 'expires ${_daysLabel(g.expiresAt!, now)}'
+                  : '',
+              style: const TextStyle(
+                fontSize: 10,
+                color: CandelaColors.textMuted,
+              ),
               overflow: TextOverflow.ellipsis,
             ),
           ),

@@ -66,11 +66,7 @@ class TokenInfo {
   final String? accessToken;
   final DateTime expiresAt;
 
-  const TokenInfo({
-    this.email,
-    this.accessToken,
-    required this.expiresAt,
-  });
+  const TokenInfo({this.email, this.accessToken, required this.expiresAt});
 
   /// Dynamic validity check — avoids stale state when the object is held
   /// in memory past its expiry time.
@@ -105,11 +101,7 @@ class CredentialOverride {
   /// The service account email if this is a service account key.
   final String? clientEmail;
 
-  const CredentialOverride({
-    required this.path,
-    this.type,
-    this.clientEmail,
-  });
+  const CredentialOverride({required this.path, this.type, this.clientEmail});
 
   bool get isServiceAccount => type == 'service_account';
 

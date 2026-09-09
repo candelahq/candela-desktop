@@ -70,7 +70,7 @@ const _allProviders = [
   'OpenAI',
   'Mistral',
   'DeepSeek',
-  'Qwen'
+  'Qwen',
 ];
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -153,7 +153,8 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                 color: CandelaColors.success.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
-                    color: CandelaColors.success.withValues(alpha: 0.3)),
+                  color: CandelaColors.success.withValues(alpha: 0.3),
+                ),
               ),
               child: const Text(
                 'Admin',
@@ -219,24 +220,33 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
             height: 40,
             child: TextField(
               style: const TextStyle(
-                  fontSize: 13, color: CandelaColors.textPrimary),
+                fontSize: 13,
+                color: CandelaColors.textPrimary,
+              ),
               decoration: InputDecoration(
                 hintText: 'Search by model name or provider…',
                 hintStyle: const TextStyle(
-                    fontSize: 13, color: CandelaColors.textMuted),
-                prefixIcon: const Icon(Icons.search_rounded,
-                    size: 18, color: CandelaColors.textMuted),
+                  fontSize: 13,
+                  color: CandelaColors.textMuted,
+                ),
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  size: 18,
+                  color: CandelaColors.textMuted,
+                ),
                 filled: true,
                 fillColor: CandelaColors.bgSecondary,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide:
-                      const BorderSide(color: CandelaColors.borderSubtle),
+                  borderSide: const BorderSide(
+                    color: CandelaColors.borderSubtle,
+                  ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide:
-                      const BorderSide(color: CandelaColors.borderSubtle),
+                  borderSide: const BorderSide(
+                    color: CandelaColors.borderSubtle,
+                  ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -267,15 +277,17 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                 selected: isSelected,
                 onSelected: (_) => setState(() => _selectedProvider = p),
                 backgroundColor: CandelaColors.bgSecondary,
-                selectedColor:
-                    p == 'All' ? CandelaColors.accent : _colorForProvider(p),
+                selectedColor: p == 'All'
+                    ? CandelaColors.accent
+                    : _colorForProvider(p),
                 side: BorderSide(
                   color: isSelected
                       ? Colors.transparent
                       : CandelaColors.borderSubtle,
                 ),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 showCheckmark: false,
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -302,15 +314,19 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline_rounded,
-                size: 48, color: CandelaColors.error),
+            const Icon(
+              Icons.error_outline_rounded,
+              size: 48,
+              color: CandelaColors.error,
+            ),
             const SizedBox(height: 16),
             const Text(
               'Failed to load catalog',
               style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: CandelaColors.textPrimary),
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: CandelaColors.textPrimary,
+              ),
             ),
             const SizedBox(height: 8),
             SizedBox(
@@ -321,13 +337,16 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                    fontSize: 12, color: CandelaColors.textMuted),
+                  fontSize: 12,
+                  color: CandelaColors.textMuted,
+                ),
               ),
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
-              style:
-                  FilledButton.styleFrom(backgroundColor: CandelaColors.accent),
+              style: FilledButton.styleFrom(
+                backgroundColor: CandelaColors.accent,
+              ),
               onPressed: () => ref.read(catalogProvider.notifier).fetch(),
               icon: const Icon(Icons.refresh_rounded, size: 16),
               label: const Text('Retry'),
@@ -342,17 +361,21 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.menu_book_outlined,
-                size: 48, color: CandelaColors.textMuted),
+            const Icon(
+              Icons.menu_book_outlined,
+              size: 48,
+              color: CandelaColors.textMuted,
+            ),
             const SizedBox(height: 16),
             Text(
               _searchQuery.isNotEmpty || _selectedProvider != 'All'
                   ? 'No models match your filters'
                   : 'No models in catalog',
               style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: CandelaColors.textPrimary),
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: CandelaColors.textPrimary,
+              ),
             ),
           ],
         ),
@@ -444,7 +467,9 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                     const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: CandelaColors.error.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(4),
@@ -468,11 +493,14 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
               child: Row(
                 children: [
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
-                      color: _colorForProvider(model.provider)
-                          .withValues(alpha: 0.15),
+                      color: _colorForProvider(
+                        model.provider,
+                      ).withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
@@ -495,10 +523,13 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
-                            color: _categoryColor(model.category)
-                                .withValues(alpha: 0.15),
+                            color: _categoryColor(
+                              model.category,
+                            ).withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
@@ -512,9 +543,13 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
                         ),
                       ],
                     )
-                  : const Text('—',
+                  : const Text(
+                      '—',
                       style: TextStyle(
-                          fontSize: 12, color: CandelaColors.textMuted)),
+                        fontSize: 12,
+                        color: CandelaColors.textMuted,
+                      ),
+                    ),
             ),
             // Input price
             Expanded(
@@ -602,13 +637,13 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel',
-                style: TextStyle(color: CandelaColors.textMuted)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: CandelaColors.textMuted),
+            ),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: CandelaColors.error,
-            ),
+            style: FilledButton.styleFrom(backgroundColor: CandelaColors.error),
             onPressed: () async {
               Navigator.of(ctx).pop();
               final notifier = ref.read(catalogProvider.notifier);
@@ -652,10 +687,12 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
       filtered = filtered
-          .where((m) =>
-              m.modelId.toLowerCase().contains(q) ||
-              m.displayName.toLowerCase().contains(q) ||
-              m.provider.toLowerCase().contains(q))
+          .where(
+            (m) =>
+                m.modelId.toLowerCase().contains(q) ||
+                m.displayName.toLowerCase().contains(q) ||
+                m.provider.toLowerCase().contains(q),
+          )
           .toList();
     }
 
@@ -718,8 +755,11 @@ class _IconActionButton extends StatelessWidget {
                     color: CandelaColors.textMuted,
                   ),
                 )
-              : Icon(icon,
-                  size: 18, color: iconColor ?? CandelaColors.textSecondary),
+              : Icon(
+                  icon,
+                  size: 18,
+                  color: iconColor ?? CandelaColors.textSecondary,
+                ),
         ),
       ),
     );

@@ -27,7 +27,11 @@ enum _BudgetThreshold {
 abstract interface class BudgetNotifAdapter {
   Future<bool?> initialize(InitializationSettings settings);
   Future<void> show(
-      int id, String? title, String? body, NotificationDetails? details);
+    int id,
+    String? title,
+    String? body,
+    NotificationDetails? details,
+  );
   Future<void> cancelAll();
 
   /// Request macOS notification permissions. No-op on other platforms.
@@ -38,7 +42,11 @@ abstract interface class BudgetNotifAdapter {
 
   /// Show a Windows-native notification. No-op on other platforms.
   Future<void> showWindows(
-      int id, String? title, String? body, WindowsNotificationDetails? details);
+    int id,
+    String? title,
+    String? body,
+    WindowsNotificationDetails? details,
+  );
 
   /// Cancel all Windows notifications. No-op on other platforms.
   Future<void> cancelAllWindows();
@@ -56,8 +64,11 @@ class _RealAdapter implements BudgetNotifAdapter {
 
   @override
   Future<void> show(
-          int id, String? title, String? body, NotificationDetails? details) =>
-      _p.show(id, title, body, details);
+    int id,
+    String? title,
+    String? body,
+    NotificationDetails? details,
+  ) => _p.show(id, title, body, details);
 
   @override
   Future<void> cancelAll() => _p.cancelAll();
@@ -66,7 +77,8 @@ class _RealAdapter implements BudgetNotifAdapter {
   Future<void> requestMacOSPermissions() async {
     await _p
         .resolvePlatformSpecificImplementation<
-            MacOSFlutterLocalNotificationsPlugin>()
+          MacOSFlutterLocalNotificationsPlugin
+        >()
         ?.requestPermissions(alert: true, badge: false, sound: false);
   }
 
@@ -77,8 +89,12 @@ class _RealAdapter implements BudgetNotifAdapter {
   }
 
   @override
-  Future<void> showWindows(int id, String? title, String? body,
-      WindowsNotificationDetails? details) async {
+  Future<void> showWindows(
+    int id,
+    String? title,
+    String? body,
+    WindowsNotificationDetails? details,
+  ) async {
     await _windowsPlugin?.show(id, title, body, details: details);
   }
 
@@ -112,11 +128,11 @@ class BudgetNotificationService {
   DateTime? _lastPeriodEnd;
 
   BudgetNotificationService({BudgetNotifAdapter? adapter})
-      : _adapter = adapter ?? _RealAdapter(FlutterLocalNotificationsPlugin());
+    : _adapter = adapter ?? _RealAdapter(FlutterLocalNotificationsPlugin());
 
   /// Named constructor for test injection.
   BudgetNotificationService.withAdapter(BudgetNotifAdapter adapter)
-      : _adapter = adapter;
+    : _adapter = adapter;
 
   /// Initialize the notification plugin. Safe to call multiple times.
   ///
@@ -193,7 +209,11 @@ class BudgetNotificationService {
         subtitle: 'Candela Budget Alert',
       );
       await _adapter.showWindows(
-          threshold.index, threshold.title, threshold.body, windowsDetails);
+        threshold.index,
+        threshold.title,
+        threshold.body,
+        windowsDetails,
+      );
     } else {
       const details = NotificationDetails(
         macOS: DarwinNotificationDetails(
@@ -208,11 +228,17 @@ class BudgetNotificationService {
       );
 
       await _adapter.show(
-          threshold.index, threshold.title, threshold.body, details);
+        threshold.index,
+        threshold.title,
+        threshold.body,
+        details,
+      );
     }
 
-    debugPrint('[BudgetNotificationService] fired: ${threshold.name} '
-        '(${(budget.usedFraction * 100).round()}% used)');
+    debugPrint(
+      '[BudgetNotificationService] fired: ${threshold.name} '
+      '(${(budget.usedFraction * 100).round()}% used)',
+    );
   }
 
   /// Cancel all pending budget notifications (e.g., on sign-out).

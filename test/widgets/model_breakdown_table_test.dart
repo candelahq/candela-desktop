@@ -6,12 +6,12 @@ import 'package:candela_desktop/widgets/model_breakdown_table.dart';
 import 'package:candela_desktop/theme/colors.dart';
 
 Widget _wrap(Widget child) => MaterialApp(
-      theme: ThemeData.dark(),
-      home: Scaffold(
-        backgroundColor: CandelaColors.bgPrimary,
-        body: SizedBox(width: 1200, child: child),
-      ),
-    );
+  theme: ThemeData.dark(),
+  home: Scaffold(
+    backgroundColor: CandelaColors.bgPrimary,
+    body: SizedBox(width: 1200, child: child),
+  ),
+);
 
 const _gpt = ModelBreakdown(
   model: 'gpt-4o',
@@ -45,8 +45,9 @@ const _cheap = ModelBreakdown(
 
 void main() {
   group('ModelBreakdownTable — empty state', () {
-    testWidgets('shows empty state message when models list is empty',
-        (tester) async {
+    testWidgets('shows empty state message when models list is empty', (
+      tester,
+    ) async {
       await tester.pumpWidget(_wrap(const ModelBreakdownTable(models: [])));
       expect(find.text('No model data yet'), findsOneWidget);
       expect(find.text('💰'), findsOneWidget);
@@ -61,21 +62,24 @@ void main() {
   group('ModelBreakdownTable — rendering', () {
     testWidgets('renders model names', (tester) async {
       await tester.pumpWidget(
-          _wrap(const ModelBreakdownTable(models: [_gpt, _claude])));
+        _wrap(const ModelBreakdownTable(models: [_gpt, _claude])),
+      );
       expect(find.text('gpt-4o'), findsOneWidget);
       expect(find.text('claude-3-5-sonnet'), findsOneWidget);
     });
 
     testWidgets('renders provider names', (tester) async {
       await tester.pumpWidget(
-          _wrap(const ModelBreakdownTable(models: [_gpt, _claude])));
+        _wrap(const ModelBreakdownTable(models: [_gpt, _claude])),
+      );
       expect(find.text('openai'), findsOneWidget);
       expect(find.text('anthropic'), findsOneWidget);
     });
 
     testWidgets('renders model count badge', (tester) async {
       await tester.pumpWidget(
-          _wrap(const ModelBreakdownTable(models: [_gpt, _claude])));
+        _wrap(const ModelBreakdownTable(models: [_gpt, _claude])),
+      );
       expect(find.text('2 models'), findsOneWidget);
     });
 
@@ -95,13 +99,15 @@ void main() {
 
     testWidgets('renders cost bar (LinearProgressIndicator)', (tester) async {
       await tester.pumpWidget(
-          _wrap(const ModelBreakdownTable(models: [_gpt, _claude])));
+        _wrap(const ModelBreakdownTable(models: [_gpt, _claude])),
+      );
       expect(find.byType(LinearProgressIndicator), findsWidgets);
     });
 
     testWidgets('renders without errors for three models', (tester) async {
       await tester.pumpWidget(
-          _wrap(const ModelBreakdownTable(models: [_gpt, _claude, _cheap])));
+        _wrap(const ModelBreakdownTable(models: [_gpt, _claude, _cheap])),
+      );
       expect(tester.takeException(), isNull);
       expect(find.text('3 models'), findsOneWidget);
     });
@@ -111,7 +117,8 @@ void main() {
     testWidgets('highest-cost model appears first by default', (tester) async {
       // Default sort is cost descending — _gpt ($0.50) > _claude ($0.25) > _cheap ($0.01)
       await tester.pumpWidget(
-          _wrap(const ModelBreakdownTable(models: [_cheap, _claude, _gpt])));
+        _wrap(const ModelBreakdownTable(models: [_cheap, _claude, _gpt])),
+      );
 
       final gptPos = tester.getTopLeft(find.text('gpt-4o')).dy;
       final claudePos = tester.getTopLeft(find.text('claude-3-5-sonnet')).dy;
@@ -125,7 +132,8 @@ void main() {
   group('ModelBreakdownTable — sorting', () {
     testWidgets('tapping Calls header sorts by call count', (tester) async {
       await tester.pumpWidget(
-          _wrap(const ModelBreakdownTable(models: [_gpt, _claude, _cheap])));
+        _wrap(const ModelBreakdownTable(models: [_gpt, _claude, _cheap])),
+      );
 
       await tester.tap(find.text('Calls'));
       await tester.pump();
@@ -136,10 +144,12 @@ void main() {
       expect(cheapPos, lessThan(gptPos));
     });
 
-    testWidgets('tapping Calls twice reverses sort to ascending',
-        (tester) async {
+    testWidgets('tapping Calls twice reverses sort to ascending', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-          _wrap(const ModelBreakdownTable(models: [_gpt, _claude, _cheap])));
+        _wrap(const ModelBreakdownTable(models: [_gpt, _claude, _cheap])),
+      );
 
       await tester.tap(find.text('Calls'));
       await tester.pump();
@@ -154,7 +164,8 @@ void main() {
 
     testWidgets('tapping Cost header re-sorts by cost', (tester) async {
       await tester.pumpWidget(
-          _wrap(const ModelBreakdownTable(models: [_gpt, _claude, _cheap])));
+        _wrap(const ModelBreakdownTable(models: [_gpt, _claude, _cheap])),
+      );
 
       // Tap Calls first to change sort, then tap Cost to re-sort.
       await tester.tap(find.text('Calls'));
@@ -174,7 +185,8 @@ void main() {
       addTearDown(tester.view.reset);
 
       await tester.pumpWidget(
-          _wrap(const ModelBreakdownTable(models: [_gpt, _claude, _cheap])));
+        _wrap(const ModelBreakdownTable(models: [_gpt, _claude, _cheap])),
+      );
 
       await tester.tap(find.text('Latency'));
       await tester.pump();
@@ -191,12 +203,14 @@ void main() {
       var models = [_gpt];
       late StateSetter outerSetState;
 
-      await tester.pumpWidget(StatefulBuilder(
-        builder: (ctx, setState) {
-          outerSetState = setState;
-          return _wrap(ModelBreakdownTable(models: models));
-        },
-      ));
+      await tester.pumpWidget(
+        StatefulBuilder(
+          builder: (ctx, setState) {
+            outerSetState = setState;
+            return _wrap(ModelBreakdownTable(models: models));
+          },
+        ),
+      );
 
       expect(find.text('gpt-4o'), findsOneWidget);
       expect(find.text('claude-3-5-sonnet'), findsNothing);
@@ -212,7 +226,8 @@ void main() {
   group('ModelBreakdownTable — hover interaction', () {
     testWidgets('hovering a row does not throw', (tester) async {
       await tester.pumpWidget(
-          _wrap(const ModelBreakdownTable(models: [_gpt, _claude])));
+        _wrap(const ModelBreakdownTable(models: [_gpt, _claude])),
+      );
 
       final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
       await gesture.addPointer();

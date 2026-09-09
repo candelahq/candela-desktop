@@ -31,14 +31,13 @@ BudgetInfo makeBudget({
   double spent = 4.0,
   int tokens = 1000,
   DateTime? periodEnd,
-}) =>
-    BudgetInfo(
-      limitUsd: limit,
-      spentUsd: spent,
-      tokensUsed: tokens,
-      period: BudgetPeriodKind.daily,
-      periodEnd: periodEnd ?? DateTime.now().add(const Duration(hours: 6)),
-    );
+}) => BudgetInfo(
+  limitUsd: limit,
+  spentUsd: spent,
+  tokensUsed: tokens,
+  period: BudgetPeriodKind.daily,
+  periodEnd: periodEnd ?? DateTime.now().add(const Duration(hours: 6)),
+);
 
 GrantInfo makeGrant({
   String id = 'g1',
@@ -47,15 +46,14 @@ GrantInfo makeGrant({
   String reason = 'Onboarding bonus',
   String grantedBy = 'admin@example.com',
   DateTime? expiresAt,
-}) =>
-    GrantInfo(
-      id: id,
-      amountUsd: amount,
-      spentUsd: spent,
-      reason: reason,
-      grantedBy: grantedBy,
-      expiresAt: expiresAt ?? DateTime.now().add(const Duration(days: 30)),
-    );
+}) => GrantInfo(
+  id: id,
+  amountUsd: amount,
+  spentUsd: spent,
+  reason: reason,
+  grantedBy: grantedBy,
+  expiresAt: expiresAt ?? DateTime.now().add(const Duration(days: 30)),
+);
 
 void main() {
   group('BudgetWaterfallCard', () {
@@ -70,14 +68,16 @@ void main() {
     });
 
     testWidgets('shows spend / limit amounts', (tester) async {
-      await tester
-          .pumpWidget(buildApp(budget: makeBudget(spent: 4.0, limit: 10.0)));
+      await tester.pumpWidget(
+        buildApp(budget: makeBudget(spent: 4.0, limit: 10.0)),
+      );
       expect(find.textContaining('\$4.00 / \$10.00'), findsOneWidget);
     });
 
     testWidgets('shows usage percentage', (tester) async {
-      await tester
-          .pumpWidget(buildApp(budget: makeBudget(spent: 8.0, limit: 10.0)));
+      await tester.pumpWidget(
+        buildApp(budget: makeBudget(spent: 8.0, limit: 10.0)),
+      );
       expect(find.text('80%'), findsOneWidget);
     });
 
@@ -88,8 +88,9 @@ void main() {
     });
 
     testWidgets('shows total available footer', (tester) async {
-      await tester
-          .pumpWidget(buildApp(budget: makeBudget(), totalRemainingUsd: 31.50));
+      await tester.pumpWidget(
+        buildApp(budget: makeBudget(), totalRemainingUsd: 31.50),
+      );
       expect(find.textContaining('\$31.50'), findsOneWidget);
     });
 
@@ -98,53 +99,70 @@ void main() {
       expect(find.text('—'), findsOneWidget);
     });
 
-    testWidgets('shows Active Grants section when grants are present',
-        (tester) async {
-      await tester
-          .pumpWidget(buildApp(budget: makeBudget(), grants: [makeGrant()]));
+    testWidgets('shows Active Grants section when grants are present', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildApp(budget: makeBudget(), grants: [makeGrant()]),
+      );
       expect(find.text('Active Grants'), findsOneWidget);
     });
 
     testWidgets('shows grant reason text', (tester) async {
-      await tester.pumpWidget(buildApp(
+      await tester.pumpWidget(
+        buildApp(
           budget: makeBudget(),
-          grants: [makeGrant(reason: 'Onboarding bonus')]));
+          grants: [makeGrant(reason: 'Onboarding bonus')],
+        ),
+      );
       expect(find.textContaining('Onboarding'), findsOneWidget);
     });
 
     testWidgets('shows grant spend/amount', (tester) async {
-      await tester.pumpWidget(buildApp(
-          budget: makeBudget(), grants: [makeGrant(amount: 25.0, spent: 2.0)]));
+      await tester.pumpWidget(
+        buildApp(
+          budget: makeBudget(),
+          grants: [makeGrant(amount: 25.0, spent: 2.0)],
+        ),
+      );
       expect(find.textContaining('\$2.00 / \$25.00'), findsOneWidget);
     });
 
-    testWidgets('shows expiry warning badge for soon-expiring grant',
-        (tester) async {
-      final soonGrant =
-          makeGrant(expiresAt: DateTime.now().add(const Duration(days: 2)));
-      await tester
-          .pumpWidget(buildApp(budget: makeBudget(), grants: [soonGrant]));
+    testWidgets('shows expiry warning badge for soon-expiring grant', (
+      tester,
+    ) async {
+      final soonGrant = makeGrant(
+        expiresAt: DateTime.now().add(const Duration(days: 2)),
+      );
+      await tester.pumpWidget(
+        buildApp(budget: makeBudget(), grants: [soonGrant]),
+      );
       expect(find.text('⚠ expiring'), findsOneWidget);
     });
 
-    testWidgets('does not show expiry badge for grant expiring far away',
-        (tester) async {
-      final farGrant =
-          makeGrant(expiresAt: DateTime.now().add(const Duration(days: 60)));
-      await tester
-          .pumpWidget(buildApp(budget: makeBudget(), grants: [farGrant]));
+    testWidgets('does not show expiry badge for grant expiring far away', (
+      tester,
+    ) async {
+      final farGrant = makeGrant(
+        expiresAt: DateTime.now().add(const Duration(days: 60)),
+      );
+      await tester.pumpWidget(
+        buildApp(budget: makeBudget(), grants: [farGrant]),
+      );
       expect(find.text('⚠ expiring'), findsNothing);
     });
 
-    testWidgets('shows no Active Grants section when grants list is empty',
-        (tester) async {
+    testWidgets('shows no Active Grants section when grants list is empty', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildApp(budget: makeBudget(), grants: []));
       expect(find.text('Active Grants'), findsNothing);
     });
 
     testWidgets('pin dropdown is present when grants exist', (tester) async {
-      await tester
-          .pumpWidget(buildApp(budget: makeBudget(), grants: [makeGrant()]));
+      await tester.pumpWidget(
+        buildApp(budget: makeBudget(), grants: [makeGrant()]),
+      );
       expect(find.textContaining('Pin'), findsOneWidget);
     });
 
@@ -154,13 +172,15 @@ void main() {
     });
 
     testWidgets('multiple grants all render', (tester) async {
-      await tester.pumpWidget(buildApp(
-        budget: makeBudget(),
-        grants: [
-          makeGrant(id: 'g1', reason: 'Onboarding'),
-          makeGrant(id: 'g2', reason: 'Beta bonus'),
-        ],
-      ));
+      await tester.pumpWidget(
+        buildApp(
+          budget: makeBudget(),
+          grants: [
+            makeGrant(id: 'g1', reason: 'Onboarding'),
+            makeGrant(id: 'g2', reason: 'Beta bonus'),
+          ],
+        ),
+      );
       expect(find.textContaining('Onboarding'), findsOneWidget);
       expect(find.textContaining('Beta'), findsOneWidget);
     });

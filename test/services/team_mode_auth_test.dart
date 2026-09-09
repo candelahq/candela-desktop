@@ -92,16 +92,15 @@ TelemetryService _teamSvc(
   MockConnectApi mock, {
   String remoteUrl = 'https://candela.example.com',
   String? authToken = 'test-token',
-}) =>
-    TelemetryService(
-      port: 8181,
-      remoteUrl: remoteUrl,
-      authToken: authToken,
-      connectApiFactory: (baseUrl, token) {
-        mock.capturedAuthToken = token;
-        return mock;
-      },
-    );
+}) => TelemetryService(
+  port: 8181,
+  remoteUrl: remoteUrl,
+  authToken: authToken,
+  connectApiFactory: (baseUrl, token) {
+    mock.capturedAuthToken = token;
+    return mock;
+  },
+);
 
 /// Tests for Team mode auth — verifies that the TelemetryService correctly
 /// passes auth tokens through ConnectApiService and handles auth failures
@@ -110,9 +109,7 @@ TelemetryService _teamSvc(
 void main() {
   group('Team mode — auth token handling', () {
     test('sends Bearer token in Authorization header', () async {
-      final mock = MockConnectApi(
-        modelResponse: GetModelBreakdownResponse(),
-      );
+      final mock = MockConnectApi(modelResponse: GetModelBreakdownResponse());
       final svc = _teamSvc(mock, authToken: 'id-token-from-gcloud');
       await svc.fetch(TokenTimeRange.h24);
       expect(mock.capturedAuthToken, 'id-token-from-gcloud');
@@ -122,9 +119,7 @@ void main() {
       // Simulate a realistic JWT-shaped token
       final idToken =
           'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjQxMDI0NDQ4MDAsImVtYWlsIjoidXNlckBjb3JwLmNvbSJ9.signature';
-      final mock = MockConnectApi(
-        modelResponse: GetModelBreakdownResponse(),
-      );
+      final mock = MockConnectApi(modelResponse: GetModelBreakdownResponse());
       final svc = _teamSvc(mock, authToken: idToken);
       await svc.fetch(TokenTimeRange.h24);
       expect(mock.capturedAuthToken, idToken);
@@ -141,9 +136,7 @@ void main() {
     });
 
     test('null authToken is passed through to factory', () async {
-      final mock = MockConnectApi(
-        modelResponse: GetModelBreakdownResponse(),
-      );
+      final mock = MockConnectApi(modelResponse: GetModelBreakdownResponse());
       final svc = _teamSvc(mock, authToken: null);
       await svc.fetch(TokenTimeRange.h24);
       expect(mock.capturedAuthToken, isNull);
@@ -172,12 +165,14 @@ void main() {
           ..tokensUsed = Int64(150000)
           ..periodEnd = ts)
         ..totalRemainingUsd = 26.50;
-      usage.activeGrants.add(BudgetGrant()
-        ..id = 'grant-1'
-        ..amountUsd = 25.0
-        ..spentUsd = 5.0
-        ..reason = 'Onboarding bonus'
-        ..grantedBy = 'admin@corp.com');
+      usage.activeGrants.add(
+        BudgetGrant()
+          ..id = 'grant-1'
+          ..amountUsd = 25.0
+          ..spentUsd = 5.0
+          ..reason = 'Onboarding bonus'
+          ..grantedBy = 'admin@corp.com',
+      );
 
       final mock = MockConnectApi(
         modelResponse: GetModelBreakdownResponse()..models.add(model),
@@ -236,9 +231,7 @@ void main() {
   group('Team mode — ConnectRPC integration', () {
     test('factory receives correct baseUrl', () async {
       String? capturedBase;
-      final mock = MockConnectApi(
-        modelResponse: GetModelBreakdownResponse(),
-      );
+      final mock = MockConnectApi(modelResponse: GetModelBreakdownResponse());
       final svc = TelemetryService(
         port: 8181,
         remoteUrl: 'https://candela.example.com',

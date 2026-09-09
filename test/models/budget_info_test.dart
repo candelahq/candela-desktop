@@ -97,8 +97,9 @@ void main() {
         spentUsd: 0.0,
         tokensUsed: 0,
         period: BudgetPeriodKind.daily,
-        periodEnd:
-            DateTime.now().toUtc().add(const Duration(hours: 6, minutes: 30)),
+        periodEnd: DateTime.now().toUtc().add(
+          const Duration(hours: 6, minutes: 30),
+        ),
       );
       expect(b.resetLabel, contains('6h'));
     });

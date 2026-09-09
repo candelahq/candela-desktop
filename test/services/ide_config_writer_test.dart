@@ -12,8 +12,9 @@ void main() {
 
     group('continueSnippet', () {
       test('returns valid JSON with models array', () {
-        final snippet =
-            IdeConfigWriter.continueSnippet('http://localhost:8181');
+        final snippet = IdeConfigWriter.continueSnippet(
+          'http://localhost:8181',
+        );
         final json = jsonDecode(snippet) as Map<String, dynamic>;
         expect(json.containsKey('models'), isTrue);
         expect(json['models'], isList);
@@ -21,8 +22,9 @@ void main() {
       });
 
       test('model entry has correct structure', () {
-        final snippet =
-            IdeConfigWriter.continueSnippet('http://localhost:9090');
+        final snippet = IdeConfigWriter.continueSnippet(
+          'http://localhost:9090',
+        );
         final json = jsonDecode(snippet) as Map<String, dynamic>;
         final model = (json['models'] as List)[0] as Map<String, dynamic>;
 
@@ -55,8 +57,9 @@ void main() {
         const url = 'http://localhost:8181/v1';
         final snippet = IdeConfigWriter.zedSnippet(url);
         final json = jsonDecode(snippet) as Map<String, dynamic>;
-        final openai = (json['language_models']
-            as Map<String, dynamic>)['openai'] as Map<String, dynamic>;
+        final openai =
+            (json['language_models'] as Map<String, dynamic>)['openai']
+                as Map<String, dynamic>;
 
         expect(openai['api_url'], url);
         expect(openai['available_models'], isList);
@@ -71,8 +74,9 @@ void main() {
 
     group('openDesignSnippet', () {
       test('returns valid JSON with openai provider', () {
-        final snippet =
-            IdeConfigWriter.openDesignSnippet('http://localhost:8181');
+        final snippet = IdeConfigWriter.openDesignSnippet(
+          'http://localhost:8181',
+        );
         final json = jsonDecode(snippet) as Map<String, dynamic>;
         expect(json.containsKey('providers'), isTrue);
 
@@ -84,8 +88,9 @@ void main() {
         const url = 'http://localhost:8181/v1';
         final snippet = IdeConfigWriter.openDesignSnippet(url);
         final json = jsonDecode(snippet) as Map<String, dynamic>;
-        final openai = (json['providers'] as Map<String, dynamic>)['openai']
-            as Map<String, dynamic>;
+        final openai =
+            (json['providers'] as Map<String, dynamic>)['openai']
+                as Map<String, dynamic>;
 
         expect(openai['apiKey'], 'candela');
         expect(openai['baseUrl'], url);
@@ -98,8 +103,9 @@ void main() {
       late Directory tempDir;
 
       setUp(() {
-        tempDir =
-            Directory.systemTemp.createTempSync('candela_ide_writer_test_');
+        tempDir = Directory.systemTemp.createTempSync(
+          'candela_ide_writer_test_',
+        );
       });
 
       tearDown(() {
@@ -120,53 +126,53 @@ void main() {
 
         final json =
             jsonDecode(configFile.readAsStringSync()) as Map<String, dynamic>;
-        final openai = (json['providers'] as Map<String, dynamic>)['openai']
-            as Map<String, dynamic>;
+        final openai =
+            (json['providers'] as Map<String, dynamic>)['openai']
+                as Map<String, dynamic>;
         expect(openai['apiKey'], 'candela');
         expect(openai['baseUrl'], 'http://localhost:8181');
       });
 
-      test('upserts existing openai provider preserving other providers',
-          () async {
-        final odDir = Directory('${tempDir.path}/.od')..createSync();
-        final configFile = File('${odDir.path}/media-config.json');
+      test(
+        'upserts existing openai provider preserving other providers',
+        () async {
+          final odDir = Directory('${tempDir.path}/.od')..createSync();
+          final configFile = File('${odDir.path}/media-config.json');
 
-        // Write an existing config with another provider.
-        final existing = jsonEncode({
-          'providers': {
-            'anthropic': {
-              'apiKey': 'sk-ant-xxx',
-              'baseUrl': 'https://api.anthropic.com',
+          // Write an existing config with another provider.
+          final existing = jsonEncode({
+            'providers': {
+              'anthropic': {
+                'apiKey': 'sk-ant-xxx',
+                'baseUrl': 'https://api.anthropic.com',
+              },
+              'openai': {'apiKey': 'old-key', 'baseUrl': 'http://old-url'},
             },
-            'openai': {
-              'apiKey': 'old-key',
-              'baseUrl': 'http://old-url',
-            },
-          },
-        });
-        configFile.writeAsStringSync(existing);
+          });
+          configFile.writeAsStringSync(existing);
 
-        await writer.writeOpenDesignConfig(
-          tempDir.path,
-          'http://localhost:9090',
-        );
+          await writer.writeOpenDesignConfig(
+            tempDir.path,
+            'http://localhost:9090',
+          );
 
-        final json =
-            jsonDecode(configFile.readAsStringSync()) as Map<String, dynamic>;
-        final providers = json['providers'] as Map<String, dynamic>;
+          final json =
+              jsonDecode(configFile.readAsStringSync()) as Map<String, dynamic>;
+          final providers = json['providers'] as Map<String, dynamic>;
 
-        // Anthropic should be preserved.
-        expect(providers.containsKey('anthropic'), isTrue);
-        expect(
-          (providers['anthropic'] as Map<String, dynamic>)['apiKey'],
-          'sk-ant-xxx',
-        );
+          // Anthropic should be preserved.
+          expect(providers.containsKey('anthropic'), isTrue);
+          expect(
+            (providers['anthropic'] as Map<String, dynamic>)['apiKey'],
+            'sk-ant-xxx',
+          );
 
-        // OpenAI should be updated.
-        final openai = providers['openai'] as Map<String, dynamic>;
-        expect(openai['apiKey'], 'candela');
-        expect(openai['baseUrl'], 'http://localhost:9090');
-      });
+          // OpenAI should be updated.
+          final openai = providers['openai'] as Map<String, dynamic>;
+          expect(openai['apiKey'], 'candela');
+          expect(openai['baseUrl'], 'http://localhost:9090');
+        },
+      );
 
       test('throws StateError if no .od/ directory exists', () {
         // tempDir exists but has no .od/ subdirectory.
@@ -192,8 +198,9 @@ void main() {
 
         final json =
             jsonDecode(configFile.readAsStringSync()) as Map<String, dynamic>;
-        final openai = (json['providers'] as Map<String, dynamic>)['openai']
-            as Map<String, dynamic>;
+        final openai =
+            (json['providers'] as Map<String, dynamic>)['openai']
+                as Map<String, dynamic>;
         expect(openai['apiKey'], 'candela');
         expect(openai['baseUrl'], 'http://localhost:8181');
       });
@@ -220,8 +227,9 @@ void main() {
           'http://localhost:8181',
         );
 
-        final content =
-            File('${tempDir.path}/.od/media-config.json').readAsStringSync();
+        final content = File(
+          '${tempDir.path}/.od/media-config.json',
+        ).readAsStringSync();
         // Pretty-printed JSON uses newlines and indentation.
         expect(content, contains('\n'));
         expect(content, contains('  '));
@@ -263,8 +271,9 @@ void main() {
 
       test('respects maxDepth limit', () async {
         // depth 0 = scanRoot, depth 1 = level1, depth 2 = level2
-        Directory('${scanRoot.path}/level1/level2/deep/.od')
-            .createSync(recursive: true);
+        Directory(
+          '${scanRoot.path}/level1/level2/deep/.od',
+        ).createSync(recursive: true);
         Directory('${scanRoot.path}/shallow/.od').createSync(recursive: true);
 
         // maxDepth=1: should find shallow (at depth 1) but not deep (at depth 3).
@@ -274,17 +283,15 @@ void main() {
         );
 
         expect(results, contains('${scanRoot.path}/shallow'));
-        expect(
-          results,
-          isNot(contains('${scanRoot.path}/level1/level2/deep')),
-        );
+        expect(results, isNot(contains('${scanRoot.path}/level1/level2/deep')));
       });
 
       test('skips hidden directories (except .od)', () async {
         // Hidden dir with .od inside — should NOT be found because the
         // scanner skips dirs starting with '.' (other than .od itself).
-        Directory('${scanRoot.path}/.hidden/project/.od')
-            .createSync(recursive: true);
+        Directory(
+          '${scanRoot.path}/.hidden/project/.od',
+        ).createSync(recursive: true);
         // Regular dir with .od — should be found.
         Directory('${scanRoot.path}/visible/.od').createSync(recursive: true);
 
@@ -294,21 +301,22 @@ void main() {
         );
 
         expect(results, contains('${scanRoot.path}/visible'));
-        expect(
-          results,
-          isNot(contains('${scanRoot.path}/.hidden/project')),
-        );
+        expect(results, isNot(contains('${scanRoot.path}/.hidden/project')));
       });
 
       test('skips node_modules, .git, and other excluded dirs', () async {
-        Directory('${scanRoot.path}/node_modules/pkg/.od')
-            .createSync(recursive: true);
-        Directory('${scanRoot.path}/.git/objects/.od')
-            .createSync(recursive: true);
-        Directory('${scanRoot.path}/vendor/dep/.od')
-            .createSync(recursive: true);
-        Directory('${scanRoot.path}/realProject/.od')
-            .createSync(recursive: true);
+        Directory(
+          '${scanRoot.path}/node_modules/pkg/.od',
+        ).createSync(recursive: true);
+        Directory(
+          '${scanRoot.path}/.git/objects/.od',
+        ).createSync(recursive: true);
+        Directory(
+          '${scanRoot.path}/vendor/dep/.od',
+        ).createSync(recursive: true);
+        Directory(
+          '${scanRoot.path}/realProject/.od',
+        ).createSync(recursive: true);
 
         final results = await writer.findOpenDesignProjects(
           maxDepth: 3,

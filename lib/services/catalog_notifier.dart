@@ -110,10 +110,7 @@ class CatalogController {
       );
     } catch (e) {
       debugPrint('[CatalogController] fetch error: $e');
-      state = state.copyWith(
-        loading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(loading: false, error: e.toString());
     }
   }
 
@@ -123,7 +120,10 @@ class CatalogController {
   ///
   /// Uses a field mask so only `enabled` is mutated server-side.
   Future<void> toggleEnabled(
-      String provider, String modelId, bool enabled) async {
+    String provider,
+    String modelId,
+    bool enabled,
+  ) async {
     if (_client == null) return;
 
     // Optimistic update.
@@ -175,10 +175,7 @@ class CatalogController {
 
     try {
       await _client!.deleteModelCatalogEntry(
-        DeleteModelCatalogEntryRequest(
-          provider: provider,
-          modelId: modelId,
-        ),
+        DeleteModelCatalogEntryRequest(provider: provider, modelId: modelId),
       );
       // Remove from local state and clear any previous error.
       final updated = state.models

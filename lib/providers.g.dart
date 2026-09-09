@@ -20,15 +20,15 @@ final class ConfigServiceProvider
     with $Provider<ConfigService> {
   /// The singleton ConfigService instance.
   ConfigServiceProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'configServiceProvider',
-          isAutoDispose: false,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'configServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$configServiceHash();
@@ -67,23 +67,28 @@ final configProvider = ConfigProvider._();
 /// Emits the initial config, then re-emits whenever the file is modified.
 /// Debouncing is handled inside [ConfigService.watchForChanges].
 
-final class ConfigProvider extends $FunctionalProvider<
-        AsyncValue<CandelaConfig>, CandelaConfig, Stream<CandelaConfig>>
+final class ConfigProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<CandelaConfig>,
+          CandelaConfig,
+          Stream<CandelaConfig>
+        >
     with $FutureModifier<CandelaConfig>, $StreamProvider<CandelaConfig> {
   /// Reactive config that auto-reloads when the config file changes on disk.
   ///
   /// Emits the initial config, then re-emits whenever the file is modified.
   /// Debouncing is handled inside [ConfigService.watchForChanges].
   ConfigProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'configProvider',
-          isAutoDispose: false,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'configProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$configHash();
@@ -91,8 +96,8 @@ final class ConfigProvider extends $FunctionalProvider<
   @$internal
   @override
   $StreamProviderElement<CandelaConfig> $createElement(
-          $ProviderPointer pointer) =>
-      $StreamProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $StreamProviderElement(pointer);
 
   @override
   Stream<CandelaConfig> create(Ref ref) {
@@ -132,8 +137,12 @@ final dashboardProvider = DashboardNotifierProvider._();
 /// Usage:
 ///   final state = ref.watch(dashboardProvider);  // DashboardState
 ///   ref.read(dashboardProvider.notifier).fetch(); // methods
-final class DashboardNotifierProvider extends $NotifierProvider<
-    DashboardNotifier, dashboard_notifier.DashboardState> {
+final class DashboardNotifierProvider
+    extends
+        $NotifierProvider<
+          DashboardNotifier,
+          dashboard_notifier.DashboardState
+        > {
   /// Shared dashboard state — the single source of truth for telemetry data.
   ///
   /// Both DashboardScreen and TodayScreen consume this provider instead of each
@@ -148,15 +157,15 @@ final class DashboardNotifierProvider extends $NotifierProvider<
   ///   final state = ref.watch(dashboardProvider);  // DashboardState
   ///   ref.read(dashboardProvider.notifier).fetch(); // methods
   DashboardNotifierProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'dashboardProvider',
-          isAutoDispose: false,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'dashboardProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$dashboardNotifierHash();
@@ -169,8 +178,9 @@ final class DashboardNotifierProvider extends $NotifierProvider<
   Override overrideWithValue(dashboard_notifier.DashboardState value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride:
-          $SyncValueProvider<dashboard_notifier.DashboardState>(value),
+      providerOverride: $SyncValueProvider<dashboard_notifier.DashboardState>(
+        value,
+      ),
     );
   }
 }
@@ -197,14 +207,23 @@ abstract class _$DashboardNotifier
   @$mustCallSuper
   @override
   void runBuild() {
-    final ref = this.ref as $Ref<dashboard_notifier.DashboardState,
-        dashboard_notifier.DashboardState>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<dashboard_notifier.DashboardState,
-            dashboard_notifier.DashboardState>,
-        dashboard_notifier.DashboardState,
-        Object?,
-        Object?>;
+    final ref =
+        this.ref
+            as $Ref<
+              dashboard_notifier.DashboardState,
+              dashboard_notifier.DashboardState
+            >;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<
+                dashboard_notifier.DashboardState,
+                dashboard_notifier.DashboardState
+              >,
+              dashboard_notifier.DashboardState,
+              Object?,
+              Object?
+            >;
     element.handleCreate(ref, build);
   }
 }
@@ -240,15 +259,15 @@ final class CatalogNotifierProvider
   ///   ref.read(catalogProvider.notifier).fetch();        // methods
   ///   ref.read(catalogProvider.notifier).toggleEnabled(…);
   CatalogNotifierProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'catalogProvider',
-          isAutoDispose: false,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'catalogProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$catalogNotifierHash();
@@ -261,8 +280,9 @@ final class CatalogNotifierProvider
   Override overrideWithValue(catalog_notifier.CatalogState value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride:
-          $SyncValueProvider<catalog_notifier.CatalogState>(value),
+      providerOverride: $SyncValueProvider<catalog_notifier.CatalogState>(
+        value,
+      ),
     );
   }
 }
@@ -284,14 +304,23 @@ abstract class _$CatalogNotifier
   @$mustCallSuper
   @override
   void runBuild() {
-    final ref = this.ref
-        as $Ref<catalog_notifier.CatalogState, catalog_notifier.CatalogState>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<catalog_notifier.CatalogState,
-            catalog_notifier.CatalogState>,
-        catalog_notifier.CatalogState,
-        Object?,
-        Object?>;
+    final ref =
+        this.ref
+            as $Ref<
+              catalog_notifier.CatalogState,
+              catalog_notifier.CatalogState
+            >;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<
+                catalog_notifier.CatalogState,
+                catalog_notifier.CatalogState
+              >,
+              catalog_notifier.CatalogState,
+              Object?,
+              Object?
+            >;
     element.handleCreate(ref, build);
   }
 }
@@ -304,18 +333,19 @@ final processManagerSetupProvider = ProcessManagerSetupProvider._();
 /// Auto-configures the ProcessManagerNotifier when config changes.
 
 final class ProcessManagerSetupProvider
-    extends $FunctionalProvider<void, void, void> with $Provider<void> {
+    extends $FunctionalProvider<void, void, void>
+    with $Provider<void> {
   /// Auto-configures the ProcessManagerNotifier when config changes.
   ProcessManagerSetupProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'processManagerSetupProvider',
-          isAutoDispose: false,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'processManagerSetupProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$processManagerSetupHash();
@@ -354,15 +384,15 @@ final class BrewServiceProvider
     with $Provider<BrewService> {
   /// Homebrew CLI wrapper for install/upgrade operations.
   BrewServiceProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'brewServiceProvider',
-          isAutoDispose: false,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'brewServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$brewServiceHash();
@@ -400,15 +430,15 @@ final class TrayServiceProvider
     with $Provider<TrayService> {
   /// System tray service, wired to the process manager notifier.
   TrayServiceProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'trayServiceProvider',
-          isAutoDispose: false,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'trayServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$trayServiceHash();

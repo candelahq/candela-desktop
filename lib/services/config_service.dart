@@ -22,7 +22,7 @@ class ConfigService {
   Future<void>? _writeLock;
 
   ConfigService({this.configPath, ProcessRunner? runner})
-      : _runner = runner ?? const SystemProcessRunner();
+    : _runner = runner ?? const SystemProcessRunner();
 
   /// Load and validate the candela config file.
   ///
@@ -35,7 +35,8 @@ class ConfigService {
         issues: [
           ConfigIssue(
             severity: IssueSeverity.error,
-            message: 'Cannot resolve config path: '
+            message:
+                'Cannot resolve config path: '
                 'required environment variables are not set',
             field: 'file',
           ),
@@ -170,8 +171,12 @@ class ConfigService {
     if (Platform.isWindows) {
       try {
         final home = platform_paths.homeDir();
-        final unixStylePath =
-            path.join(home, '.config', 'candela', 'config.yaml');
+        final unixStylePath = path.join(
+          home,
+          '.config',
+          'candela',
+          'config.yaml',
+        );
         if (File(unixStylePath).existsSync()) return unixStylePath;
       } catch (_) {
         // homeDir() unavailable — fall through to default.
@@ -227,29 +232,32 @@ class ConfigService {
     final issues = <ConfigIssue>[];
 
     // Parse fields.
-    final configVersion =
-        yaml['config_version'] is int ? yaml['config_version'] as int : 0;
+    final configVersion = yaml['config_version'] is int
+        ? yaml['config_version'] as int
+        : 0;
     final remote = yaml['remote']?.toString();
     final audience = yaml['audience']?.toString();
     final iapServiceAccount = yaml['iap_service_account']?.toString();
     final port = yaml['port'] is int ? yaml['port'] as int : 8181;
-    final lmStudioPort =
-        yaml['lmstudio_port'] is int ? yaml['lmstudio_port'] as int : 1234;
+    final lmStudioPort = yaml['lmstudio_port'] is int
+        ? yaml['lmstudio_port'] as int
+        : 1234;
     final autoStartProxy = yaml['auto_start_proxy'] is bool
         ? yaml['auto_start_proxy'] as bool
         : true;
 
     // Parse providers.
     final providers = <ProviderConfig>[];
-    final providersYaml =
-        yaml['providers'] is YamlList ? yaml['providers'] as YamlList : null;
+    final providersYaml = yaml['providers'] is YamlList
+        ? yaml['providers'] as YamlList
+        : null;
     if (providersYaml != null) {
       for (final p in providersYaml) {
         if (p is YamlMap) {
           final name = p['name'] as String? ?? '';
           final models =
               (p['models'] as YamlList?)?.map((m) => m.toString()).toList() ??
-                  [];
+              [];
           providers.add(ProviderConfig(name: name, models: models));
         }
       }
@@ -257,8 +265,9 @@ class ConfigService {
 
     // Parse vertex_ai.
     VertexAIConfig? vertexAI;
-    final vtx =
-        yaml['vertex_ai'] is YamlMap ? yaml['vertex_ai'] as YamlMap : null;
+    final vtx = yaml['vertex_ai'] is YamlMap
+        ? yaml['vertex_ai'] as YamlMap
+        : null;
     if (vtx != null) {
       // Backward compat: bool true → 'auto', false → 'off'.
       final rawCaching = vtx['prompt_caching'];
@@ -281,8 +290,9 @@ class ConfigService {
 
     // Parse pricing.
     PricingConfig? pricing;
-    final pricingYaml =
-        yaml['pricing'] is YamlMap ? yaml['pricing'] as YamlMap : null;
+    final pricingYaml = yaml['pricing'] is YamlMap
+        ? yaml['pricing'] as YamlMap
+        : null;
     if (pricingYaml != null) {
       final modelsYaml = pricingYaml['models'] is YamlList
           ? pricingYaml['models'] as YamlList
@@ -291,14 +301,16 @@ class ConfigService {
         final modelPricing = <ModelPricing>[];
         for (final m in modelsYaml) {
           if (m is YamlMap) {
-            modelPricing.add(ModelPricing(
-              provider: m['provider'] as String? ?? '',
-              model: m['model'] as String? ?? '',
-              inputPerMillion:
-                  (m['input_per_million'] as num?)?.toDouble() ?? 0.0,
-              outputPerMillion:
-                  (m['output_per_million'] as num?)?.toDouble() ?? 0.0,
-            ));
+            modelPricing.add(
+              ModelPricing(
+                provider: m['provider'] as String? ?? '',
+                model: m['model'] as String? ?? '',
+                inputPerMillion:
+                    (m['input_per_million'] as num?)?.toDouble() ?? 0.0,
+                outputPerMillion:
+                    (m['output_per_million'] as num?)?.toDouble() ?? 0.0,
+              ),
+            );
           }
         }
         pricing = PricingConfig(models: modelPricing);
@@ -331,22 +343,27 @@ class ConfigService {
 
     // Team mode requires audience.
     if (mode == CandelaMode.team && (audience == null || audience.isEmpty)) {
-      issues.add(const ConfigIssue(
-        severity: IssueSeverity.error,
-        message: '`audience` is required when `remote` is set',
-        field: 'audience',
-      ));
+      issues.add(
+        const ConfigIssue(
+          severity: IssueSeverity.error,
+          message: '`audience` is required when `remote` is set',
+          field: 'audience',
+        ),
+      );
     }
 
     // Team mode: iap_service_account is needed for ID token acquisition.
     if (mode == CandelaMode.team &&
         (iapServiceAccount == null || iapServiceAccount.isEmpty)) {
-      issues.add(const ConfigIssue(
-        severity: IssueSeverity.warning,
-        message: '`iap_service_account` not set — team auth may fail. '
-            'Set it to the service account email used by your team backend.',
-        field: 'iap_service_account',
-      ));
+      issues.add(
+        const ConfigIssue(
+          severity: IssueSeverity.warning,
+          message:
+              '`iap_service_account` not set — team auth may fail. '
+              'Set it to the service account email used by your team backend.',
+          field: 'iap_service_account',
+        ),
+      );
     }
 
     // Cloud providers require vertex_ai.project — but only in solo modes.
@@ -358,20 +375,24 @@ class ConfigService {
       );
       if (hasGcpProvider &&
           (vertexAI?.project == null || vertexAI!.project!.isEmpty)) {
-        issues.add(const ConfigIssue(
-          severity: IssueSeverity.error,
-          message: '`vertex_ai.project` is required for cloud providers',
-          field: 'vertex_ai.project',
-        ));
+        issues.add(
+          const ConfigIssue(
+            severity: IssueSeverity.error,
+            message: '`vertex_ai.project` is required for cloud providers',
+            field: 'vertex_ai.project',
+          ),
+        );
       }
 
       // Region warning.
       if (hasGcpProvider && vertexAI?.region == null) {
-        issues.add(const ConfigIssue(
-          severity: IssueSeverity.warning,
-          message: '`vertex_ai.region` not set — defaulting to us-central1',
-          field: 'vertex_ai.region',
-        ));
+        issues.add(
+          const ConfigIssue(
+            severity: IssueSeverity.warning,
+            message: '`vertex_ai.region` not set — defaulting to us-central1',
+            field: 'vertex_ai.region',
+          ),
+        );
       }
     }
 
@@ -446,10 +467,7 @@ class ConfigService {
       );
     }
     // Prepend config_version and schema comment for initial configs.
-    final fullConfig = <String, dynamic>{
-      'config_version': 1,
-      ...config,
-    };
+    final fullConfig = <String, dynamic>{'config_version': 1, ...config};
     await _writeYaml(file, fullConfig);
   }
 
@@ -504,7 +522,7 @@ class ConfigService {
     for (final field in [
       'runtime_backend',
       'runtime_config',
-      'runtime_manage'
+      'runtime_manage',
     ]) {
       if (parsed.containsKey(field)) {
         editor.remove([field]);
@@ -550,8 +568,10 @@ class ConfigService {
       editor.update(['auto_start_proxy'], enabled);
       await _writeRaw(file, editor.toString());
     } else {
-      await _writeYaml(
-          file, {'config_version': 1, 'auto_start_proxy': enabled});
+      await _writeYaml(file, {
+        'config_version': 1,
+        'auto_start_proxy': enabled,
+      });
     }
   }
 
@@ -585,8 +605,10 @@ class ConfigService {
   }
 
   /// Add a provider to the config file.
-  Future<void> addProvider(String providerName,
-      {List<String> models = const []}) async {
+  Future<void> addProvider(
+    String providerName, {
+    List<String> models = const [],
+  }) async {
     final resolvedPath = _resolveConfigPath();
     final file = File(resolvedPath);
 
@@ -619,7 +641,7 @@ class ConfigService {
       await _writeYaml(file, {
         'config_version': 1,
         'providers': [
-          {'name': providerName, if (models.isNotEmpty) 'models': models}
+          {'name': providerName, if (models.isNotEmpty) 'models': models},
         ],
       });
     }
@@ -686,8 +708,11 @@ class ConfigService {
 
     // Hot-apply to the running proxy (best-effort).
     final config = await load();
-    await _applyCachingToProxy(mode, config.port,
-        cacheTTL: config.vertexAI?.cacheTTL);
+    await _applyCachingToProxy(
+      mode,
+      config.port,
+      cacheTTL: config.vertexAI?.cacheTTL,
+    );
   }
 
   /// Send caching mode and TTL to the running proxy for immediate effect.
@@ -767,8 +792,10 @@ class ConfigService {
         editor.update(['optimizations', 'semantic_cache'], semanticCache);
       }
       if (contextCompression != null) {
-        editor.update(
-            ['optimizations', 'context_compression'], contextCompression);
+        editor.update([
+          'optimizations',
+          'context_compression',
+        ], contextCompression);
       }
 
       await _writeRaw(file, editor.toString());
@@ -837,10 +864,12 @@ class ConfigService {
       final username = Platform.environment['USERNAME'];
       if (username != null && username.isNotEmpty) {
         try {
-          await _runner.run(
-            'icacls',
-            [file.path, '/inheritance:r', '/grant:r', '$username:F'],
-          );
+          await _runner.run('icacls', [
+            file.path,
+            '/inheritance:r',
+            '/grant:r',
+            '$username:F',
+          ]);
         } catch (_) {}
       }
     }
@@ -850,7 +879,8 @@ class ConfigService {
   Future<void> _writeYaml(File file, Map<String, dynamic> data) async {
     final sb = StringBuffer();
     sb.writeln(
-        '# yaml-language-server: \$schema=https://candelahq.com/schemas/config.v1.json');
+      '# yaml-language-server: \$schema=https://candelahq.com/schemas/config.v1.json',
+    );
     _writeYamlMap(sb, data, 0);
     await _writeRaw(file, sb.toString());
   }
@@ -888,8 +918,9 @@ class ConfigService {
   }
 
   static final _yamlUnsafe = RegExp(r'[:#{}\\[\]&*!|>%@`]');
-  static final _yamlNumeric =
-      RegExp(r'^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$');
+  static final _yamlNumeric = RegExp(
+    r'^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$',
+  );
   static final _yamlOctal = RegExp(r'^0[0-7]+$');
   static final _yamlHex = RegExp(r'^0x[0-9a-fA-F]+$');
   static const _yamlKeywords = {
@@ -899,7 +930,7 @@ class ConfigService {
     'yes',
     'no',
     'on',
-    'off'
+    'off',
   };
 
   String _yamlValue(dynamic value) {

@@ -51,9 +51,7 @@ class _ProcessLogsDialogState extends ConsumerState<ProcessLogsDialog> {
     final process = pmState.get(widget.processName);
 
     if (process == null) {
-      return const AlertDialog(
-        content: Text('Process no longer exists.'),
-      );
+      return const AlertDialog(content: Text('Process no longer exists.'));
     }
 
     final logText = _logs.isEmpty ? 'No logs available yet.' : _logs.join('\n');

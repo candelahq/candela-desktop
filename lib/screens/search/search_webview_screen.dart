@@ -27,7 +27,7 @@ class _SearchWebViewScreenState extends State<SearchWebViewScreen> {
   @override
   void initState() {
     super.initState();
-    _platformSupported = Platform.isMacOS || Platform.isIOS;
+    _platformSupported = Platform.isMacOS;
     if (!_platformSupported) return;
 
     _controller = WebViewController()

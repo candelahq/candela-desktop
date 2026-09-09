@@ -39,10 +39,7 @@ jobs:
       - run: flutter pub get
 
       - name: Format check
-        run: |
-          dart format lib/ test/
-          git diff
-          git diff --exit-code
+        run: dart format --set-exit-if-changed lib/ test/
 
       - name: Static analysis
         run: dart analyze --fatal-infos lib/ test/

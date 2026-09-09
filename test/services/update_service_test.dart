@@ -298,6 +298,7 @@ void main() {
     test(
       'delegates to BrewService.upgradeCask with correct cask name',
       () async {
+        if (!Platform.isMacOS) return;
         final fakeBrew = _FakeBrewService();
         // Simulate failure so we don't hit exit(0).
         fakeBrew.nextUpgradeCaskResult = const BrewResult(
@@ -315,58 +316,52 @@ void main() {
           'candelahq/tap/candela-desktop',
         );
       },
-      skip: !Platform.isMacOS ? 'performBrewUpgrade is macOS-only' : null,
     );
 
-    test(
-      'returns false and sets error status on upgrade failure',
-      () async {
-        final fakeBrew = _FakeBrewService();
-        fakeBrew.nextUpgradeCaskResult = const BrewResult(
-          success: false,
-          output: '',
-          errorMessage: 'Error: cask not found',
-        );
-        final runner = _FakeProcessRunner();
-        final service = UpdateService(runner: runner, brew: fakeBrew);
+    test('returns false and sets error status on upgrade failure', () async {
+      if (!Platform.isMacOS) return;
+      final fakeBrew = _FakeBrewService();
+      fakeBrew.nextUpgradeCaskResult = const BrewResult(
+        success: false,
+        output: '',
+        errorMessage: 'Error: cask not found',
+      );
+      final runner = _FakeProcessRunner();
+      final service = UpdateService(runner: runner, brew: fakeBrew);
 
-        final states = <UpdateStatus>[];
-        service.addListener(() => states.add(service.status));
+      final states = <UpdateStatus>[];
+      service.addListener(() => states.add(service.status));
 
-        final result = await service.performBrewUpgrade();
+      final result = await service.performBrewUpgrade();
 
-        expect(result, isFalse);
-        expect(service.status, UpdateStatus.error);
-        expect(
-          states,
-          containsAllInOrder([UpdateStatus.checking, UpdateStatus.error]),
-        );
-        // Should NOT have tried to relaunch the app.
-        expect(runner.startCalls, isEmpty);
-      },
-      skip: !Platform.isMacOS ? 'performBrewUpgrade is macOS-only' : null,
-    );
+      expect(result, isFalse);
+      expect(service.status, UpdateStatus.error);
+      expect(
+        states,
+        containsAllInOrder([UpdateStatus.checking, UpdateStatus.error]),
+      );
+      // Should NOT have tried to relaunch the app.
+      expect(runner.startCalls, isEmpty);
+    });
 
-    test(
-      'returns false and sets error status on thrown exception',
-      () async {
-        final fakeBrew = _FakeBrewService();
-        fakeBrew.throwOnUpgrade = true;
-        final runner = _FakeProcessRunner();
-        final service = UpdateService(runner: runner, brew: fakeBrew);
+    test('returns false and sets error status on thrown exception', () async {
+      if (!Platform.isMacOS) return;
+      final fakeBrew = _FakeBrewService();
+      fakeBrew.throwOnUpgrade = true;
+      final runner = _FakeProcessRunner();
+      final service = UpdateService(runner: runner, brew: fakeBrew);
 
-        final result = await service.performBrewUpgrade();
+      final result = await service.performBrewUpgrade();
 
-        expect(result, isFalse);
-        expect(service.status, UpdateStatus.error);
-        expect(runner.startCalls, isEmpty);
-      },
-      skip: !Platform.isMacOS ? 'performBrewUpgrade is macOS-only' : null,
-    );
+      expect(result, isFalse);
+      expect(service.status, UpdateStatus.error);
+      expect(runner.startCalls, isEmpty);
+    });
 
     test(
       'does not spawn real processes when no BrewService is injected',
       () async {
+        if (!Platform.isMacOS) return;
         // When only a fake ProcessRunner is provided (no explicit BrewService),
         // the default BrewService should receive the same fake runner —
         // so no real `brew` process is spawned.
@@ -384,25 +379,21 @@ void main() {
         // to resolve the path, then the upgrade command).
         expect(runner.runCalls, isNotEmpty);
       },
-      skip: !Platform.isMacOS ? 'performBrewUpgrade is macOS-only' : null,
     );
 
-    test(
-      'returns false immediately on non-macOS platforms',
-      () async {
-        final fakeBrew = _FakeBrewService();
-        final runner = _FakeProcessRunner();
-        final service = UpdateService(runner: runner, brew: fakeBrew);
+    test('returns false immediately on non-macOS platforms', () async {
+      if (Platform.isMacOS) return;
+      final fakeBrew = _FakeBrewService();
+      final runner = _FakeProcessRunner();
+      final service = UpdateService(runner: runner, brew: fakeBrew);
 
-        final result = await service.performBrewUpgrade();
+      final result = await service.performBrewUpgrade();
 
-        expect(result, isFalse);
-        // Should not have called BrewService at all.
-        expect(fakeBrew.upgradeCaskCalls, isEmpty);
-        // Status should remain idle (no state change).
-        expect(service.status, UpdateStatus.idle);
-      },
-      skip: Platform.isMacOS ? 'Only meaningful on non-macOS platforms' : null,
-    );
+      expect(result, isFalse);
+      // Should not have called BrewService at all.
+      expect(fakeBrew.upgradeCaskCalls, isEmpty);
+      // Status should remain idle (no state change).
+      expect(service.status, UpdateStatus.idle);
+    });
   });
 }

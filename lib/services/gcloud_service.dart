@@ -121,11 +121,11 @@ class GCloudService {
       ]);
       if (result.exitCode != 0) {
         // Fall back to regular access token (works with userinfo validation).
-        return getAccessToken();
+        return await getAccessToken();
       }
 
       final token = (result.stdout as String).trim();
-      if (token.isEmpty) return getAccessToken();
+      if (token.isEmpty) return await getAccessToken();
 
       return _decodeJwt(token);
     } catch (_) {

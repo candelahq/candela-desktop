@@ -162,7 +162,8 @@ void main() {
 
       final spans = ConnectApiService.spansFromModels([model], start, end);
       final midpoint = start.add(
-          Duration(milliseconds: end.difference(start).inMilliseconds ~/ 2));
+        Duration(milliseconds: end.difference(start).inMilliseconds ~/ 2),
+      );
       expect(
         spans.first.timestamp.difference(midpoint).abs().inMinutes,
         lessThan(1),
@@ -244,10 +245,7 @@ void main() {
       final budget = ConnectApiService.budgetFromProto(resp);
       expect(budget, isNotNull);
       // Should default to approximately now + 1 day.
-      expect(
-        budget!.periodEnd.isAfter(DateTime.now().toUtc()),
-        isTrue,
-      );
+      expect(budget!.periodEnd.isAfter(DateTime.now().toUtc()), isTrue);
     });
   });
 
@@ -262,14 +260,16 @@ void main() {
     test('parses grant fields correctly', () {
       final expiresAt = DateTime.utc(2026, 6, 1);
       final resp = GetMyUsageResponse();
-      resp.activeGrants.add(BudgetGrant()
-        ..id = 'g-1'
-        ..amountUsd = 100.0
-        ..spentUsd = 25.0
-        ..reason = 'Project allocation'
-        ..grantedBy = 'admin@co.com'
-        ..expiresAt = (Timestamp()
-          ..seconds = Int64(expiresAt.millisecondsSinceEpoch ~/ 1000)));
+      resp.activeGrants.add(
+        BudgetGrant()
+          ..id = 'g-1'
+          ..amountUsd = 100.0
+          ..spentUsd = 25.0
+          ..reason = 'Project allocation'
+          ..grantedBy = 'admin@co.com'
+          ..expiresAt = (Timestamp()
+            ..seconds = Int64(expiresAt.millisecondsSinceEpoch ~/ 1000)),
+      );
 
       final grants = ConnectApiService.grantsFromProto(resp);
       expect(grants.length, 1);
@@ -283,11 +283,13 @@ void main() {
 
     test('handles grant without expiresAt', () {
       final resp = GetMyUsageResponse();
-      resp.activeGrants.add(BudgetGrant()
-        ..id = 'g-2'
-        ..amountUsd = 50.0
-        ..spentUsd = 0.0
-        ..reason = 'Trial');
+      resp.activeGrants.add(
+        BudgetGrant()
+          ..id = 'g-2'
+          ..amountUsd = 50.0
+          ..spentUsd = 0.0
+          ..reason = 'Trial',
+      );
 
       final grants = ConnectApiService.grantsFromProto(resp);
       expect(grants.first.expiresAt, isNull);
@@ -423,8 +425,10 @@ void main() {
         ..costUsd = 5.0
         ..avgLatencyMs = 500.0;
 
-      final result =
-          ConnectApiService.modelBreakdownsFromProto([cheap, expensive]);
+      final result = ConnectApiService.modelBreakdownsFromProto([
+        cheap,
+        expensive,
+      ]);
       expect(result.first.model, 'claude-opus');
       expect(result.last.model, 'gemini-flash');
     });
@@ -468,8 +472,11 @@ void main() {
         ..avgLatencyMs = 100.0;
 
       final result = ConnectApiService.modelBreakdownsFromProto([model]);
-      expect(result.first.callCount, 5000,
-          reason: 'real call count must not be clamped to 1000');
+      expect(
+        result.first.callCount,
+        5000,
+        reason: 'real call count must not be clamped to 1000',
+      );
     });
   });
 }

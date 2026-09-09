@@ -15,13 +15,18 @@ void main() {
       expect(home, isNotEmpty);
       // Platform-aware: Windows uses drive letters, Unix uses /.
       if (Platform.isWindows) {
-        expect(RegExp(r'^[A-Z]:\\').hasMatch(home), isTrue,
-            reason:
-                'homeDir should return an absolute path on Windows, got: $home');
+        expect(
+          RegExp(r'^[A-Z]:\\').hasMatch(home),
+          isTrue,
+          reason:
+              'homeDir should return an absolute path on Windows, got: $home',
+        );
       } else {
-        expect(home.startsWith('/'), isTrue,
-            reason:
-                'homeDir should return an absolute path on Unix, got: $home');
+        expect(
+          home.startsWith('/'),
+          isTrue,
+          reason: 'homeDir should return an absolute path on Unix, got: $home',
+        );
       }
     });
 
@@ -33,8 +38,11 @@ void main() {
 
     test('candelaConfigDir returns absolute path', () {
       final dir = platform_paths.candelaConfigDir();
-      expect(dir.startsWith('/') || RegExp(r'^[A-Z]:\\').hasMatch(dir), isTrue,
-          reason: 'Config dir should be an absolute path, got: $dir');
+      expect(
+        dir.startsWith('/') || RegExp(r'^[A-Z]:\\').hasMatch(dir),
+        isTrue,
+        reason: 'Config dir should be an absolute path, got: $dir',
+      );
     });
 
     test('candelaConfigPath ends with config.yaml', () {
@@ -57,8 +65,10 @@ void main() {
     test('adcCredentialPath returns absolute path', () {
       final path = platform_paths.adcCredentialPath();
       expect(
-          path.startsWith('/') || RegExp(r'^[A-Z]:\\').hasMatch(path), isTrue,
-          reason: 'ADC path should be an absolute path, got: $path');
+        path.startsWith('/') || RegExp(r'^[A-Z]:\\').hasMatch(path),
+        isTrue,
+        reason: 'ADC path should be an absolute path, got: $path',
+      );
     });
 
     test('extraCliPaths contains google-cloud-sdk path', () {
@@ -124,8 +134,11 @@ void main() {
     test('buildAugmentedEnv preserves existing PATH entries', () {
       final systemPath = Platform.environment['PATH'] ?? '';
       final augmentedPath = platform_paths.buildAugmentedEnv()['PATH']!;
-      expect(augmentedPath, contains(systemPath),
-          reason: 'Augmented PATH should contain original system PATH');
+      expect(
+        augmentedPath,
+        contains(systemPath),
+        reason: 'Augmented PATH should contain original system PATH',
+      );
     });
 
     test('buildAugmentedEnv uses correct separator', () {
@@ -137,10 +150,14 @@ void main() {
 
     test('buildAugmentedEnv has exactly one PATH key', () {
       final env = platform_paths.buildAugmentedEnv();
-      final pathKeys =
-          env.keys.where((k) => k.toUpperCase() == 'PATH').toList();
-      expect(pathKeys.length, equals(1),
-          reason: 'Should have exactly one PATH key, got: $pathKeys');
+      final pathKeys = env.keys
+          .where((k) => k.toUpperCase() == 'PATH')
+          .toList();
+      expect(
+        pathKeys.length,
+        equals(1),
+        reason: 'Should have exactly one PATH key, got: $pathKeys',
+      );
     });
   });
 
@@ -183,11 +200,13 @@ void main() {
       final paths = const PlatformPaths(env: {}, isWindows: true);
       expect(
         () => paths.homeDir(),
-        throwsA(isA<StateError>().having(
-          (e) => e.message,
-          'message',
-          contains('USERPROFILE'),
-        )),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains('USERPROFILE'),
+          ),
+        ),
       );
     });
 
@@ -214,11 +233,13 @@ void main() {
       final paths = const PlatformPaths(env: {}, isWindows: true);
       expect(
         () => paths.candelaConfigDir(),
-        throwsA(isA<StateError>().having(
-          (e) => e.message,
-          'message',
-          contains('APPDATA'),
-        )),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains('APPDATA'),
+          ),
+        ),
       );
     });
 
@@ -270,18 +291,22 @@ void main() {
       expect(adc, contains('application_default_credentials.json'));
     });
 
-    test('adcCredentialPath throws when APPDATA missing (no CLOUDSDK_CONFIG)',
-        () {
-      final paths = const PlatformPaths(env: {}, isWindows: true);
-      expect(
-        () => paths.adcCredentialPath(),
-        throwsA(isA<StateError>().having(
-          (e) => e.message,
-          'message',
-          contains('APPDATA'),
-        )),
-      );
-    });
+    test(
+      'adcCredentialPath throws when APPDATA missing (no CLOUDSDK_CONFIG)',
+      () {
+        final paths = const PlatformPaths(env: {}, isWindows: true);
+        expect(
+          () => paths.adcCredentialPath(),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              contains('APPDATA'),
+            ),
+          ),
+        );
+      },
+    );
 
     // ── extraCliPaths ────────────────────────────────────────────────────
 
@@ -318,8 +343,11 @@ void main() {
       final cliPaths = paths.extraCliPaths();
       // Without LOCALAPPDATA, no relative paths should be generated.
       for (final p in cliPaths) {
-        expect(p.startsWith('Google'), isFalse,
-            reason: 'Should not generate relative path, got: $p');
+        expect(
+          p.startsWith('Google'),
+          isFalse,
+          reason: 'Should not generate relative path, got: $p',
+        );
       }
     });
 
@@ -349,15 +377,10 @@ void main() {
 
     test('buildAugmentedEnv includes additional paths on Windows', () {
       final paths = const PlatformPaths(
-        env: {
-          'USERPROFILE': r'C:\Users\test',
-          'PATH': r'C:\Windows',
-        },
+        env: {'USERPROFILE': r'C:\Users\test', 'PATH': r'C:\Windows'},
         isWindows: true,
       );
-      final env = paths.buildAugmentedEnv(
-        additionalPaths: [r'C:\custom\bin'],
-      );
+      final env = paths.buildAugmentedEnv(additionalPaths: [r'C:\custom\bin']);
       expect(env['PATH'], contains(r'C:\custom\bin'));
     });
   });
@@ -379,19 +402,18 @@ void main() {
       final paths = const PlatformPaths(env: {}, isWindows: false);
       expect(
         () => paths.homeDir(),
-        throwsA(isA<StateError>().having(
-          (e) => e.message,
-          'message',
-          contains('HOME'),
-        )),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains('HOME'),
+          ),
+        ),
       );
     });
 
     test('homeDir throws StateError when HOME is empty', () {
-      final paths = const PlatformPaths(
-        env: {'HOME': ''},
-        isWindows: false,
-      );
+      final paths = const PlatformPaths(env: {'HOME': ''}, isWindows: false);
       expect(() => paths.homeDir(), throwsA(isA<StateError>()));
     });
 
@@ -410,23 +432,22 @@ void main() {
       );
       final adc = paths.adcCredentialPath();
       expect(
-          adc,
-          '/home/testuser/.config/gcloud/'
-          'application_default_credentials.json');
+        adc,
+        '/home/testuser/.config/gcloud/'
+        'application_default_credentials.json',
+      );
     });
 
     test('adcCredentialPath prefers CLOUDSDK_CONFIG on Unix', () {
       final paths = const PlatformPaths(
-        env: {
-          'CLOUDSDK_CONFIG': '/custom/gcloud',
-          'HOME': '/home/testuser',
-        },
+        env: {'CLOUDSDK_CONFIG': '/custom/gcloud', 'HOME': '/home/testuser'},
         isWindows: false,
       );
       expect(
-          paths.adcCredentialPath(),
-          '/custom/gcloud/'
-          'application_default_credentials.json');
+        paths.adcCredentialPath(),
+        '/custom/gcloud/'
+        'application_default_credentials.json',
+      );
     });
 
     test('extraCliPaths includes homebrew and local bin', () {
@@ -447,10 +468,7 @@ void main() {
 
     test('buildAugmentedEnv uses : separator on Unix', () {
       final paths = const PlatformPaths(
-        env: {
-          'HOME': '/home/testuser',
-          'PATH': '/usr/bin',
-        },
+        env: {'HOME': '/home/testuser', 'PATH': '/usr/bin'},
         isWindows: false,
       );
       final env = paths.buildAugmentedEnv();
@@ -477,22 +495,21 @@ void main() {
       expect(paths.candelaConfigDir(), '/home/testuser/.myconfig/candela');
     });
 
-    test('candelaConfigDir falls back to ~/.config when XDG unset on Linux',
-        () {
-      final paths = const PlatformPaths(
-        env: {'HOME': '/home/testuser'},
-        isWindows: false,
-        isLinux: true,
-      );
-      expect(paths.candelaConfigDir(), '/home/testuser/.config/candela');
-    });
+    test(
+      'candelaConfigDir falls back to ~/.config when XDG unset on Linux',
+      () {
+        final paths = const PlatformPaths(
+          env: {'HOME': '/home/testuser'},
+          isWindows: false,
+          isLinux: true,
+        );
+        expect(paths.candelaConfigDir(), '/home/testuser/.config/candela');
+      },
+    );
 
     test('candelaConfigDir ignores empty XDG_CONFIG_HOME on Linux', () {
       final paths = const PlatformPaths(
-        env: {
-          'HOME': '/home/testuser',
-          'XDG_CONFIG_HOME': '',
-        },
+        env: {'HOME': '/home/testuser', 'XDG_CONFIG_HOME': ''},
         isWindows: false,
         isLinux: true,
       );
@@ -501,10 +518,7 @@ void main() {
 
     test('candelaConfigDir ignores relative XDG_CONFIG_HOME on Linux', () {
       final paths = const PlatformPaths(
-        env: {
-          'HOME': '/home/testuser',
-          'XDG_CONFIG_HOME': 'relative/path',
-        },
+        env: {'HOME': '/home/testuser', 'XDG_CONFIG_HOME': 'relative/path'},
         isWindows: false,
         isLinux: true,
       );
@@ -535,9 +549,10 @@ void main() {
       // ADC always uses ~/.config/gcloud, not $XDG_CONFIG_HOME/gcloud.
       // Use $CLOUDSDK_CONFIG to override.
       expect(
-          paths.adcCredentialPath(),
-          '/home/testuser/.config/gcloud/'
-          'application_default_credentials.json');
+        paths.adcCredentialPath(),
+        '/home/testuser/.config/gcloud/'
+        'application_default_credentials.json',
+      );
     });
   });
 
@@ -577,8 +592,11 @@ void main() {
       expect(env['PATH'], isNotNull);
       expect(env['PATH'], contains('google-cloud-sdk'));
       // CWE-426: trailing separator would be interpreted as CWD on Unix.
-      expect(env['PATH']!.endsWith(':'), isFalse,
-          reason: 'Should not append a trailing separator when PATH is empty');
+      expect(
+        env['PATH']!.endsWith(':'),
+        isFalse,
+        reason: 'Should not append a trailing separator when PATH is empty',
+      );
     });
   });
 }

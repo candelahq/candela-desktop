@@ -15,17 +15,13 @@ void main() {
     tearDown(() => container.dispose());
 
     test('clears previous processes on reconfigure', () {
-      notifier.configure(
-        providerNames: ['ollama'],
-        proxyPort: '8181',
-      );
-      expect(container.read(processManagerProvider).all.length,
-          2); // proxy + ollama
+      notifier.configure(providerNames: ['ollama'], proxyPort: '8181');
+      expect(
+        container.read(processManagerProvider).all.length,
+        2,
+      ); // proxy + ollama
 
-      notifier.configure(
-        providerNames: ['lmstudio'],
-        proxyPort: '8181',
-      );
+      notifier.configure(providerNames: ['lmstudio'], proxyPort: '8181');
       final state = container.read(processManagerProvider);
       expect(state.all.length, 2); // proxy + lmstudio
       expect(state.get('ollama'), isNull);
@@ -62,18 +58,15 @@ void main() {
         name: 'test',
         displayName: 'Test',
         icon: '🧪',
-        startedAt:
-            DateTime.now().subtract(const Duration(hours: 2, minutes: 15)),
+        startedAt: DateTime.now().subtract(
+          const Duration(hours: 2, minutes: 15),
+        ),
       );
       expect(p.uptimeString, contains('h'));
     });
 
     test('initial state is detecting', () {
-      const p = ManagedProcess(
-        name: 'test',
-        displayName: 'Test',
-        icon: '🧪',
-      );
+      const p = ManagedProcess(name: 'test', displayName: 'Test', icon: '🧪');
       expect(p.state, ProcessState.detecting);
       expect(p.pid, isNull);
       expect(p.errorMessage, isNull);

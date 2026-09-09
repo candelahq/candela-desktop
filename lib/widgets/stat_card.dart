@@ -36,11 +36,7 @@ class StatCard extends StatelessWidget {
 
     return Text(
       '$icon $valStr',
-      style: TextStyle(
-        color: color,
-        fontSize: 11,
-        fontWeight: FontWeight.w600,
-      ),
+      style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600),
     );
   }
 
@@ -110,10 +106,7 @@ class StatCard extends StatelessWidget {
               height: 24,
               width: double.infinity,
               child: CustomPaint(
-                painter: _SparklinePainter(
-                  data: sparklineData!,
-                  color: accent,
-                ),
+                painter: _SparklinePainter(data: sparklineData!, color: accent),
               ),
             )
           else

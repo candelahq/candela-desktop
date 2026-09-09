@@ -41,9 +41,7 @@ class CandelaTheme {
           backgroundColor: CandelaColors.accent,
           foregroundColor: Colors.black,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
         ),
       ),
@@ -52,9 +50,7 @@ class CandelaTheme {
           foregroundColor: CandelaColors.textPrimary,
           side: const BorderSide(color: CandelaColors.border),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           textStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
         ),
       ),
@@ -105,9 +101,7 @@ class CandelaTheme {
           backgroundColor: CandelaColors.accent,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
         ),
       ),
@@ -116,9 +110,7 @@ class CandelaTheme {
           foregroundColor: CandelaColorsLight.textPrimary,
           side: const BorderSide(color: CandelaColorsLight.border),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           textStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
         ),
       ),

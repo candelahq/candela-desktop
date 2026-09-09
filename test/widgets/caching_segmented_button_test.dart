@@ -43,10 +43,9 @@ Widget _buildCachingSegmentedButton({
 void main() {
   group('CachingModeSegmentedButton', () {
     testWidgets('renders all three segments', (tester) async {
-      await tester.pumpWidget(_buildCachingSegmentedButton(
-        selected: 'auto',
-        onChanged: (_) {},
-      ));
+      await tester.pumpWidget(
+        _buildCachingSegmentedButton(selected: 'auto', onChanged: (_) {}),
+      );
 
       expect(find.text('Off'), findsOneWidget);
       expect(find.text('Auto'), findsOneWidget);
@@ -55,10 +54,9 @@ void main() {
     });
 
     testWidgets('auto is selected by default', (tester) async {
-      await tester.pumpWidget(_buildCachingSegmentedButton(
-        selected: 'auto',
-        onChanged: (_) {},
-      ));
+      await tester.pumpWidget(
+        _buildCachingSegmentedButton(selected: 'auto', onChanged: (_) {}),
+      );
 
       final button = tester.widget<SegmentedButton<String>>(
         find.byType(SegmentedButton<String>),
@@ -68,10 +66,12 @@ void main() {
 
     testWidgets('tapping Off fires callback with off', (tester) async {
       String? changed;
-      await tester.pumpWidget(_buildCachingSegmentedButton(
-        selected: 'auto',
-        onChanged: (mode) => changed = mode,
-      ));
+      await tester.pumpWidget(
+        _buildCachingSegmentedButton(
+          selected: 'auto',
+          onChanged: (mode) => changed = mode,
+        ),
+      );
 
       await tester.tap(find.text('Off'));
       await tester.pumpAndSettle();
@@ -79,13 +79,16 @@ void main() {
       expect(changed, 'off');
     });
 
-    testWidgets('tapping System fires callback with system-only',
-        (tester) async {
+    testWidgets('tapping System fires callback with system-only', (
+      tester,
+    ) async {
       String? changed;
-      await tester.pumpWidget(_buildCachingSegmentedButton(
-        selected: 'auto',
-        onChanged: (mode) => changed = mode,
-      ));
+      await tester.pumpWidget(
+        _buildCachingSegmentedButton(
+          selected: 'auto',
+          onChanged: (mode) => changed = mode,
+        ),
+      );
 
       await tester.tap(find.text('System'));
       await tester.pumpAndSettle();
@@ -95,10 +98,12 @@ void main() {
 
     testWidgets('tapping Auto fires callback with auto', (tester) async {
       String? changed;
-      await tester.pumpWidget(_buildCachingSegmentedButton(
-        selected: 'off',
-        onChanged: (mode) => changed = mode,
-      ));
+      await tester.pumpWidget(
+        _buildCachingSegmentedButton(
+          selected: 'off',
+          onChanged: (mode) => changed = mode,
+        ),
+      );
 
       await tester.tap(find.text('Auto'));
       await tester.pumpAndSettle();
@@ -108,49 +113,50 @@ void main() {
 
     testWidgets('shows correct selection state for each mode', (tester) async {
       for (final mode in ['off', 'auto', 'system-only']) {
-        await tester.pumpWidget(_buildCachingSegmentedButton(
-          selected: mode,
-          onChanged: (_) {},
-        ));
+        await tester.pumpWidget(
+          _buildCachingSegmentedButton(selected: mode, onChanged: (_) {}),
+        );
 
         final button = tester.widget<SegmentedButton<String>>(
           find.byType(SegmentedButton<String>),
         );
-        expect(button.selected, {mode},
-            reason: 'Expected $mode to be selected');
+        expect(button.selected, {
+          mode,
+        }, reason: 'Expected $mode to be selected');
       }
     });
 
     testWidgets('does not crash with empty selection guard', (tester) async {
       // The isNotEmpty guard should prevent errors if somehow
       // SegmentedButton fires with an empty set.
-      await tester.pumpWidget(_buildCachingSegmentedButton(
-        selected: 'auto',
-        onChanged: (_) {},
-      ));
+      await tester.pumpWidget(
+        _buildCachingSegmentedButton(selected: 'auto', onChanged: (_) {}),
+      );
 
       // Just verify no exceptions during normal interaction.
       expect(tester.takeException(), isNull);
     });
 
     testWidgets('renders without overflow in narrow container', (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        theme: ThemeData.dark(),
-        home: Scaffold(
-          body: SizedBox(
-            width: 250,
-            child: SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(value: 'off', label: Text('Off')),
-                ButtonSegment(value: 'auto', label: Text('Auto')),
-                ButtonSegment(value: 'system-only', label: Text('System')),
-              ],
-              selected: const {'auto'},
-              onSelectionChanged: (_) {},
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData.dark(),
+          home: Scaffold(
+            body: SizedBox(
+              width: 250,
+              child: SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(value: 'off', label: Text('Off')),
+                  ButtonSegment(value: 'auto', label: Text('Auto')),
+                  ButtonSegment(value: 'system-only', label: Text('System')),
+                ],
+                selected: const {'auto'},
+                onSelectionChanged: (_) {},
+              ),
             ),
           ),
         ),
-      ));
+      );
 
       expect(tester.takeException(), isNull);
     });

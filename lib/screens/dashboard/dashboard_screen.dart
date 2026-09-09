@@ -203,10 +203,7 @@ class _Header extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           if (isTeamMode)
-            ScopeToggle(
-              scope: userScope,
-              onChanged: onScopeChanged,
-            ),
+            ScopeToggle(scope: userScope, onChanged: onScopeChanged),
           const Spacer(),
           if (models.isNotEmpty) ...[
             ModelSelectorDropdown(
@@ -285,8 +282,11 @@ class _RefreshButton extends StatelessWidget {
                     color: CandelaColors.accent,
                   ),
                 )
-              : const Icon(Icons.refresh,
-                  size: 16, color: CandelaColors.textMuted),
+              : const Icon(
+                  Icons.refresh,
+                  size: 16,
+                  color: CandelaColors.textMuted,
+                ),
         ),
       ),
     );
@@ -388,8 +388,9 @@ class _StatGrid extends StatelessWidget {
             accentColor: const Color(0xFF4ADE80),
             icon: Icons.attach_money,
             changePercent: comp?.costChangePercent,
-            sparklineData:
-                s?.costOverTime.map((p) => p.value.toDouble()).toList(),
+            sparklineData: s?.costOverTime
+                .map((p) => p.value.toDouble())
+                .toList(),
           ),
         ),
         const SizedBox(width: 12),
@@ -401,8 +402,9 @@ class _StatGrid extends StatelessWidget {
             accentColor: CandelaColors.accent,
             icon: Icons.bolt,
             changePercent: comp?.callsChangePercent,
-            sparklineData:
-                s?.callsOverTime.map((p) => p.value.toDouble()).toList(),
+            sparklineData: s?.callsOverTime
+                .map((p) => p.value.toDouble())
+                .toList(),
           ),
         ),
         const SizedBox(width: 12),
@@ -414,8 +416,9 @@ class _StatGrid extends StatelessWidget {
             accentColor: const Color(0xFF60A5FA),
             icon: Icons.arrow_forward,
             changePercent: comp?.tokensChangePercent,
-            sparklineData:
-                s?.tokensOverTime.map((p) => p.value.toDouble()).toList(),
+            sparklineData: s?.tokensOverTime
+                .map((p) => p.value.toDouble())
+                .toList(),
           ),
         ),
         const SizedBox(width: 12),
@@ -608,17 +611,23 @@ class _ChartCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title,
-                  style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: CandelaColors.textPrimary)),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: CandelaColors.textPrimary,
+                ),
+              ),
               if (subtitle != null)
-                Text(subtitle!,
-                    style: const TextStyle(
-                        fontSize: 11,
-                        color: CandelaColors.textMuted,
-                        fontFamily: 'monospace')),
+                Text(
+                  subtitle!,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: CandelaColors.textMuted,
+                    fontFamily: 'monospace',
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 16),
@@ -646,13 +655,18 @@ class _ErrorBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded,
-              size: 16, color: Color(0xFFEF4444)),
+          const Icon(
+            Icons.warning_amber_rounded,
+            size: 16,
+            color: Color(0xFFEF4444),
+          ),
           const SizedBox(width: 10),
           Expanded(
-              child: Text(message,
-                  style:
-                      const TextStyle(fontSize: 12, color: Color(0xFFFCA5A5)))),
+            child: Text(
+              message,
+              style: const TextStyle(fontSize: 12, color: Color(0xFFFCA5A5)),
+            ),
+          ),
         ],
       ),
     );

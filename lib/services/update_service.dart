@@ -25,13 +25,7 @@ enum InstallChannel {
 }
 
 /// Describes the current update status.
-enum UpdateStatus {
-  idle,
-  checking,
-  available,
-  upToDate,
-  error,
-}
+enum UpdateStatus { idle, checking, available, upToDate, error }
 
 /// Manages version checking and update notifications.
 ///
@@ -70,9 +64,9 @@ class UpdateService extends ChangeNotifier {
   }
 
   UpdateService({http.Client? client, ProcessRunner? runner, BrewService? brew})
-      : _client = client ?? http.Client(),
-        _runner = runner ?? const SystemProcessRunner(),
-        _brew = brew ?? BrewService(runner: runner);
+    : _client = client ?? http.Client(),
+      _runner = runner ?? const SystemProcessRunner(),
+      _brew = brew ?? BrewService(runner: runner);
 
   /// Current update status.
   UpdateStatus get status => _status;
@@ -125,10 +119,12 @@ class UpdateService extends ChangeNotifier {
   Future<String?> checkForUpdate(String currentVersion) async {
     _setStatus(UpdateStatus.checking);
     try {
-      final response = await _client.get(
-        Uri.parse(_releaseFeedUrl),
-        headers: {'Accept': 'application/vnd.github.v3+json'},
-      ).timeout(const Duration(seconds: 10));
+      final response = await _client
+          .get(
+            Uri.parse(_releaseFeedUrl),
+            headers: {'Accept': 'application/vnd.github.v3+json'},
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode != 200) {
         _setStatus(UpdateStatus.error);
@@ -169,7 +165,8 @@ class UpdateService extends ChangeNotifier {
         return 'Run: nix profile upgrade';
       case InstallChannel.unknown:
         debugPrint(
-            '[UpdateService] Unknown install channel for: ${Platform.resolvedExecutable}');
+          '[UpdateService] Unknown install channel for: ${Platform.resolvedExecutable}',
+        );
         return 'Visit GitHub releases for the latest version.';
     }
   }
@@ -209,14 +206,17 @@ class UpdateService extends ChangeNotifier {
     }
 
     final plusIdx = version.indexOf('+');
-    final withoutBuild =
-        plusIdx == -1 ? version : version.substring(0, plusIdx);
+    final withoutBuild = plusIdx == -1
+        ? version
+        : version.substring(0, plusIdx);
 
     final dashIdx = withoutBuild.indexOf('-');
-    final base =
-        dashIdx == -1 ? withoutBuild : withoutBuild.substring(0, dashIdx);
-    final preRelease =
-        dashIdx == -1 ? null : withoutBuild.substring(dashIdx + 1);
+    final base = dashIdx == -1
+        ? withoutBuild
+        : withoutBuild.substring(0, dashIdx);
+    final preRelease = dashIdx == -1
+        ? null
+        : withoutBuild.substring(dashIdx + 1);
 
     final parts = base.split('.').map((s) => int.tryParse(s) ?? 0).toList();
     while (parts.length < 3) {
@@ -242,11 +242,11 @@ class UpdateService extends ChangeNotifier {
         return false;
       }
 
-      await _runner.start(
-        'open',
-        ['-n', '-a', 'Candela'],
-        mode: ProcessStartMode.detached,
-      );
+      await _runner.start('open', [
+        '-n',
+        '-a',
+        'Candela',
+      ], mode: ProcessStartMode.detached);
 
       exit(0);
     } catch (_) {

@@ -11,16 +11,15 @@ ModelBreakdown _model({
   int output = 500,
   double cost = 0.50,
   double avgLatency = 1200,
-}) =>
-    ModelBreakdown(
-      model: name,
-      provider: provider,
-      callCount: calls,
-      inputTokens: input,
-      outputTokens: output,
-      costUsd: cost,
-      avgLatencyMs: avgLatency,
-    );
+}) => ModelBreakdown(
+  model: name,
+  provider: provider,
+  callCount: calls,
+  inputTokens: input,
+  outputTokens: output,
+  costUsd: cost,
+  avgLatencyMs: avgLatency,
+);
 
 void main() {
   group('Model sorting', () {
@@ -137,8 +136,9 @@ void main() {
         _model(name: 'b', cost: 0.50),
         _model(name: 'c', cost: 0.25),
       ];
-      final maxCost =
-          models.map((m) => m.costUsd).reduce((a, b) => a > b ? a : b);
+      final maxCost = models
+          .map((m) => m.costUsd)
+          .reduce((a, b) => a > b ? a : b);
       expect(maxCost, 0.50);
       expect(models[0].costUsd / maxCost, 0.2);
       expect(models[1].costUsd / maxCost, 1.0);

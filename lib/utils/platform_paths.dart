@@ -60,7 +60,8 @@ class PlatformPaths {
       final homePath = env['HOMEPATH'];
       if (homeDrive != null && homePath != null) return '$homeDrive$homePath';
       throw StateError(
-          'Unable to determine home directory: %USERPROFILE% is not set');
+        'Unable to determine home directory: %USERPROFILE% is not set',
+      );
     }
     final home = env['HOME'];
     if (home == null || home.isEmpty) {
@@ -81,7 +82,8 @@ class PlatformPaths {
       final appData = env['APPDATA'];
       if (appData == null || appData.isEmpty) {
         throw StateError(
-            'Unable to determine config directory: %APPDATA% is not set');
+          'Unable to determine config directory: %APPDATA% is not set',
+        );
       }
       return path.join(appData, 'candela');
     }
@@ -152,10 +154,20 @@ class PlatformPaths {
       return [
         if (localAppData != null && localAppData.isNotEmpty)
           path.join(
-              localAppData, 'Google', 'Cloud SDK', 'google-cloud-sdk', 'bin'),
+            localAppData,
+            'Google',
+            'Cloud SDK',
+            'google-cloud-sdk',
+            'bin',
+          ),
         if (programFiles.isNotEmpty)
           path.join(
-              programFiles, 'Google', 'Cloud SDK', 'google-cloud-sdk', 'bin'),
+            programFiles,
+            'Google',
+            'Cloud SDK',
+            'google-cloud-sdk',
+            'bin',
+          ),
         path.join(home, 'google-cloud-sdk', 'bin'),
       ];
     }

@@ -23,7 +23,11 @@ class FakeAdapter implements BudgetNotifAdapter {
 
   @override
   Future<void> show(
-      int id, String? title, String? body, NotificationDetails? details) async {
+    int id,
+    String? title,
+    String? body,
+    NotificationDetails? details,
+  ) async {
     shown.add((id: id, title: title, body: body));
   }
 
@@ -41,8 +45,12 @@ class FakeAdapter implements BudgetNotifAdapter {
   }
 
   @override
-  Future<void> showWindows(int id, String? title, String? body,
-      WindowsNotificationDetails? details) async {
+  Future<void> showWindows(
+    int id,
+    String? title,
+    String? body,
+    WindowsNotificationDetails? details,
+  ) async {
     shown.add((id: id, title: title, body: body));
   }
 
@@ -58,14 +66,13 @@ BudgetInfo _budget({
   double limit = 10.0,
   double spent = 0.0,
   DateTime? periodEnd,
-}) =>
-    BudgetInfo(
-      limitUsd: limit,
-      spentUsd: spent,
-      tokensUsed: 0,
-      period: BudgetPeriodKind.daily,
-      periodEnd: periodEnd ?? DateTime.now().add(const Duration(hours: 6)),
-    );
+}) => BudgetInfo(
+  limitUsd: limit,
+  spentUsd: spent,
+  tokensUsed: 0,
+  period: BudgetPeriodKind.daily,
+  periodEnd: periodEnd ?? DateTime.now().add(const Duration(hours: 6)),
+);
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 

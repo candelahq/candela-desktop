@@ -31,10 +31,12 @@ void main() {
     });
 
     test('decodeJwt handles expired JWT', () {
-      final header =
-          base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
-      final payload = base64Url
-          .encode(utf8.encode('{"exp":1000000000,"email":"test@test.com"}'));
+      final header = base64Url.encode(
+        utf8.encode('{"alg":"RS256","typ":"JWT"}'),
+      );
+      final payload = base64Url.encode(
+        utf8.encode('{"exp":1000000000,"email":"test@test.com"}'),
+      );
       final fakeToken = '$header.$payload.signature';
 
       final token = service.getTokenInfoForTest(fakeToken);
@@ -44,10 +46,12 @@ void main() {
     });
 
     test('decodeJwt handles valid JWT', () {
-      final header =
-          base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
-      final payload = base64Url
-          .encode(utf8.encode('{"exp":4102444800,"email":"user@example.com"}'));
+      final header = base64Url.encode(
+        utf8.encode('{"alg":"RS256","typ":"JWT"}'),
+      );
+      final payload = base64Url.encode(
+        utf8.encode('{"exp":4102444800,"email":"user@example.com"}'),
+      );
       final fakeToken = '$header.$payload.signature';
 
       final token = service.getTokenInfoForTest(fakeToken);
@@ -62,10 +66,12 @@ void main() {
     });
 
     test('decodeJwt handles token with no email claim', () {
-      final header =
-          base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
-      final payload =
-          base64Url.encode(utf8.encode('{"exp":4102444800}')); // no email
+      final header = base64Url.encode(
+        utf8.encode('{"alg":"RS256","typ":"JWT"}'),
+      );
+      final payload = base64Url.encode(
+        utf8.encode('{"exp":4102444800}'),
+      ); // no email
       final fakeToken = '$header.$payload.signature';
 
       final token = service.getTokenInfoForTest(fakeToken);
@@ -75,8 +81,9 @@ void main() {
     });
 
     test('decodeJwt handles malformed base64 gracefully', () {
-      final header =
-          base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
+      final header = base64Url.encode(
+        utf8.encode('{"alg":"RS256","typ":"JWT"}'),
+      );
       const brokenPayload = '!!!not-valid-base64!!!';
       final fakeToken = '$header.$brokenPayload.signature';
 
@@ -86,10 +93,12 @@ void main() {
     });
 
     test('decodeJwt future-dated expiry returns valid', () {
-      final header =
-          base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
-      final payload = base64Url
-          .encode(utf8.encode('{"exp":4070908800,"email":"future@test.com"}'));
+      final header = base64Url.encode(
+        utf8.encode('{"alg":"RS256","typ":"JWT"}'),
+      );
+      final payload = base64Url.encode(
+        utf8.encode('{"exp":4070908800,"email":"future@test.com"}'),
+      );
       final fakeToken = '$header.$payload.signature';
 
       final token = service.getTokenInfoForTest(fakeToken);
@@ -102,10 +111,12 @@ void main() {
     // ── CRITICAL-3: email validation added after security hardening ─────────
 
     test('CRITICAL-3: rejects non-string email field (int in JSON)', () {
-      final header =
-          base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
-      final payload =
-          base64Url.encode(utf8.encode('{"exp":4102444800,"email":12345}'));
+      final header = base64Url.encode(
+        utf8.encode('{"alg":"RS256","typ":"JWT"}'),
+      );
+      final payload = base64Url.encode(
+        utf8.encode('{"exp":4102444800,"email":12345}'),
+      );
       final fakeToken = '$header.$payload.signature';
       final token = service.getTokenInfoForTest(fakeToken);
       expect(token!.email, isNull);
@@ -113,10 +124,12 @@ void main() {
 
     test('CRITICAL-3: rejects email longer than 254 chars', () {
       final longEmail = '${'a' * 250}@x.com'; // 256 chars
-      final header =
-          base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
-      final payload = base64Url
-          .encode(utf8.encode('{"exp":4102444800,"email":"$longEmail"}'));
+      final header = base64Url.encode(
+        utf8.encode('{"alg":"RS256","typ":"JWT"}'),
+      );
+      final payload = base64Url.encode(
+        utf8.encode('{"exp":4102444800,"email":"$longEmail"}'),
+      );
       final fakeToken = '$header.$payload.signature';
       final token = service.getTokenInfoForTest(fakeToken);
       expect(token!.email, isNull);
@@ -126,20 +139,24 @@ void main() {
       // 249 a's + @x.co = exactly 254
       final okEmail = '${'a' * 249}@x.co';
       expect(okEmail.length, 254);
-      final header =
-          base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
-      final payload = base64Url
-          .encode(utf8.encode('{"exp":4102444800,"email":"$okEmail"}'));
+      final header = base64Url.encode(
+        utf8.encode('{"alg":"RS256","typ":"JWT"}'),
+      );
+      final payload = base64Url.encode(
+        utf8.encode('{"exp":4102444800,"email":"$okEmail"}'),
+      );
       final fakeToken = '$header.$payload.signature';
       final token = service.getTokenInfoForTest(fakeToken);
       expect(token!.email, equals(okEmail));
     });
 
     test('CRITICAL-3: rejects boolean email field', () {
-      final header =
-          base64Url.encode(utf8.encode('{"alg":"RS256","typ":"JWT"}'));
-      final payload =
-          base64Url.encode(utf8.encode('{"exp":4102444800,"email":false}'));
+      final header = base64Url.encode(
+        utf8.encode('{"alg":"RS256","typ":"JWT"}'),
+      );
+      final payload = base64Url.encode(
+        utf8.encode('{"exp":4102444800,"email":false}'),
+      );
       final fakeToken = '$header.$payload.signature';
       final token = service.getTokenInfoForTest(fakeToken);
       expect(token!.email, isNull);

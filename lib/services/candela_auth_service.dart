@@ -34,9 +34,9 @@ class CandelaAuthService {
     AdcService? adcService,
     ProcessRunner? runner,
     http.Client? client,
-  })  : _adcService = adcService ?? AdcService(client: client),
-        _runner = runner ?? const SystemProcessRunner(),
-        _client = client ?? http.Client();
+  }) : _adcService = adcService ?? AdcService(client: client),
+       _runner = runner ?? const SystemProcessRunner(),
+       _client = client ?? http.Client();
 
   // ── Status ──────────────────────────────────────────────────────────────
 
@@ -91,8 +91,9 @@ class CandelaAuthService {
   Future<TokenInfo?> getTokenInfo({bool forceRefresh = false}) async {
     // Return cached token if still fresh (> 5 min before expiry).
     if (!forceRefresh && _cachedToken != null) {
-      final remaining =
-          _cachedToken!.expiresAt.difference(DateTime.now().toUtc());
+      final remaining = _cachedToken!.expiresAt.difference(
+        DateTime.now().toUtc(),
+      );
       if (remaining > const Duration(minutes: 5)) {
         return _cachedToken;
       }
@@ -134,10 +135,7 @@ class CandelaAuthService {
               'Authorization': 'Bearer $accessToken',
               'Content-Type': 'application/json',
             },
-            body: json.encode({
-              'audience': audience,
-              'includeEmail': true,
-            }),
+            body: json.encode({'audience': audience, 'includeEmail': true}),
           )
           .timeout(const Duration(seconds: 10));
 
@@ -159,8 +157,9 @@ class CandelaAuthService {
   /// OAuth2 flow) and `candela proxy start`.
   Future<bool> isCandelaInstalled() async {
     try {
-      final result = await _runner.run('candela', ['--version'],
-          environment: _augmentedEnv());
+      final result = await _runner.run('candela', [
+        '--version',
+      ], environment: _augmentedEnv());
       return result.exitCode == 0;
     } catch (_) {
       return false;
@@ -185,9 +184,9 @@ class CandelaAuthService {
         'serviceusage.googleapis.com',
         '/v1/projects/$project/services/$api',
       );
-      final response = await _client.get(uri, headers: {
-        'Authorization': 'Bearer $accessToken',
-      }).timeout(const Duration(seconds: 10));
+      final response = await _client
+          .get(uri, headers: {'Authorization': 'Bearer $accessToken'})
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode != 200) return false;
 

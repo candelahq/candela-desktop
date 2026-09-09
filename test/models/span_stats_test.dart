@@ -93,10 +93,13 @@ void main() {
       final s = SpanRecord.fromJson({'timestamp': 'not-a-date'});
       final after = DateTime.now();
       expect(
-          s.timestamp.isAfter(before) || s.timestamp.isAtSameMomentAs(before),
-          isTrue);
-      expect(s.timestamp.isBefore(after) || s.timestamp.isAtSameMomentAs(after),
-          isTrue);
+        s.timestamp.isAfter(before) || s.timestamp.isAtSameMomentAs(before),
+        isTrue,
+      );
+      expect(
+        s.timestamp.isBefore(after) || s.timestamp.isAtSameMomentAs(after),
+        isTrue,
+      );
     });
   });
 

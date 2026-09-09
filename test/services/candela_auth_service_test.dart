@@ -23,32 +23,32 @@ class FakeAdcService extends AdcService {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 AdcInfo _userAdc({String? quotaProject, String? clientEmail}) => AdcInfo(
-      path: '/tmp/adc.json',
-      type: 'authorized_user',
-      clientEmail: clientEmail,
-      quotaProject: quotaProject,
-      clientId: 'cid',
-      clientSecret: 'csecret',
-      refreshToken: 'rtoken',
-    );
+  path: '/tmp/adc.json',
+  type: 'authorized_user',
+  clientEmail: clientEmail,
+  quotaProject: quotaProject,
+  clientId: 'cid',
+  clientSecret: 'csecret',
+  refreshToken: 'rtoken',
+);
 
 AdcInfo _saAdc({String? email}) => AdcInfo(
-      path: '/tmp/adc.json',
-      type: 'service_account',
-      clientEmail: email ?? 'sa@proj.iam.gserviceaccount.com',
-    );
+  path: '/tmp/adc.json',
+  type: 'service_account',
+  clientEmail: email ?? 'sa@proj.iam.gserviceaccount.com',
+);
 
 TokenInfo _validToken({String? email}) => TokenInfo(
-      accessToken: 'ya29.fake-access-token',
-      email: email ?? 'user@corp.com',
-      expiresAt: DateTime.now().toUtc().add(const Duration(hours: 1)),
-    );
+  accessToken: 'ya29.fake-access-token',
+  email: email ?? 'user@corp.com',
+  expiresAt: DateTime.now().toUtc().add(const Duration(hours: 1)),
+);
 
 TokenInfo _expiredToken() => TokenInfo(
-      accessToken: 'ya29.old',
-      email: 'user@corp.com',
-      expiresAt: DateTime.now().toUtc().subtract(const Duration(hours: 1)),
-    );
+  accessToken: 'ya29.old',
+  email: 'user@corp.com',
+  expiresAt: DateTime.now().toUtc().subtract(const Duration(hours: 1)),
+);
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
@@ -187,8 +187,10 @@ void main() {
       // branch where getAccessToken succeeds but the HTTP call would fail
       // in a test environment (no real network). The test verifies that
       // the method doesn't throw and returns false gracefully.
-      final result =
-          await svc.isApiEnabled('my-project', 'aiplatform.googleapis.com');
+      final result = await svc.isApiEnabled(
+        'my-project',
+        'aiplatform.googleapis.com',
+      );
       // In test env, the HTTP call fails → returns false.
       expect(result, isFalse);
     });

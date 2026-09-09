@@ -53,7 +53,7 @@ extension type DashboardServiceClient(connect.Transport _transport) {
   /// Deprecated: use GetDashboardData instead.
   @deprecated
   Future<candelav1dashboard_service.GetModelBreakdownResponse>
-      getModelBreakdown(
+  getModelBreakdown(
     candelav1dashboard_service.GetModelBreakdownRequest input, {
     connect.Headers? headers,
     connect.AbortSignal? signal,
@@ -72,7 +72,7 @@ extension type DashboardServiceClient(connect.Transport _transport) {
 
   /// GetLatencyPercentiles returns latency distribution data.
   Future<candelav1dashboard_service.GetLatencyPercentilesResponse>
-      getLatencyPercentiles(
+  getLatencyPercentiles(
     candelav1dashboard_service.GetLatencyPercentilesRequest input, {
     connect.Headers? headers,
     connect.AbortSignal? signal,
@@ -111,7 +111,7 @@ extension type DashboardServiceClient(connect.Transport _transport) {
 
   /// GetTeamLeaderboard returns per-user usage for the team (admin only).
   Future<candelav1dashboard_service.GetTeamLeaderboardResponse>
-      getTeamLeaderboard(
+  getTeamLeaderboard(
     candelav1dashboard_service.GetTeamLeaderboardRequest input, {
     connect.Headers? headers,
     connect.AbortSignal? signal,
@@ -130,7 +130,7 @@ extension type DashboardServiceClient(connect.Transport _transport) {
 
   /// GetJobLeaderboard returns per-job usage for cost attribution.
   Future<candelav1dashboard_service.GetJobLeaderboardResponse>
-      getJobLeaderboard(
+  getJobLeaderboard(
     candelav1dashboard_service.GetJobLeaderboardRequest input, {
     connect.Headers? headers,
     connect.AbortSignal? signal,

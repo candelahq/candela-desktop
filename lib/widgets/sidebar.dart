@@ -29,31 +29,45 @@ class _CandelaSidebarState extends State<CandelaSidebar> {
 
   static const _items = [
     _NavItem(
-        icon: Icons.today_outlined, activeIcon: Icons.today, label: 'Today'),
+      icon: Icons.today_outlined,
+      activeIcon: Icons.today,
+      label: 'Today',
+    ),
     _NavItem(
-        icon: Icons.shield_outlined,
-        activeIcon: Icons.shield,
-        label: 'Diagnostics'),
+      icon: Icons.shield_outlined,
+      activeIcon: Icons.shield,
+      label: 'Diagnostics',
+    ),
     _NavItem(
-        icon: Icons.dashboard_outlined,
-        activeIcon: Icons.dashboard,
-        label: 'Dashboard'),
+      icon: Icons.dashboard_outlined,
+      activeIcon: Icons.dashboard,
+      label: 'Dashboard',
+    ),
     _NavItem(
-        icon: Icons.timeline_outlined,
-        activeIcon: Icons.timeline,
-        label: 'Traces'),
+      icon: Icons.timeline_outlined,
+      activeIcon: Icons.timeline,
+      label: 'Traces',
+    ),
     _NavItem(
-        icon: Icons.search_outlined, activeIcon: Icons.search, label: 'Search'),
+      icon: Icons.search_outlined,
+      activeIcon: Icons.search,
+      label: 'Search',
+    ),
     _NavItem(
-        icon: Icons.memory_outlined, activeIcon: Icons.memory, label: 'Models'),
+      icon: Icons.memory_outlined,
+      activeIcon: Icons.memory,
+      label: 'Models',
+    ),
     _NavItem(
-        icon: Icons.menu_book_outlined,
-        activeIcon: Icons.menu_book,
-        label: 'Catalog'),
+      icon: Icons.menu_book_outlined,
+      activeIcon: Icons.menu_book,
+      label: 'Catalog',
+    ),
     _NavItem(
-        icon: Icons.settings_outlined,
-        activeIcon: Icons.settings,
-        label: 'Settings'),
+      icon: Icons.settings_outlined,
+      activeIcon: Icons.settings,
+      label: 'Settings',
+    ),
   ];
 
   @override
@@ -118,8 +132,10 @@ class _CandelaSidebarState extends State<CandelaSidebar> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel',
-                style: TextStyle(color: CandelaColors.textMuted)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: CandelaColors.textMuted),
+            ),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -130,7 +146,8 @@ class _CandelaSidebarState extends State<CandelaSidebar> {
               final success = await svc.performBrewUpgrade();
               if (!success && mounted) {
                 _showUpdateSnackBar(
-                    'Upgrade failed. Please run: brew upgrade candela');
+                  'Upgrade failed. Please run: brew upgrade candela',
+                );
               }
             },
             child: const Text('Update & Relaunch'),
@@ -150,9 +167,7 @@ class _CandelaSidebarState extends State<CandelaSidebar> {
         ),
         behavior: SnackBarBehavior.floating,
         backgroundColor: CandelaColors.bgTertiary,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
@@ -240,22 +255,28 @@ class _CandelaSidebarState extends State<CandelaSidebar> {
       ),
       child: hasUpdate
           ? // ── Update available: prominent banner ──
-          InkWell(
+            InkWell(
               borderRadius: BorderRadius.circular(8),
               onTap: _handleUpdateTap,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: CandelaColors.accentDim,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                      color: CandelaColors.accent.withValues(alpha: 0.3)),
+                    color: CandelaColors.accent.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.upgrade_rounded,
-                        size: 16, color: CandelaColors.accent),
+                    const Icon(
+                      Icons.upgrade_rounded,
+                      size: 16,
+                      color: CandelaColors.accent,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Column(
@@ -282,7 +303,9 @@ class _CandelaSidebarState extends State<CandelaSidebar> {
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: CandelaColors.accent,
                         borderRadius: BorderRadius.circular(6),
@@ -301,7 +324,7 @@ class _CandelaSidebarState extends State<CandelaSidebar> {
               ),
             )
           : // ── Up to date: subtle version label ──
-          Padding(
+            Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               child: Row(
                 children: [
@@ -382,6 +405,9 @@ class _NavItem {
   final IconData icon;
   final IconData activeIcon;
   final String label;
-  const _NavItem(
-      {required this.icon, required this.activeIcon, required this.label});
+  const _NavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+  });
 }

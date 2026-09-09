@@ -12,44 +12,43 @@ ModelCatalogEntry _entry({
   String category = 'flagship',
   double inputPerMillion = 5.0,
   double outputPerMillion = 15.0,
-}) =>
-    ModelCatalogEntry(
-      modelId: modelId,
-      provider: provider,
-      displayName: displayName,
-      enabled: enabled,
-      category: category,
-      inputPerMillion: inputPerMillion,
-      outputPerMillion: outputPerMillion,
-    );
+}) => ModelCatalogEntry(
+  modelId: modelId,
+  provider: provider,
+  displayName: displayName,
+  enabled: enabled,
+  category: category,
+  inputPerMillion: inputPerMillion,
+  outputPerMillion: outputPerMillion,
+);
 
 List<ModelCatalogEntry> _sampleModels() => [
-      _entry(
-        modelId: 'gemini-2.5-pro',
-        provider: 'google',
-        displayName: 'Gemini 2.5 Pro',
-        category: 'flagship',
-      ),
-      _entry(
-        modelId: 'claude-sonnet-4',
-        provider: 'anthropic',
-        displayName: 'Claude Sonnet 4',
-        category: 'flagship',
-      ),
-      _entry(
-        modelId: 'gpt-4o',
-        provider: 'openai',
-        displayName: 'GPT-4o',
-        category: 'flagship',
-      ),
-      _entry(
-        modelId: 'mistral-large',
-        provider: 'mistral',
-        displayName: 'Mistral Large',
-        category: 'flagship',
-        enabled: false,
-      ),
-    ];
+  _entry(
+    modelId: 'gemini-2.5-pro',
+    provider: 'google',
+    displayName: 'Gemini 2.5 Pro',
+    category: 'flagship',
+  ),
+  _entry(
+    modelId: 'claude-sonnet-4',
+    provider: 'anthropic',
+    displayName: 'Claude Sonnet 4',
+    category: 'flagship',
+  ),
+  _entry(
+    modelId: 'gpt-4o',
+    provider: 'openai',
+    displayName: 'GPT-4o',
+    category: 'flagship',
+  ),
+  _entry(
+    modelId: 'mistral-large',
+    provider: 'mistral',
+    displayName: 'Mistral Large',
+    category: 'flagship',
+    enabled: false,
+  ),
+];
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // These are pure-logic tests for the catalog screen's filtering and display
@@ -72,15 +71,17 @@ void main() {
     });
 
     test('filter by Google provider', () {
-      final filtered =
-          models.where((m) => m.provider.toLowerCase() == 'google').toList();
+      final filtered = models
+          .where((m) => m.provider.toLowerCase() == 'google')
+          .toList();
       expect(filtered.length, 1);
       expect(filtered.first.modelId, 'gemini-2.5-pro');
     });
 
     test('filter by Anthropic provider', () {
-      final filtered =
-          models.where((m) => m.provider.toLowerCase() == 'anthropic').toList();
+      final filtered = models
+          .where((m) => m.provider.toLowerCase() == 'anthropic')
+          .toList();
       expect(filtered.length, 1);
       expect(filtered.first.modelId, 'claude-sonnet-4');
     });
@@ -99,10 +100,12 @@ void main() {
     test('search by model ID substring', () {
       final q = 'gemini';
       final filtered = models
-          .where((m) =>
-              m.modelId.toLowerCase().contains(q) ||
-              m.displayName.toLowerCase().contains(q) ||
-              m.provider.toLowerCase().contains(q))
+          .where(
+            (m) =>
+                m.modelId.toLowerCase().contains(q) ||
+                m.displayName.toLowerCase().contains(q) ||
+                m.provider.toLowerCase().contains(q),
+          )
           .toList();
       expect(filtered.length, 1);
       expect(filtered.first.modelId, 'gemini-2.5-pro');
@@ -111,10 +114,12 @@ void main() {
     test('search by display name', () {
       final q = 'sonnet';
       final filtered = models
-          .where((m) =>
-              m.modelId.toLowerCase().contains(q) ||
-              m.displayName.toLowerCase().contains(q) ||
-              m.provider.toLowerCase().contains(q))
+          .where(
+            (m) =>
+                m.modelId.toLowerCase().contains(q) ||
+                m.displayName.toLowerCase().contains(q) ||
+                m.provider.toLowerCase().contains(q),
+          )
           .toList();
       expect(filtered.length, 1);
       expect(filtered.first.provider, 'anthropic');
@@ -123,10 +128,12 @@ void main() {
     test('search by provider name matches all of that provider', () {
       final q = 'openai';
       final filtered = models
-          .where((m) =>
-              m.modelId.toLowerCase().contains(q) ||
-              m.displayName.toLowerCase().contains(q) ||
-              m.provider.toLowerCase().contains(q))
+          .where(
+            (m) =>
+                m.modelId.toLowerCase().contains(q) ||
+                m.displayName.toLowerCase().contains(q) ||
+                m.provider.toLowerCase().contains(q),
+          )
           .toList();
       expect(filtered.length, 1);
     });
@@ -134,10 +141,12 @@ void main() {
     test('case-insensitive search', () {
       final q = 'GPT';
       final filtered = models
-          .where((m) =>
-              m.modelId.toLowerCase().contains(q.toLowerCase()) ||
-              m.displayName.toLowerCase().contains(q.toLowerCase()) ||
-              m.provider.toLowerCase().contains(q.toLowerCase()))
+          .where(
+            (m) =>
+                m.modelId.toLowerCase().contains(q.toLowerCase()) ||
+                m.displayName.toLowerCase().contains(q.toLowerCase()) ||
+                m.provider.toLowerCase().contains(q.toLowerCase()),
+          )
           .toList();
       expect(filtered.length, 1);
       expect(filtered.first.modelId, 'gpt-4o');
@@ -146,10 +155,12 @@ void main() {
     test('search with no matches returns empty', () {
       final q = 'nonexistent-model';
       final filtered = models
-          .where((m) =>
-              m.modelId.toLowerCase().contains(q) ||
-              m.displayName.toLowerCase().contains(q) ||
-              m.provider.toLowerCase().contains(q))
+          .where(
+            (m) =>
+                m.modelId.toLowerCase().contains(q) ||
+                m.displayName.toLowerCase().contains(q) ||
+                m.provider.toLowerCase().contains(q),
+          )
           .toList();
       expect(filtered, isEmpty);
     });
@@ -163,9 +174,11 @@ void main() {
       final q = 'pro';
       final filtered = models
           .where((m) => m.provider.toLowerCase() == provLower)
-          .where((m) =>
-              m.modelId.toLowerCase().contains(q) ||
-              m.displayName.toLowerCase().contains(q))
+          .where(
+            (m) =>
+                m.modelId.toLowerCase().contains(q) ||
+                m.displayName.toLowerCase().contains(q),
+          )
           .toList();
       expect(filtered.length, 1);
       expect(filtered.first.modelId, 'gemini-2.5-pro');
@@ -176,9 +189,11 @@ void main() {
       final q = 'claude';
       final filtered = models
           .where((m) => m.provider.toLowerCase() == provLower)
-          .where((m) =>
-              m.modelId.toLowerCase().contains(q) ||
-              m.displayName.toLowerCase().contains(q))
+          .where(
+            (m) =>
+                m.modelId.toLowerCase().contains(q) ||
+                m.displayName.toLowerCase().contains(q),
+          )
           .toList();
       expect(filtered, isEmpty);
     });
@@ -232,10 +247,7 @@ void main() {
     });
 
     test('error with existing models shows SnackBar (not full-screen)', () {
-      final state = CatalogState(
-        error: 'Delete failed',
-        models: [_entry()],
-      );
+      final state = CatalogState(error: 'Delete failed', models: [_entry()]);
       // UI: state.error != null but models are not empty → SnackBar only.
       expect(state.error != null && state.models.isNotEmpty, isTrue);
     });
@@ -274,15 +286,17 @@ void main() {
   group('Catalog — display formatting', () {
     test('model uses displayName when available', () {
       final entry = _entry(displayName: 'Fancy Model', modelId: 'boring-id');
-      final label =
-          entry.displayName.isNotEmpty ? entry.displayName : entry.modelId;
+      final label = entry.displayName.isNotEmpty
+          ? entry.displayName
+          : entry.modelId;
       expect(label, 'Fancy Model');
     });
 
     test('model falls back to modelId when displayName is empty', () {
       final entry = _entry(displayName: '', modelId: 'boring-id');
-      final label =
-          entry.displayName.isNotEmpty ? entry.displayName : entry.modelId;
+      final label = entry.displayName.isNotEmpty
+          ? entry.displayName
+          : entry.modelId;
       expect(label, 'boring-id');
     });
 

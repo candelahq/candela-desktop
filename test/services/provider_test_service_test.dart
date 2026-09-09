@@ -12,17 +12,25 @@ void main() {
       test('classifies gemini models correctly', () {
         expect(ProviderTestService.modelCategory('gemini-2.0-flash'), 'google');
         expect(ProviderTestService.modelCategory('gemini-1.5-pro'), 'google');
-        expect(ProviderTestService.modelCategory('gemini-1.5-flash-001'),
-            'google');
+        expect(
+          ProviderTestService.modelCategory('gemini-1.5-flash-001'),
+          'google',
+        );
       });
 
       test('classifies claude models correctly', () {
         expect(
-            ProviderTestService.modelCategory('claude-sonnet-4'), 'anthropic');
+          ProviderTestService.modelCategory('claude-sonnet-4'),
+          'anthropic',
+        );
         expect(
-            ProviderTestService.modelCategory('claude-3-haiku'), 'anthropic');
-        expect(ProviderTestService.modelCategory('claude-3.5-sonnet-20240620'),
-            'anthropic');
+          ProviderTestService.modelCategory('claude-3-haiku'),
+          'anthropic',
+        );
+        expect(
+          ProviderTestService.modelCategory('claude-3.5-sonnet-20240620'),
+          'anthropic',
+        );
       });
 
       test('classifies local models correctly', () {
@@ -79,7 +87,9 @@ void main() {
         expect(versionSuffix.hasMatch('gemini-2.0-flash-001'), isTrue);
         expect(versionSuffix.hasMatch('gemini-2.0-flash-01'), isTrue);
         expect(
-            versionSuffix.hasMatch('model-100'), isFalse); // not zero-prefixed
+          versionSuffix.hasMatch('model-100'),
+          isFalse,
+        ); // not zero-prefixed
         expect(versionSuffix.hasMatch('model-200'), isFalse);
       });
 
@@ -213,16 +223,18 @@ void main() {
               'models': [
                 {
                   'name': 'models/gemini-2.0-flash',
-                  'displayName': 'Gemini Flash'
-                }
-              ]
+                  'displayName': 'Gemini Flash',
+                },
+              ],
             }),
             200,
           );
         });
         final svc = ProviderTestService(client: mockClient);
-        final result =
-            await svc.testGoogle(project: 'test-proj', accessToken: 'tok');
+        final result = await svc.testGoogle(
+          project: 'test-proj',
+          accessToken: 'tok',
+        );
         expect(result.state, ProviderState.connected);
         expect(result.latency, isNotNull);
         svc.dispose();
@@ -233,8 +245,10 @@ void main() {
           return http.Response('Unauthorized', 401);
         });
         final svc = ProviderTestService(client: mockClient);
-        final result =
-            await svc.testGoogle(project: 'test-proj', accessToken: 'bad-tok');
+        final result = await svc.testGoogle(
+          project: 'test-proj',
+          accessToken: 'bad-tok',
+        );
         expect(result.state, ProviderState.error);
         svc.dispose();
       });
@@ -244,8 +258,10 @@ void main() {
           return http.Response('Forbidden', 403);
         });
         final svc = ProviderTestService(client: mockClient);
-        final result =
-            await svc.testGoogle(project: 'test-proj', accessToken: 'tok');
+        final result = await svc.testGoogle(
+          project: 'test-proj',
+          accessToken: 'tok',
+        );
         expect(result.state, ProviderState.error);
         svc.dispose();
       });
@@ -255,8 +271,10 @@ void main() {
           return http.Response('Internal Server Error', 500);
         });
         final svc = ProviderTestService(client: mockClient);
-        final result =
-            await svc.testGoogle(project: 'test-proj', accessToken: 'tok');
+        final result = await svc.testGoogle(
+          project: 'test-proj',
+          accessToken: 'tok',
+        );
         expect(result.state, ProviderState.error);
         svc.dispose();
       });
@@ -267,8 +285,10 @@ void main() {
         final svc = ProviderTestService();
         final result = await svc.testOpenAI();
         expect(result.name, 'openai');
-        expect(result.state,
-            anyOf(ProviderState.error, ProviderState.notConfigured));
+        expect(
+          result.state,
+          anyOf(ProviderState.error, ProviderState.notConfigured),
+        );
         svc.dispose();
       });
     });
@@ -279,31 +299,39 @@ void main() {
           return http.Response('{}', 200);
         });
         final svc = ProviderTestService(client: mockClient);
-        final result =
-            await svc.testAnthropic(project: 'proj', accessToken: 'tok');
+        final result = await svc.testAnthropic(
+          project: 'proj',
+          accessToken: 'tok',
+        );
         expect(result.state, ProviderState.connected);
         svc.dispose();
       });
 
-      test('returns connected on 400 (model API validation error = reachable)',
-          () async {
-        final mockClient = http_testing.MockClient((request) async {
-          return http.Response('{}', 400);
-        });
-        final svc = ProviderTestService(client: mockClient);
-        final result =
-            await svc.testAnthropic(project: 'proj', accessToken: 'tok');
-        expect(result.state, ProviderState.connected);
-        svc.dispose();
-      });
+      test(
+        'returns connected on 400 (model API validation error = reachable)',
+        () async {
+          final mockClient = http_testing.MockClient((request) async {
+            return http.Response('{}', 400);
+          });
+          final svc = ProviderTestService(client: mockClient);
+          final result = await svc.testAnthropic(
+            project: 'proj',
+            accessToken: 'tok',
+          );
+          expect(result.state, ProviderState.connected);
+          svc.dispose();
+        },
+      );
 
       test('returns error on 403 not enabled', () async {
         final mockClient = http_testing.MockClient((request) async {
           return http.Response('Forbidden', 403);
         });
         final svc = ProviderTestService(client: mockClient);
-        final result =
-            await svc.testAnthropic(project: 'proj', accessToken: 'tok');
+        final result = await svc.testAnthropic(
+          project: 'proj',
+          accessToken: 'tok',
+        );
         expect(result.state, ProviderState.error);
         svc.dispose();
       });
@@ -318,7 +346,7 @@ void main() {
                 'data': [
                   {'id': 'gemini-2.0-flash'},
                   {'id': 'claude-3-5-sonnet'},
-                ]
+                ],
               }),
               200,
             );
@@ -357,35 +385,37 @@ void main() {
         svc.dispose();
       });
 
-      test('populates rawModels with original IDs before name cleanup',
-          () async {
-        final mockClient = http_testing.MockClient((request) async {
-          if (request.url.path == '/v1/models') {
-            return http.Response(
-              jsonEncode({
-                'data': [
-                  {'id': 'claude-sonnet-4-20250514'},
-                  {'id': 'claude-opus-4-20250514'},
-                  {'id': 'gemini-2.5-flash-001'},
-                ]
-              }),
-              200,
-            );
-          }
-          return http.Response('ok', 200);
-        });
-        final svc = ProviderTestService(client: mockClient);
-        final result = await svc.testProxy(port: 8181);
-        expect(result.state, ProviderState.connected);
-        // models should have cleaned names (date/version suffixes stripped).
-        // rawModels should preserve the original IDs for proxy verification.
-        expect(result.rawModels, isNotEmpty);
-        expect(result.rawModels.length, result.models.length);
-        // Raw models preserve the original server IDs.
-        expect(result.rawModels, contains('claude-sonnet-4-20250514'));
-        expect(result.rawModels, contains('gemini-2.5-flash-001'));
-        svc.dispose();
-      });
+      test(
+        'populates rawModels with original IDs before name cleanup',
+        () async {
+          final mockClient = http_testing.MockClient((request) async {
+            if (request.url.path == '/v1/models') {
+              return http.Response(
+                jsonEncode({
+                  'data': [
+                    {'id': 'claude-sonnet-4-20250514'},
+                    {'id': 'claude-opus-4-20250514'},
+                    {'id': 'gemini-2.5-flash-001'},
+                  ],
+                }),
+                200,
+              );
+            }
+            return http.Response('ok', 200);
+          });
+          final svc = ProviderTestService(client: mockClient);
+          final result = await svc.testProxy(port: 8181);
+          expect(result.state, ProviderState.connected);
+          // models should have cleaned names (date/version suffixes stripped).
+          // rawModels should preserve the original IDs for proxy verification.
+          expect(result.rawModels, isNotEmpty);
+          expect(result.rawModels.length, result.models.length);
+          // Raw models preserve the original server IDs.
+          expect(result.rawModels, contains('claude-sonnet-4-20250514'));
+          expect(result.rawModels, contains('gemini-2.5-flash-001'));
+          svc.dispose();
+        },
+      );
 
       test('deduplicates models by cleaned name, keeps first raw ID', () async {
         final mockClient = http_testing.MockClient((request) async {
@@ -397,7 +427,7 @@ void main() {
                   {'id': 'claude-sonnet-4-20250514'},
                   {'id': 'claude-sonnet-4-20250601'},
                   {'id': 'gemini-2.5-flash'},
-                ]
+                ],
               }),
               200,
             );
@@ -407,10 +437,14 @@ void main() {
         final svc = ProviderTestService(client: mockClient);
         final result = await svc.testProxy(port: 8181);
         // Should deduplicate: claude-sonnet-4 appears once.
-        final claudeCount =
-            result.models.where((m) => m.contains('claude-sonnet')).length;
-        expect(claudeCount, 1,
-            reason: 'Duplicate cleaned names should be deduplicated');
+        final claudeCount = result.models
+            .where((m) => m.contains('claude-sonnet'))
+            .length;
+        expect(
+          claudeCount,
+          1,
+          reason: 'Duplicate cleaned names should be deduplicated',
+        );
         // The first raw ID wins the dedup.
         expect(result.rawModels, contains('claude-sonnet-4-20250514'));
         expect(result.rawModels, isNot(contains('claude-sonnet-4-20250601')));
@@ -456,24 +490,26 @@ void main() {
     });
 
     group('testOllama — HTTP paths', () {
-      test('returns connected when ollama API returns 200 with models',
-          () async {
-        final mockClient = http_testing.MockClient((request) async {
-          return http.Response(
-            jsonEncode({
-              'models': [
-                {'name': 'llama3.2:latest'},
-                {'name': 'mistral:latest'},
-              ]
-            }),
-            200,
-          );
-        });
-        final svc = ProviderTestService(client: mockClient);
-        final result = await svc.testOllama(host: 'http://localhost:11434');
-        expect(result.state, ProviderState.connected);
-        svc.dispose();
-      });
+      test(
+        'returns connected when ollama API returns 200 with models',
+        () async {
+          final mockClient = http_testing.MockClient((request) async {
+            return http.Response(
+              jsonEncode({
+                'models': [
+                  {'name': 'llama3.2:latest'},
+                  {'name': 'mistral:latest'},
+                ],
+              }),
+              200,
+            );
+          });
+          final svc = ProviderTestService(client: mockClient);
+          final result = await svc.testOllama(host: 'http://localhost:11434');
+          expect(result.state, ProviderState.connected);
+          svc.dispose();
+        },
+      );
 
       test('returns error when ollama returns non-200', () async {
         final mockClient = http_testing.MockClient((request) async {

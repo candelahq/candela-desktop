@@ -73,10 +73,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _setMode({String? remote, String? audience}) async {
-    await ref.read(configServiceProvider).setMode(
-          remote: remote,
-          audience: audience,
-        );
+    await ref
+        .read(configServiceProvider)
+        .setMode(remote: remote, audience: audience);
     await _loadAll();
   }
 
@@ -90,8 +89,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Expanded(
             child: _loading
                 ? const Center(
-                    child:
-                        CircularProgressIndicator(color: CandelaColors.accent))
+                    child: CircularProgressIndicator(
+                      color: CandelaColors.accent,
+                    ),
+                  )
                 : SingleChildScrollView(
                     padding: const EdgeInsets.all(24),
                     child: Column(
@@ -128,11 +129,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
       child: const Row(
         children: [
-          Text('Settings',
-              style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: CandelaColors.textPrimary)),
+          Text(
+            'Settings',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: CandelaColors.textPrimary,
+            ),
+          ),
         ],
       ),
     );
@@ -149,14 +153,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           child: SegmentedButton<ThemeMode>(
             segments: const [
               ButtonSegment(
-                  value: ThemeMode.system,
-                  label: Text('System', style: TextStyle(fontSize: 12))),
+                value: ThemeMode.system,
+                label: Text('System', style: TextStyle(fontSize: 12)),
+              ),
               ButtonSegment(
-                  value: ThemeMode.dark,
-                  label: Text('Dark', style: TextStyle(fontSize: 12))),
+                value: ThemeMode.dark,
+                label: Text('Dark', style: TextStyle(fontSize: 12)),
+              ),
               ButtonSegment(
-                  value: ThemeMode.light,
-                  label: Text('Light', style: TextStyle(fontSize: 12))),
+                value: ThemeMode.light,
+                label: Text('Light', style: TextStyle(fontSize: 12)),
+              ),
             ],
             selected: {widget.currentThemeMode},
             onSelectionChanged: (s) => widget.onThemeModeChanged?.call(s.first),
@@ -279,8 +286,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               style: SegmentedButton.styleFrom(
                 backgroundColor: CandelaColors.bgTertiary,
                 foregroundColor: CandelaColors.textPrimary,
-                selectedBackgroundColor:
-                    is1h ? Colors.amber.shade700 : CandelaColors.accent,
+                selectedBackgroundColor: is1h
+                    ? Colors.amber.shade700
+                    : CandelaColors.accent,
                 selectedForegroundColor: Colors.white,
                 textStyle: const TextStyle(fontSize: 12),
               ),
@@ -307,8 +315,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             children: [
               Icon(Icons.warning_amber_rounded, color: Colors.amber, size: 24),
               SizedBox(width: 8),
-              Text('Enable 1-hour cache?',
-                  style: TextStyle(color: Colors.white)),
+              Text(
+                'Enable 1-hour cache?',
+                style: TextStyle(color: Colors.white),
+              ),
             ],
           ),
           content: const Text(
@@ -403,11 +413,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           child: SegmentedButton<bool>(
             segments: const [
               ButtonSegment(
-                  value: false,
-                  label: Text('Solo', style: TextStyle(fontSize: 12))),
+                value: false,
+                label: Text('Solo', style: TextStyle(fontSize: 12)),
+              ),
               ButtonSegment(
-                  value: true,
-                  label: Text('Team', style: TextStyle(fontSize: 12))),
+                value: true,
+                label: Text('Team', style: TextStyle(fontSize: 12)),
+              ),
             ],
             selected: {isTeam},
             onSelectionChanged: (s) {
@@ -462,7 +474,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
@@ -506,11 +520,14 @@ class _SettingsSection extends StatelessWidget {
               children: [
                 Icon(icon, size: 16, color: CandelaColors.accent),
                 const SizedBox(width: 8),
-                Text(title,
-                    style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: CandelaColors.textPrimary)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: CandelaColors.textPrimary,
+                  ),
+                ),
               ],
             ),
           ),
@@ -543,13 +560,21 @@ class _SettingsRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
-                    style: const TextStyle(
-                        fontSize: 13, color: CandelaColors.textPrimary)),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: CandelaColors.textPrimary,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(subtitle,
-                    style: const TextStyle(
-                        fontSize: 11, color: CandelaColors.textMuted)),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: CandelaColors.textMuted,
+                  ),
+                ),
               ],
             ),
           ),
@@ -608,15 +633,18 @@ class _PortEditorState extends State<_PortEditor> {
           setState(() => _editing = false);
         },
         style: const TextStyle(
-            fontSize: 13,
-            fontFamily: 'monospace',
-            color: CandelaColors.textPrimary),
+          fontSize: 13,
+          fontFamily: 'monospace',
+          color: CandelaColors.textPrimary,
+        ),
         textAlign: TextAlign.center,
         decoration: InputDecoration(
           filled: true,
           fillColor: CandelaColors.bgTertiary,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 8,
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
             borderSide: const BorderSide(color: CandelaColors.border),
@@ -653,9 +681,10 @@ class _CacheTTLWarningBannerState extends State<_CacheTTLWarningBanner>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
-    _opacity = Tween<double>(begin: 0.7, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _opacity = Tween<double>(
+      begin: 0.7,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override

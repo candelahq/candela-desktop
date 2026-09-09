@@ -30,17 +30,18 @@ ManagedProcess _makeProcess({
 /// Creates a test Notifier that immediately emits the given processes.
 /// Uses overrideWith so .notifier access works in the widget.
 Widget _wrap(List<ManagedProcess> processes) => ProviderScope(
-      overrides: [
-        processManagerProvider.overrideWith(() {
-          return _TestProcessManagerNotifier(processes);
-        }),
-      ],
-      child: MaterialApp(
-        theme: CandelaTheme.dark,
-        home: const Scaffold(
-            body: SingleChildScrollView(child: LocalServicesCard())),
-      ),
-    );
+  overrides: [
+    processManagerProvider.overrideWith(() {
+      return _TestProcessManagerNotifier(processes);
+    }),
+  ],
+  child: MaterialApp(
+    theme: CandelaTheme.dark,
+    home: const Scaffold(
+      body: SingleChildScrollView(child: LocalServicesCard()),
+    ),
+  ),
+);
 
 /// A test-only notifier that seeds itself with the given processes.
 class _TestProcessManagerNotifier extends ProcessManagerNotifier {
@@ -72,68 +73,72 @@ void main() {
     });
 
     testWidgets('shows process row with displayName and icon', (tester) async {
-      await tester.pumpWidget(_wrap([
-        _makeProcess(displayName: 'Ollama', icon: '🦙'),
-      ]));
+      await tester.pumpWidget(
+        _wrap([_makeProcess(displayName: 'Ollama', icon: '🦙')]),
+      );
       expect(find.text('Ollama'), findsOneWidget);
       expect(find.text('🦙'), findsOneWidget);
     });
 
     testWidgets('shows RUNNING badge (green) when running', (tester) async {
-      await tester.pumpWidget(_wrap([
-        _makeProcess(state: ProcessState.running),
-      ]));
+      await tester.pumpWidget(
+        _wrap([_makeProcess(state: ProcessState.running)]),
+      );
       expect(find.text('RUNNING'), findsOneWidget);
     });
 
     testWidgets('shows STOPPED badge when stopped', (tester) async {
-      await tester.pumpWidget(_wrap([
-        _makeProcess(state: ProcessState.stopped),
-      ]));
+      await tester.pumpWidget(
+        _wrap([_makeProcess(state: ProcessState.stopped)]),
+      );
       expect(find.text('STOPPED'), findsOneWidget);
     });
 
-    testWidgets('shows ERROR badge and error message when errored',
-        (tester) async {
-      await tester.pumpWidget(_wrap([
-        _makeProcess(
-          state: ProcessState.error,
-          errorMessage: 'Health check failed',
-        ),
-      ]));
+    testWidgets('shows ERROR badge and error message when errored', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap([
+          _makeProcess(
+            state: ProcessState.error,
+            errorMessage: 'Health check failed',
+          ),
+        ]),
+      );
       expect(find.text('ERROR'), findsOneWidget);
       expect(find.text('Health check failed'), findsOneWidget);
     });
 
     testWidgets(
-        'shows MISSING badge and "Not installed" message when notInstalled',
-        (tester) async {
-      await tester.pumpWidget(_wrap([
-        _makeProcess(state: ProcessState.notInstalled),
-      ]));
-      expect(find.text('MISSING'), findsOneWidget);
-      expect(find.text('Not installed or not found in PATH'), findsOneWidget);
-    });
+      'shows MISSING badge and "Not installed" message when notInstalled',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap([_makeProcess(state: ProcessState.notInstalled)]),
+        );
+        expect(find.text('MISSING'), findsOneWidget);
+        expect(find.text('Not installed or not found in PATH'), findsOneWidget);
+      },
+    );
 
     testWidgets('shows play button when stopped', (tester) async {
-      await tester.pumpWidget(_wrap([
-        _makeProcess(state: ProcessState.stopped),
-      ]));
+      await tester.pumpWidget(
+        _wrap([_makeProcess(state: ProcessState.stopped)]),
+      );
       expect(find.byIcon(Icons.play_arrow), findsOneWidget);
     });
 
     testWidgets('shows stop and restart buttons when running', (tester) async {
-      await tester.pumpWidget(_wrap([
-        _makeProcess(state: ProcessState.running),
-      ]));
+      await tester.pumpWidget(
+        _wrap([_makeProcess(state: ProcessState.running)]),
+      );
       expect(find.byIcon(Icons.stop), findsOneWidget);
       expect(find.byIcon(Icons.refresh), findsOneWidget);
     });
 
     testWidgets('hides play button when notInstalled', (tester) async {
-      await tester.pumpWidget(_wrap([
-        _makeProcess(state: ProcessState.notInstalled),
-      ]));
+      await tester.pumpWidget(
+        _wrap([_makeProcess(state: ProcessState.notInstalled)]),
+      );
       expect(find.byIcon(Icons.play_arrow), findsNothing);
     });
   });

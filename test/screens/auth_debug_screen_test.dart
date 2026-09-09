@@ -18,14 +18,11 @@ import 'package:candela_desktop/theme/colors.dart';
 /// "Timer still pending" errors in the default fake-async test environment.
 
 Widget _wrap(Widget child) => ProviderScope(
-      child: MaterialApp(
-        theme: ThemeData.dark(),
-        home: Scaffold(
-          backgroundColor: CandelaColors.bgPrimary,
-          body: child,
-        ),
-      ),
-    );
+  child: MaterialApp(
+    theme: ThemeData.dark(),
+    home: Scaffold(backgroundColor: CandelaColors.bgPrimary, body: child),
+  ),
+);
 
 /// Build, assert, then tear down the AuthDebugScreen cleanly.
 Future<void> _pumpAndCheck(
@@ -64,8 +61,9 @@ void main() {
       });
     });
 
-    testWidgets('Run All Tests button is disabled while loading',
-        (tester) async {
+    testWidgets('Run All Tests button is disabled while loading', (
+      tester,
+    ) async {
       await _pumpAndCheck(tester, () {
         final button = tester.widget<OutlinedButton>(
           find.widgetWithText(OutlinedButton, 'Run All Tests'),
@@ -94,8 +92,9 @@ void main() {
   });
 
   group('AuthDebugScreen lifecycle safety', () {
-    testWidgets('survives rapid dispose without setState crash',
-        (tester) async {
+    testWidgets('survives rapid dispose without setState crash', (
+      tester,
+    ) async {
       await tester.runAsync(() async {
         await tester.pumpWidget(_wrap(const AuthDebugScreen()));
         await Future.delayed(const Duration(milliseconds: 50));
@@ -104,8 +103,9 @@ void main() {
       });
     });
 
-    testWidgets('survives multiple rapid rebuilds (tray show/hide cycle)',
-        (tester) async {
+    testWidgets('survives multiple rapid rebuilds (tray show/hide cycle)', (
+      tester,
+    ) async {
       await tester.runAsync(() async {
         for (int i = 0; i < 3; i++) {
           await tester.pumpWidget(_wrap(const AuthDebugScreen()));
@@ -128,17 +128,19 @@ void main() {
       addTearDown(pageNotifier.dispose);
 
       await tester.runAsync(() async {
-        await tester.pumpWidget(ProviderScope(
-          child: MaterialApp(
-            theme: ThemeData.dark(),
-            home: ValueListenableBuilder<int>(
-              valueListenable: pageNotifier,
-              builder: (_, page, __) => page == 0
-                  ? const AuthDebugScreen()
-                  : const Center(child: Text('Other Page')),
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              theme: ThemeData.dark(),
+              home: ValueListenableBuilder<int>(
+                valueListenable: pageNotifier,
+                builder: (_, page, __) => page == 0
+                    ? const AuthDebugScreen()
+                    : const Center(child: Text('Other Page')),
+              ),
             ),
           ),
-        ));
+        );
         await Future.delayed(const Duration(milliseconds: 50));
         pageNotifier.value = 1;
         await tester.pump();
@@ -147,8 +149,9 @@ void main() {
       expect(find.text('Other Page'), findsOneWidget);
     });
 
-    testWidgets('dispose then rebuild creates fresh loading state',
-        (tester) async {
+    testWidgets('dispose then rebuild creates fresh loading state', (
+      tester,
+    ) async {
       await tester.runAsync(() async {
         await tester.pumpWidget(_wrap(const AuthDebugScreen()));
         await Future.delayed(const Duration(milliseconds: 50));
@@ -172,23 +175,20 @@ void main() {
         project: 'my-project',
       );
 
-      await tester.pumpWidget(_wrap(
-        IdentityCard(identity: identity, onRefresh: () {}),
-      ));
+      await tester.pumpWidget(
+        _wrap(IdentityCard(identity: identity, onRefresh: () {})),
+      );
 
       expect(find.textContaining('test@example.com'), findsOneWidget);
       expect(find.textContaining('my-project'), findsOneWidget);
     });
 
     testWidgets('shows "Not authenticated" when email is null', (tester) async {
-      const identity = IdentityState(
-        email: null,
-        project: null,
-      );
+      const identity = IdentityState(email: null, project: null);
 
-      await tester.pumpWidget(_wrap(
-        IdentityCard(identity: identity, onRefresh: () {}),
-      ));
+      await tester.pumpWidget(
+        _wrap(IdentityCard(identity: identity, onRefresh: () {})),
+      );
 
       expect(find.textContaining('Not authenticated'), findsOneWidget);
     });
@@ -200,22 +200,19 @@ void main() {
         tokenInfo: null,
       );
 
-      await tester.pumpWidget(_wrap(
-        IdentityCard(identity: identity, onRefresh: () {}),
-      ));
+      await tester.pumpWidget(
+        _wrap(IdentityCard(identity: identity, onRefresh: () {})),
+      );
 
       expect(find.textContaining('No token'), findsOneWidget);
     });
 
     testWidgets('renders avatar with initials', (tester) async {
-      const identity = IdentityState(
-        email: 'alice@example.com',
-        project: null,
-      );
+      const identity = IdentityState(email: 'alice@example.com', project: null);
 
-      await tester.pumpWidget(_wrap(
-        IdentityCard(identity: identity, onRefresh: () {}),
-      ));
+      await tester.pumpWidget(
+        _wrap(IdentityCard(identity: identity, onRefresh: () {})),
+      );
 
       // Initials for "alice@example.com" should be "A".
       expect(find.text('A'), findsOneWidget);
@@ -230,9 +227,9 @@ void main() {
       );
 
       await tester.runAsync(() async {
-        await tester.pumpWidget(_wrap(
-          IdentityCard(identity: identity, onRefresh: () {}),
-        ));
+        await tester.pumpWidget(
+          _wrap(IdentityCard(identity: identity, onRefresh: () {})),
+        );
         await Future.delayed(const Duration(milliseconds: 50));
         await tester.pumpWidget(const SizedBox());
         await Future.delayed(const Duration(milliseconds: 100));

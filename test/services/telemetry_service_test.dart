@@ -27,34 +27,32 @@ Map<String, dynamic> _spanJson({
   double costUsd = 0.01,
   double durationMs = 500,
   String? timestamp,
-}) =>
-    {
-      'span_id': 'sid',
-      'trace_id': 'tid',
-      'model': model,
-      'provider': provider,
-      'input_tokens': inputTokens,
-      'output_tokens': outputTokens,
-      'total_tokens': inputTokens + outputTokens,
-      'cost_usd': costUsd,
-      'duration_ms': durationMs,
-      'status': 'ok',
-      'timestamp': timestamp ?? DateTime.now().toIso8601String(),
-      'name': 'chat',
-    };
+}) => {
+  'span_id': 'sid',
+  'trace_id': 'tid',
+  'model': model,
+  'provider': provider,
+  'input_tokens': inputTokens,
+  'output_tokens': outputTokens,
+  'total_tokens': inputTokens + outputTokens,
+  'cost_usd': costUsd,
+  'duration_ms': durationMs,
+  'status': 'ok',
+  'timestamp': timestamp ?? DateTime.now().toIso8601String(),
+  'name': 'chat',
+};
 
 /// Mock HTTP client that returns a fixed response.
 MockClient _mockClient(
   String body, {
   int status = 200,
   String path = '/_local/api/traces',
-}) =>
-    MockClient((request) async {
-      if (request.url.path.contains(path)) {
-        return http.Response(body, status);
-      }
-      return http.Response('Not found', 404);
-    });
+}) => MockClient((request) async {
+  if (request.url.path.contains(path)) {
+    return http.Response(body, status);
+  }
+  return http.Response('Not found', 404);
+});
 
 /// Returns a local-mode [TelemetryService] with the given mock client.
 TelemetryService _localSvc(MockClient client) =>
@@ -159,16 +157,15 @@ TelemetryService _teamSvcWithMock(
   MockConnectApi mock, {
   String remoteUrl = 'https://candela.example.com',
   String? authToken = 'test-token',
-}) =>
-    TelemetryService(
-      port: 8181,
-      remoteUrl: remoteUrl,
-      authToken: authToken,
-      connectApiFactory: (baseUrl, token) {
-        mock.capturedAuthToken = token;
-        return mock;
-      },
-    );
+}) => TelemetryService(
+  port: 8181,
+  remoteUrl: remoteUrl,
+  authToken: authToken,
+  connectApiFactory: (baseUrl, token) {
+    mock.capturedAuthToken = token;
+    return mock;
+  },
+);
 
 // ── isSafeUrl (C2) ───────────────────────────────────────────────────────────
 
@@ -250,8 +247,7 @@ void main() {
       expect(result!.error, TelemetryErrorKind.unreachable);
     });
 
-    test('returns empty result when response body is empty spans list',
-        () async {
+    test('returns empty result when response body is empty spans list', () async {
       final client = _mockClient(jsonEncode({'spans': []}));
       final svc = _localSvc(client);
       final result = await svc.fetch(TokenTimeRange.d7);
@@ -263,12 +259,18 @@ void main() {
 
     test('aggregates a single span correctly', () async {
       final ts = DateTime.now().toIso8601String();
-      final client = _mockClient(jsonEncode({
-        'spans': [
-          _spanJson(
-              inputTokens: 100, outputTokens: 50, costUsd: 0.01, timestamp: ts)
-        ],
-      }));
+      final client = _mockClient(
+        jsonEncode({
+          'spans': [
+            _spanJson(
+              inputTokens: 100,
+              outputTokens: 50,
+              costUsd: 0.01,
+              timestamp: ts,
+            ),
+          ],
+        }),
+      );
       final svc = _localSvc(client);
       final result = await svc.fetch(TokenTimeRange.h24);
 
@@ -284,7 +286,11 @@ void main() {
       final spans = List.generate(
         5,
         (_) => _spanJson(
-            inputTokens: 100, outputTokens: 40, costUsd: 0.005, timestamp: ts),
+          inputTokens: 100,
+          outputTokens: 40,
+          costUsd: 0.005,
+          timestamp: ts,
+        ),
       );
       final client = _mockClient(jsonEncode({'spans': spans}));
       final svc = _localSvc(client);
@@ -312,11 +318,14 @@ void main() {
 
     test('returns empty result for spans outside the time range', () async {
       // Span 60 days ago — outside any range
-      final oldTs =
-          DateTime.now().subtract(const Duration(days: 60)).toIso8601String();
-      final client = _mockClient(jsonEncode({
-        'spans': [_spanJson(timestamp: oldTs)],
-      }));
+      final oldTs = DateTime.now()
+          .subtract(const Duration(days: 60))
+          .toIso8601String();
+      final client = _mockClient(
+        jsonEncode({
+          'spans': [_spanJson(timestamp: oldTs)],
+        }),
+      );
       final svc = _localSvc(client);
       final result = await svc.fetch(TokenTimeRange.d7);
       // Filtered-out spans produce TelemetryResult.empty(), not null.
@@ -327,9 +336,11 @@ void main() {
 
     test('result is not team mode', () async {
       final ts = DateTime.now().toIso8601String();
-      final client = _mockClient(jsonEncode({
-        'spans': [_spanJson(timestamp: ts)],
-      }));
+      final client = _mockClient(
+        jsonEncode({
+          'spans': [_spanJson(timestamp: ts)],
+        }),
+      );
       final svc = _localSvc(client);
       final result = await svc.fetch(TokenTimeRange.h24);
       expect(result!.isTeamMode, isFalse);
@@ -343,14 +354,23 @@ void main() {
       final ts = DateTime.now().toIso8601String();
       final spans = [
         _spanJson(
-            model: 'gpt-4o', provider: 'openai', costUsd: 0.01, timestamp: ts),
+          model: 'gpt-4o',
+          provider: 'openai',
+          costUsd: 0.01,
+          timestamp: ts,
+        ),
         _spanJson(
-            model: 'gpt-4o', provider: 'openai', costUsd: 0.02, timestamp: ts),
+          model: 'gpt-4o',
+          provider: 'openai',
+          costUsd: 0.02,
+          timestamp: ts,
+        ),
         _spanJson(
-            model: 'claude-3',
-            provider: 'anthropic',
-            costUsd: 0.05,
-            timestamp: ts),
+          model: 'claude-3',
+          provider: 'anthropic',
+          costUsd: 0.05,
+          timestamp: ts,
+        ),
       ];
       final client = _mockClient(jsonEncode({'spans': spans}));
       final svc = _localSvc(client);
@@ -363,16 +383,27 @@ void main() {
       final ts = DateTime.now().toIso8601String();
       final spans = [
         _spanJson(
-            model: 'gpt-4o', provider: 'openai', costUsd: 0.01, timestamp: ts),
+          model: 'gpt-4o',
+          provider: 'openai',
+          costUsd: 0.01,
+          timestamp: ts,
+        ),
         _spanJson(
-            model: 'gpt-4o', provider: 'azure', costUsd: 0.02, timestamp: ts),
+          model: 'gpt-4o',
+          provider: 'azure',
+          costUsd: 0.02,
+          timestamp: ts,
+        ),
       ];
       final client = _mockClient(jsonEncode({'spans': spans}));
       final svc = _localSvc(client);
       final result = await svc.fetch(TokenTimeRange.h24);
 
-      expect(result!.models.length, 1,
-          reason: 'same model under different providers should be merged');
+      expect(
+        result!.models.length,
+        1,
+        reason: 'same model under different providers should be merged',
+      );
       expect(result.models.first.model, 'gpt-4o');
       expect(result.models.first.callCount, 2);
       expect(result.models.first.costUsd, closeTo(0.03, 1e-9));
@@ -383,7 +414,11 @@ void main() {
       final spans = [
         _spanJson(model: 'cheap', provider: 'p', costUsd: 0.001, timestamp: ts),
         _spanJson(
-            model: 'expensive', provider: 'p', costUsd: 0.99, timestamp: ts),
+          model: 'expensive',
+          provider: 'p',
+          costUsd: 0.99,
+          timestamp: ts,
+        ),
       ];
       final client = _mockClient(jsonEncode({'spans': spans}));
       final svc = _localSvc(client);
@@ -397,19 +432,21 @@ void main() {
       final ts = DateTime.now().toIso8601String();
       final spans = [
         _spanJson(
-            model: 'gpt-4o',
-            provider: 'openai',
-            inputTokens: 200,
-            outputTokens: 100,
-            costUsd: 0.01,
-            timestamp: ts),
+          model: 'gpt-4o',
+          provider: 'openai',
+          inputTokens: 200,
+          outputTokens: 100,
+          costUsd: 0.01,
+          timestamp: ts,
+        ),
         _spanJson(
-            model: 'gpt-4o',
-            provider: 'openai',
-            inputTokens: 300,
-            outputTokens: 150,
-            costUsd: 0.02,
-            timestamp: ts),
+          model: 'gpt-4o',
+          provider: 'openai',
+          inputTokens: 300,
+          outputTokens: 150,
+          costUsd: 0.02,
+          timestamp: ts,
+        ),
       ];
       final client = _mockClient(jsonEncode({'spans': spans}));
       final svc = _localSvc(client);
@@ -428,9 +465,11 @@ void main() {
   group('TelemetryService — time series', () {
     test('produces range-appropriate bucket counts', () async {
       final ts = DateTime.now().toIso8601String();
-      final client = _mockClient(jsonEncode({
-        'spans': [_spanJson(timestamp: ts)],
-      }));
+      final client = _mockClient(
+        jsonEncode({
+          'spans': [_spanJson(timestamp: ts)],
+        }),
+      );
 
       // Adaptive bucket counts per range.
       final expected = {
@@ -444,34 +483,50 @@ void main() {
         final svc = _localSvc(client);
         final result = await svc.fetch(range);
         final n = expected[range]!;
-        expect(result!.summary!.costOverTime.length, n,
-            reason: 'range: ${range.label}');
-        expect(result.summary!.tokensOverTime.length, n,
-            reason: 'range: ${range.label}');
-        expect(result.summary!.callsOverTime.length, n,
-            reason: 'range: ${range.label}');
+        expect(
+          result!.summary!.costOverTime.length,
+          n,
+          reason: 'range: ${range.label}',
+        );
+        expect(
+          result.summary!.tokensOverTime.length,
+          n,
+          reason: 'range: ${range.label}',
+        );
+        expect(
+          result.summary!.callsOverTime.length,
+          n,
+          reason: 'range: ${range.label}',
+        );
       }
     });
 
     test('a span within the window lands in a non-zero bucket', () async {
-      final ts =
-          DateTime.now().subtract(const Duration(hours: 1)).toIso8601String();
-      final client = _mockClient(jsonEncode({
-        'spans': [_spanJson(costUsd: 0.05, timestamp: ts)],
-      }));
+      final ts = DateTime.now()
+          .subtract(const Duration(hours: 1))
+          .toIso8601String();
+      final client = _mockClient(
+        jsonEncode({
+          'spans': [_spanJson(costUsd: 0.05, timestamp: ts)],
+        }),
+      );
       final svc = _localSvc(client);
       final result = await svc.fetch(TokenTimeRange.h24);
 
-      final totalInBuckets =
-          result!.summary!.costOverTime.fold(0.0, (s, p) => s + p.value);
+      final totalInBuckets = result!.summary!.costOverTime.fold(
+        0.0,
+        (s, p) => s + p.value,
+      );
       expect(totalInBuckets, closeTo(0.05, 1e-9));
     });
 
     test('h24 bucket labels are formatted as HH:mm', () async {
       final ts = DateTime.now().toIso8601String();
-      final client = _mockClient(jsonEncode({
-        'spans': [_spanJson(timestamp: ts)],
-      }));
+      final client = _mockClient(
+        jsonEncode({
+          'spans': [_spanJson(timestamp: ts)],
+        }),
+      );
       final svc = _localSvc(client);
       final result = await svc.fetch(TokenTimeRange.h24);
 
@@ -481,9 +536,11 @@ void main() {
 
     test('d7 bucket labels are formatted as Mon DD', () async {
       final ts = DateTime.now().toIso8601String();
-      final client = _mockClient(jsonEncode({
-        'spans': [_spanJson(timestamp: ts)],
-      }));
+      final client = _mockClient(
+        jsonEncode({
+          'spans': [_spanJson(timestamp: ts)],
+        }),
+      );
       final svc = _localSvc(client);
       final result = await svc.fetch(TokenTimeRange.d7);
 
@@ -521,10 +578,7 @@ void main() {
     test('returns unreachable on invalid remoteUrl (C2 SSRF guard)', () async {
       // The SSRF check happens in fetch() before _fetchRemote, so no mock needed.
       final mock = MockConnectApi();
-      final svc = _teamSvcWithMock(
-        mock,
-        remoteUrl: 'file:///etc/passwd',
-      );
+      final svc = _teamSvcWithMock(mock, remoteUrl: 'file:///etc/passwd');
       final result = await svc.fetch(TokenTimeRange.d7);
       expect(result!.error, TelemetryErrorKind.unreachable);
     });
@@ -573,9 +627,7 @@ void main() {
     });
 
     test('returns empty result when model breakdown is empty', () async {
-      final mock = MockConnectApi(
-        modelResponse: GetModelBreakdownResponse(),
-      );
+      final mock = MockConnectApi(modelResponse: GetModelBreakdownResponse());
       final svc = _teamSvcWithMock(mock);
       final result = await svc.fetch(TokenTimeRange.h24);
 
@@ -586,9 +638,7 @@ void main() {
     });
 
     test('passes authToken through factory', () async {
-      final mock = MockConnectApi(
-        modelResponse: GetModelBreakdownResponse(),
-      );
+      final mock = MockConnectApi(modelResponse: GetModelBreakdownResponse());
       _teamSvcWithMock(mock, authToken: 'my-token');
       // Factory captures the token before RPC — verify it was passed.
       // (fetch() triggers the factory call)
@@ -598,9 +648,7 @@ void main() {
     });
 
     test('passes null authToken when not provided', () async {
-      final mock = MockConnectApi(
-        modelResponse: GetModelBreakdownResponse(),
-      );
+      final mock = MockConnectApi(modelResponse: GetModelBreakdownResponse());
       final svc = _teamSvcWithMock(mock, authToken: null);
       await svc.fetch(TokenTimeRange.h24);
       expect(mock.capturedAuthToken, isNull);
@@ -625,8 +673,11 @@ void main() {
       // The model breakdown should use the real call count (5000),
       // not the clamped synthetic span count (1000).
       expect(result!.models.length, 1);
-      expect(result.models.first.callCount, 5000,
-          reason: 'team mode should use preBuiltModels with real call count');
+      expect(
+        result.models.first.callCount,
+        5000,
+        reason: 'team mode should use preBuiltModels with real call count',
+      );
     });
 
     test('team mode deduplicates same model across providers', () async {
@@ -654,8 +705,11 @@ void main() {
       final svc = _teamSvcWithMock(mock);
       final result = await svc.fetch(TokenTimeRange.d7);
 
-      expect(result!.models.length, 1,
-          reason: 'same model under different providers should be merged');
+      expect(
+        result!.models.length,
+        1,
+        reason: 'same model under different providers should be merged',
+      );
       expect(result.models.first.model, 'claude-sonnet-4-20250514');
       expect(result.models.first.callCount, 1046);
     });
@@ -689,8 +743,10 @@ void main() {
       final midpoint = windowStart.add(const Duration(days: 3, hours: 12));
 
       // Should be within 1 hour of the midpoint.
-      expect(span.timestamp.difference(midpoint).abs().inHours,
-          lessThanOrEqualTo(1));
+      expect(
+        span.timestamp.difference(midpoint).abs().inHours,
+        lessThanOrEqualTo(1),
+      );
     });
 
     test('parses model breakdown with typed proto fields', () async {
@@ -777,15 +833,18 @@ void main() {
           ..periodEnd = (Timestamp()
             ..seconds = Int64(periodEnd.millisecondsSinceEpoch ~/ 1000)))
         ..totalRemainingUsd = 37.66;
-      usage.activeGrants.add(BudgetGrant()
-        ..id = '1'
-        ..amountUsd = 25.0
-        ..spentUsd = 10.0
-        ..reason = 'Monthly allocation'
-        ..grantedBy = 'admin@example.com'
-        ..expiresAt = (Timestamp()
-          ..seconds =
-              Int64(DateTime.utc(2026, 7, 1).millisecondsSinceEpoch ~/ 1000)));
+      usage.activeGrants.add(
+        BudgetGrant()
+          ..id = '1'
+          ..amountUsd = 25.0
+          ..spentUsd = 10.0
+          ..reason = 'Monthly allocation'
+          ..grantedBy = 'admin@example.com'
+          ..expiresAt = (Timestamp()
+            ..seconds = Int64(
+              DateTime.utc(2026, 7, 1).millisecondsSinceEpoch ~/ 1000,
+            )),
+      );
 
       final mock = MockConnectApi(
         modelResponse: GetModelBreakdownResponse()..models.add(model),
@@ -864,12 +923,14 @@ void main() {
 
     test('grants with missing optional expiresAt field', () async {
       final usage = GetMyUsageResponse();
-      usage.activeGrants.add(BudgetGrant()
-        ..id = 'g1'
-        ..amountUsd = 100.0
-        ..spentUsd = 0.0
-        ..reason = 'Trial'
-        ..grantedBy = 'system');
+      usage.activeGrants.add(
+        BudgetGrant()
+          ..id = 'g1'
+          ..amountUsd = 100.0
+          ..spentUsd = 0.0
+          ..reason = 'Trial'
+          ..grantedBy = 'system',
+      );
 
       final model = ModelUsage()
         ..model = 'gpt-4o'
@@ -903,8 +964,10 @@ void main() {
       // No periodEnd set on budget.
       final resp = GetDashboardDataResponse()..budgetContext = bc;
 
-      final info =
-          ConnectApiService.budgetFromDashboard(resp, referenceNow: stableNow);
+      final info = ConnectApiService.budgetFromDashboard(
+        resp,
+        referenceNow: stableNow,
+      );
 
       expect(info, isNotNull);
       // Fallback periodEnd should be exactly stableNow + 1 day, not DateTime.now().
@@ -916,22 +979,29 @@ void main() {
   // ── ProcessState.detecting transition tests ───────────────────────────────
 
   group('ProcessState.detecting transitions', () {
-    test('detectRunning transitions from detecting to stopped when installed',
-        () async {
-      final container = ProviderContainer();
-      final notifier = container.read(processManagerProvider.notifier);
-      notifier.configure(providerNames: ['lmstudio']);
-      expect(container.read(processManagerProvider).get('lmstudio')!.state,
-          ProcessState.detecting);
-      await notifier.detectRunning();
-      // After detection: lmstudio has no binary, so → notInstalled or running
-      expect(
-        container.read(processManagerProvider).get('lmstudio')!.state,
-        anyOf(ProcessState.notInstalled, ProcessState.running,
-            ProcessState.stopped),
-      );
-      container.dispose();
-    });
+    test(
+      'detectRunning transitions from detecting to stopped when installed',
+      () async {
+        final container = ProviderContainer();
+        final notifier = container.read(processManagerProvider.notifier);
+        notifier.configure(providerNames: ['lmstudio']);
+        expect(
+          container.read(processManagerProvider).get('lmstudio')!.state,
+          ProcessState.detecting,
+        );
+        await notifier.detectRunning();
+        // After detection: lmstudio has no binary, so → notInstalled or running
+        expect(
+          container.read(processManagerProvider).get('lmstudio')!.state,
+          anyOf(
+            ProcessState.notInstalled,
+            ProcessState.running,
+            ProcessState.stopped,
+          ),
+        );
+        container.dispose();
+      },
+    );
 
     test('detecting state is not treated as running or stopped', () {
       const p = ManagedProcess(name: 'x', displayName: 'X', icon: 'X');

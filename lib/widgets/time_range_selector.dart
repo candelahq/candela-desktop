@@ -25,11 +25,13 @@ class TimeRangeSelector extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: TokenTimeRange.values
-            .map((r) => _RangeChip(
-                  range: r,
-                  selected: r == value,
-                  onTap: () => onChanged(r),
-                ))
+            .map(
+              (r) => _RangeChip(
+                range: r,
+                selected: r == value,
+                onTap: () => onChanged(r),
+              ),
+            )
             .toList(),
       ),
     );

@@ -14,15 +14,18 @@ class ProviderTestService {
   static const _timeout = Duration(seconds: 10);
 
   ProviderTestService({http.Client? client, ProcessRunner? runner})
-      : _client = client ?? http.Client(),
-        _runner = runner ?? const SystemProcessRunner();
+    : _client = client ?? http.Client(),
+      _runner = runner ?? const SystemProcessRunner();
 
   // Pre-compiled regex patterns for sanitizeError.
-  static final _bearerRe =
-      RegExp(r'Bearer\s+[A-Za-z0-9\-._~+/]+=*', caseSensitive: false);
+  static final _bearerRe = RegExp(
+    r'Bearer\s+[A-Za-z0-9\-._~+/]+=*',
+    caseSensitive: false,
+  );
   static final _apiKeyRe = RegExp(
-      r'(api[_-]?key|authorization)[":\s]+[A-Za-z0-9\-._~+/]{20,}',
-      caseSensitive: false);
+    r'(api[_-]?key|authorization)[":\s]+[A-Za-z0-9\-._~+/]{20,}',
+    caseSensitive: false,
+  );
 
   // Pre-compiled regex patterns for _cleanModelName.
   static final _dateSuffixRe = RegExp(r'-\d{8}$');
@@ -39,8 +42,10 @@ class ProviderTestService {
     return error;
   }
 
-  Future<ProviderStatus> testGoogle(
-      {String? project, String? accessToken}) async {
+  Future<ProviderStatus> testGoogle({
+    String? project,
+    String? accessToken,
+  }) async {
     if (project == null) {
       String configPath;
       try {
@@ -49,22 +54,24 @@ class ProviderTestService {
         configPath = 'config.yaml';
       }
       return ProviderStatus(
-          name: 'google',
-          displayName: 'Google / Vertex AI',
-          state: ProviderState.error,
-          statusMessage: 'No GCP project configured',
-          fixCommand: 'Set vertex_ai.project in $configPath',
-          icon: 'G');
+        name: 'google',
+        displayName: 'Google / Vertex AI',
+        state: ProviderState.error,
+        statusMessage: 'No GCP project configured',
+        fixCommand: 'Set vertex_ai.project in $configPath',
+        icon: 'G',
+      );
     }
     if (accessToken == null) {
       return ProviderStatus(
-          name: 'google',
-          displayName: 'Google / Vertex AI',
-          state: ProviderState.error,
-          statusMessage: 'No access token',
-          fixCommand: 'candela auth login',
-          project: project,
-          icon: 'G');
+        name: 'google',
+        displayName: 'Google / Vertex AI',
+        state: ProviderState.error,
+        statusMessage: 'No access token',
+        fixCommand: 'candela auth login',
+        project: project,
+        icon: 'G',
+      );
     }
     try {
       final sw = Stopwatch()..start();
@@ -76,109 +83,123 @@ class ProviderTestService {
       if (resp == null) return _disposedStatus('google', 'Google / Vertex AI');
       if (resp.statusCode == 200) {
         final body = json.decode(resp.body) as Map<String, dynamic>;
-        final models = (body['models'] as List?)
+        final models =
+            (body['models'] as List?)
                 ?.map(
-                    (m) => (m as Map)['name']?.toString().split('/').last ?? '')
+                  (m) => (m as Map)['name']?.toString().split('/').last ?? '',
+                )
                 .where((n) => n.contains('gemini'))
                 .take(5)
                 .toList() ??
             [];
         return ProviderStatus(
-            name: 'google',
-            displayName: 'Google / Vertex AI',
-            state: ProviderState.connected,
-            statusMessage: 'Connected',
-            project: project,
-            models: models,
-            latency: sw.elapsed,
-            icon: 'G');
+          name: 'google',
+          displayName: 'Google / Vertex AI',
+          state: ProviderState.connected,
+          statusMessage: 'Connected',
+          project: project,
+          models: models,
+          latency: sw.elapsed,
+          icon: 'G',
+        );
       }
       return ProviderStatus(
-          name: 'google',
-          displayName: 'Google / Vertex AI',
-          state: ProviderState.error,
-          statusMessage: '${resp.statusCode}',
-          project: project,
-          icon: 'G');
+        name: 'google',
+        displayName: 'Google / Vertex AI',
+        state: ProviderState.error,
+        statusMessage: '${resp.statusCode}',
+        project: project,
+        icon: 'G',
+      );
     } catch (e) {
       return ProviderStatus(
-          name: 'google',
-          displayName: 'Google / Vertex AI',
-          state: ProviderState.error,
-          statusMessage: 'Connection failed',
-          errorDetail: sanitizeError(e.toString()),
-          project: project,
-          icon: 'G');
+        name: 'google',
+        displayName: 'Google / Vertex AI',
+        state: ProviderState.error,
+        statusMessage: 'Connection failed',
+        errorDetail: sanitizeError(e.toString()),
+        project: project,
+        icon: 'G',
+      );
     }
   }
 
-  Future<ProviderStatus> testAnthropic(
-      {String? project,
-      String region = 'us-central1',
-      String? accessToken}) async {
+  Future<ProviderStatus> testAnthropic({
+    String? project,
+    String region = 'us-central1',
+    String? accessToken,
+  }) async {
     if (project == null || accessToken == null) {
       return ProviderStatus(
-          name: 'anthropic',
-          displayName: 'Anthropic (Vertex)',
-          state: ProviderState.error,
-          statusMessage: project == null ? 'No project' : 'No token',
-          fixCommand:
-              project == null ? 'Set vertex_ai.project' : 'candela auth login',
-          project: project,
-          region: region,
-          icon: 'A');
+        name: 'anthropic',
+        displayName: 'Anthropic (Vertex)',
+        state: ProviderState.error,
+        statusMessage: project == null ? 'No project' : 'No token',
+        fixCommand: project == null
+            ? 'Set vertex_ai.project'
+            : 'candela auth login',
+        project: project,
+        region: region,
+        icon: 'A',
+      );
     }
     try {
       final sw = Stopwatch()..start();
       final endpoint =
           'https://$region-aiplatform.googleapis.com/v1/projects/$project/locations/$region/publishers/anthropic/models/claude-sonnet-4-20250514';
-      final resp = await _guardedGet(Uri.parse(endpoint),
-          headers: {'Authorization': 'Bearer $accessToken'});
+      final resp = await _guardedGet(
+        Uri.parse(endpoint),
+        headers: {'Authorization': 'Bearer $accessToken'},
+      );
       sw.stop();
       if (resp == null) {
         return _disposedStatus('anthropic', 'Anthropic (Vertex)');
       }
       if (resp.statusCode == 200 || resp.statusCode == 400) {
         return ProviderStatus(
-            name: 'anthropic',
-            displayName: 'Anthropic (Vertex)',
-            state: ProviderState.connected,
-            statusMessage: 'Connected',
-            project: project,
-            region: region,
-            models: const ['claude-sonnet-4'],
-            latency: sw.elapsed,
-            icon: 'A');
+          name: 'anthropic',
+          displayName: 'Anthropic (Vertex)',
+          state: ProviderState.connected,
+          statusMessage: 'Connected',
+          project: project,
+          region: region,
+          models: const ['claude-sonnet-4'],
+          latency: sw.elapsed,
+          icon: 'A',
+        );
       } else if (resp.statusCode == 403) {
         return ProviderStatus(
-            name: 'anthropic',
-            displayName: 'Anthropic (Vertex)',
-            state: ProviderState.error,
-            statusMessage: '403 — Model not enabled',
-            errorDetail: 'Enable Claude in Vertex AI Model Garden',
-            fixUrl: 'https://console.cloud.google.com/vertex-ai/model-garden',
-            project: project,
-            region: region,
-            icon: 'A');
+          name: 'anthropic',
+          displayName: 'Anthropic (Vertex)',
+          state: ProviderState.error,
+          statusMessage: '403 — Model not enabled',
+          errorDetail: 'Enable Claude in Vertex AI Model Garden',
+          fixUrl: 'https://console.cloud.google.com/vertex-ai/model-garden',
+          project: project,
+          region: region,
+          icon: 'A',
+        );
       }
       return ProviderStatus(
-          name: 'anthropic',
-          displayName: 'Anthropic (Vertex)',
-          state: ProviderState.error,
-          statusMessage: '${resp.statusCode}',
-          project: project,
-          region: region,
-          icon: 'A');
+        name: 'anthropic',
+        displayName: 'Anthropic (Vertex)',
+        state: ProviderState.error,
+        statusMessage: '${resp.statusCode}',
+        project: project,
+        region: region,
+        icon: 'A',
+      );
     } catch (e) {
       return ProviderStatus(
-          name: 'anthropic',
-          displayName: 'Anthropic (Vertex)',
-          state: ProviderState.error,
-          statusMessage: 'Connection failed',
-          errorDetail: sanitizeError(e.toString()),
-          project: project,
-          region: region,
-          icon: 'A');
+        name: 'anthropic',
+        displayName: 'Anthropic (Vertex)',
+        state: ProviderState.error,
+        statusMessage: 'Connection failed',
+        errorDetail: sanitizeError(e.toString()),
+        project: project,
+        region: region,
+        icon: 'A',
+      );
     }
   }
 
@@ -186,51 +207,57 @@ class ProviderTestService {
     final apiKey = Platform.environment['OPENAI_API_KEY'];
     if (apiKey == null || apiKey.isEmpty) {
       return const ProviderStatus(
-          name: 'openai',
-          displayName: 'OpenAI',
-          state: ProviderState.notConfigured,
-          statusMessage: 'Not configured',
-          errorDetail: 'No OPENAI_API_KEY set',
-          icon: 'O');
+        name: 'openai',
+        displayName: 'OpenAI',
+        state: ProviderState.notConfigured,
+        statusMessage: 'Not configured',
+        errorDetail: 'No OPENAI_API_KEY set',
+        icon: 'O',
+      );
     }
     try {
       final sw = Stopwatch()..start();
       final resp = await _guardedGet(
-          Uri.parse('https://api.openai.com/v1/models'),
-          headers: {'Authorization': 'Bearer $apiKey'});
+        Uri.parse('https://api.openai.com/v1/models'),
+        headers: {'Authorization': 'Bearer $apiKey'},
+      );
       sw.stop();
       if (resp == null) return _disposedStatus('openai', 'OpenAI');
       if (resp.statusCode == 200) {
         final body = json.decode(resp.body) as Map<String, dynamic>;
-        final models = (body['data'] as List?)
+        final models =
+            (body['data'] as List?)
                 ?.map((m) => (m as Map)['id']?.toString() ?? '')
                 .where((n) => n.startsWith('gpt-'))
                 .take(5)
                 .toList() ??
             [];
         return ProviderStatus(
-            name: 'openai',
-            displayName: 'OpenAI',
-            state: ProviderState.connected,
-            statusMessage: 'Connected',
-            models: models,
-            latency: sw.elapsed,
-            icon: 'O');
+          name: 'openai',
+          displayName: 'OpenAI',
+          state: ProviderState.connected,
+          statusMessage: 'Connected',
+          models: models,
+          latency: sw.elapsed,
+          icon: 'O',
+        );
       }
       return ProviderStatus(
-          name: 'openai',
-          displayName: 'OpenAI',
-          state: ProviderState.error,
-          statusMessage: '${resp.statusCode} — Invalid key',
-          icon: 'O');
+        name: 'openai',
+        displayName: 'OpenAI',
+        state: ProviderState.error,
+        statusMessage: '${resp.statusCode} — Invalid key',
+        icon: 'O',
+      );
     } catch (e) {
       return ProviderStatus(
-          name: 'openai',
-          displayName: 'OpenAI',
-          state: ProviderState.error,
-          statusMessage: 'Connection failed',
-          errorDetail: sanitizeError(e.toString()),
-          icon: 'O');
+        name: 'openai',
+        displayName: 'OpenAI',
+        state: ProviderState.error,
+        statusMessage: 'Connection failed',
+        errorDetail: sanitizeError(e.toString()),
+        icon: 'O',
+      );
     }
   }
 
@@ -241,27 +268,31 @@ class ProviderTestService {
       sw.stop();
       if (result.exitCode == 0) {
         return ProviderStatus(
-            name: 'aws',
-            displayName: 'AWS (Bedrock)',
-            state: ProviderState.connected,
-            statusMessage: 'Connected',
-            latency: sw.elapsed,
-            icon: 'A');
+          name: 'aws',
+          displayName: 'AWS (Bedrock)',
+          state: ProviderState.connected,
+          statusMessage: 'Connected',
+          latency: sw.elapsed,
+          icon: 'A',
+        );
       } else {
         final err = result.stderr.toString().trim();
         return ProviderStatus(
-            name: 'aws',
-            displayName: 'AWS (Bedrock)',
-            state: ProviderState.error,
-            statusMessage: 'Connection failed',
-            errorDetail: sanitizeError(
-                err.isNotEmpty ? err : 'aws sts get-caller-identity failed'),
-            fixCommand: 'aws configure sso',
-            icon: 'A');
+          name: 'aws',
+          displayName: 'AWS (Bedrock)',
+          state: ProviderState.error,
+          statusMessage: 'Connection failed',
+          errorDetail: sanitizeError(
+            err.isNotEmpty ? err : 'aws sts get-caller-identity failed',
+          ),
+          fixCommand: 'aws configure sso',
+          icon: 'A',
+        );
       }
     } catch (_) {
       // AWS CLI not installed, fall back to checking credential files
-      final hasEnv = Platform.environment['AWS_ACCESS_KEY_ID'] != null &&
+      final hasEnv =
+          Platform.environment['AWS_ACCESS_KEY_ID'] != null &&
           Platform.environment['AWS_ACCESS_KEY_ID']!.isNotEmpty;
       var hasFile = false;
       try {
@@ -273,26 +304,29 @@ class ProviderTestService {
 
       if (!hasEnv && !hasFile) {
         return const ProviderStatus(
-            name: 'aws',
-            displayName: 'AWS (Bedrock)',
-            state: ProviderState.notConfigured,
-            statusMessage: 'Not configured',
-            errorDetail: 'No ~/.aws/credentials or AWS_ACCESS_KEY_ID found',
-            fixCommand: 'aws configure sso',
-            icon: 'A');
+          name: 'aws',
+          displayName: 'AWS (Bedrock)',
+          state: ProviderState.notConfigured,
+          statusMessage: 'Not configured',
+          errorDetail: 'No ~/.aws/credentials or AWS_ACCESS_KEY_ID found',
+          fixCommand: 'aws configure sso',
+          icon: 'A',
+        );
       }
 
       return const ProviderStatus(
-          name: 'aws',
-          displayName: 'AWS (Bedrock)',
-          state: ProviderState.connected,
-          statusMessage: 'Credentials found (unverified)',
-          icon: 'A');
+        name: 'aws',
+        displayName: 'AWS (Bedrock)',
+        state: ProviderState.connected,
+        statusMessage: 'Credentials found (unverified)',
+        icon: 'A',
+      );
     }
   }
 
-  Future<ProviderStatus> testOllama(
-      {String host = 'http://localhost:11434'}) async {
+  Future<ProviderStatus> testOllama({
+    String host = 'http://localhost:11434',
+  }) async {
     try {
       final sw = Stopwatch()..start();
       final resp = await _client
@@ -301,52 +335,58 @@ class ProviderTestService {
       sw.stop();
       if (resp.statusCode == 200) {
         final body = json.decode(resp.body) as Map<String, dynamic>;
-        final models = (body['models'] as List?)
+        final models =
+            (body['models'] as List?)
                 ?.map((m) => (m as Map)['name']?.toString() ?? '')
                 .toList() ??
             [];
         return ProviderStatus(
-            name: 'ollama',
-            displayName: 'Ollama (local)',
-            state: ProviderState.connected,
-            statusMessage: 'Running',
-            models: models,
-            latency: sw.elapsed,
-            icon: '🦙');
-      }
-      return ProviderStatus(
           name: 'ollama',
           displayName: 'Ollama (local)',
-          state: ProviderState.error,
-          statusMessage: '${resp.statusCode}',
-          icon: '🦙');
+          state: ProviderState.connected,
+          statusMessage: 'Running',
+          models: models,
+          latency: sw.elapsed,
+          icon: '🦙',
+        );
+      }
+      return ProviderStatus(
+        name: 'ollama',
+        displayName: 'Ollama (local)',
+        state: ProviderState.error,
+        statusMessage: '${resp.statusCode}',
+        icon: '🦙',
+      );
     } catch (_) {
       try {
         final cmd = Platform.isWindows ? 'where.exe' : 'which';
         final which = await _runner.run(cmd, ['ollama']);
         if (which.exitCode == 0) {
           return const ProviderStatus(
-              name: 'ollama',
-              displayName: 'Ollama (local)',
-              state: ProviderState.error,
-              statusMessage: 'Not running',
-              errorDetail: 'Ollama is installed but not running',
-              fixCommand: 'ollama serve',
-              icon: '🦙');
+            name: 'ollama',
+            displayName: 'Ollama (local)',
+            state: ProviderState.error,
+            statusMessage: 'Not running',
+            errorDetail: 'Ollama is installed but not running',
+            fixCommand: 'ollama serve',
+            icon: '🦙',
+          );
         }
       } catch (_) {}
       return const ProviderStatus(
-          name: 'ollama',
-          displayName: 'Ollama (local)',
-          state: ProviderState.notInstalled,
-          statusMessage: 'Not installed',
-          fixUrl: 'https://ollama.ai/download',
-          icon: '🦙');
+        name: 'ollama',
+        displayName: 'Ollama (local)',
+        state: ProviderState.notInstalled,
+        statusMessage: 'Not installed',
+        fixUrl: 'https://ollama.ai/download',
+        icon: '🦙',
+      );
     }
   }
 
-  Future<ProviderStatus> testVllm(
-      {String host = 'http://localhost:8000'}) async {
+  Future<ProviderStatus> testVllm({
+    String host = 'http://localhost:8000',
+  }) async {
     try {
       final sw = Stopwatch()..start();
       final resp = await _client
@@ -355,38 +395,43 @@ class ProviderTestService {
       sw.stop();
       if (resp.statusCode == 200) {
         final body = json.decode(resp.body) as Map<String, dynamic>;
-        final models = (body['data'] as List?)
+        final models =
+            (body['data'] as List?)
                 ?.map((m) => (m as Map)['id']?.toString() ?? '')
                 .toList() ??
             [];
         return ProviderStatus(
-            name: 'vllm',
-            displayName: 'vLLM',
-            state: ProviderState.connected,
-            statusMessage: 'Running',
-            models: models,
-            latency: sw.elapsed,
-            icon: 'V');
+          name: 'vllm',
+          displayName: 'vLLM',
+          state: ProviderState.connected,
+          statusMessage: 'Running',
+          models: models,
+          latency: sw.elapsed,
+          icon: 'V',
+        );
       }
       return ProviderStatus(
-          name: 'vllm',
-          displayName: 'vLLM',
-          state: ProviderState.error,
-          statusMessage: '${resp.statusCode}',
-          icon: 'V');
+        name: 'vllm',
+        displayName: 'vLLM',
+        state: ProviderState.error,
+        statusMessage: '${resp.statusCode}',
+        icon: 'V',
+      );
     } catch (_) {
       return const ProviderStatus(
-          name: 'vllm',
-          displayName: 'vLLM',
-          state: ProviderState.error,
-          statusMessage: 'Not running',
-          errorDetail: 'No response on port 8000',
-          icon: 'V');
+        name: 'vllm',
+        displayName: 'vLLM',
+        state: ProviderState.error,
+        statusMessage: 'Not running',
+        errorDetail: 'No response on port 8000',
+        icon: 'V',
+      );
     }
   }
 
-  Future<ProviderStatus> testLmStudio(
-      {String host = 'http://localhost:1234'}) async {
+  Future<ProviderStatus> testLmStudio({
+    String host = 'http://localhost:1234',
+  }) async {
     try {
       final sw = Stopwatch()..start();
       final resp = await _client
@@ -395,33 +440,37 @@ class ProviderTestService {
       sw.stop();
       if (resp.statusCode == 200) {
         final body = json.decode(resp.body) as Map<String, dynamic>;
-        final models = (body['data'] as List?)
+        final models =
+            (body['data'] as List?)
                 ?.map((m) => (m as Map)['id']?.toString() ?? '')
                 .toList() ??
             [];
         return ProviderStatus(
-            name: 'lmstudio',
-            displayName: 'LM Studio',
-            state: ProviderState.connected,
-            statusMessage: 'Running',
-            models: models,
-            latency: sw.elapsed,
-            icon: 'L');
+          name: 'lmstudio',
+          displayName: 'LM Studio',
+          state: ProviderState.connected,
+          statusMessage: 'Running',
+          models: models,
+          latency: sw.elapsed,
+          icon: 'L',
+        );
       }
       return ProviderStatus(
-          name: 'lmstudio',
-          displayName: 'LM Studio',
-          state: ProviderState.error,
-          statusMessage: '${resp.statusCode}',
-          icon: 'L');
+        name: 'lmstudio',
+        displayName: 'LM Studio',
+        state: ProviderState.error,
+        statusMessage: '${resp.statusCode}',
+        icon: 'L',
+      );
     } catch (_) {
       return const ProviderStatus(
-          name: 'lmstudio',
-          displayName: 'LM Studio',
-          state: ProviderState.error,
-          statusMessage: 'Not running',
-          errorDetail: 'No response on port 1234',
-          icon: 'L');
+        name: 'lmstudio',
+        displayName: 'LM Studio',
+        state: ProviderState.error,
+        statusMessage: 'Not running',
+        errorDetail: 'No response on port 1234',
+        icon: 'L',
+      );
     }
   }
 
@@ -457,23 +506,28 @@ class ProviderTestService {
       if (modelsResp.statusCode == 200) {
         try {
           final body = json.decode(modelsResp.body) as Map<String, dynamic>;
-          final allModels = (body['data'] as List?)
+          final allModels =
+              (body['data'] as List?)
                   ?.map((m) => (m as Map)['id']?.toString() ?? '')
                   .where((n) => n.isNotEmpty)
                   .toList() ??
               [];
           // Prioritize real model names (gemini, claude, llama) over OpenAI-compat aliases.
           final priority = allModels
-              .where((n) =>
-                  n.contains('gemini') ||
-                  n.contains('claude') ||
-                  n.contains('llama'))
+              .where(
+                (n) =>
+                    n.contains('gemini') ||
+                    n.contains('claude') ||
+                    n.contains('llama'),
+              )
               .toList();
           final others = allModels
-              .where((n) =>
-                  !n.contains('gemini') &&
-                  !n.contains('claude') &&
-                  !n.contains('llama'))
+              .where(
+                (n) =>
+                    !n.contains('gemini') &&
+                    !n.contains('claude') &&
+                    !n.contains('llama'),
+              )
               .toList();
           final ordered = [...priority, ...others];
           // Deduplicate by cleaned name, keeping the first raw name per clean
@@ -541,8 +595,10 @@ class ProviderTestService {
 
   /// Perform a guarded GET request that silently returns null if the
   /// service has been disposed mid-flight.
-  Future<http.Response?> _guardedGet(Uri url,
-      {Map<String, String>? headers}) async {
+  Future<http.Response?> _guardedGet(
+    Uri url, {
+    Map<String, String>? headers,
+  }) async {
     if (_disposed) return null;
     try {
       return await _client.get(url, headers: headers).timeout(_timeout);

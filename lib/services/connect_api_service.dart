@@ -54,19 +54,17 @@ class ConnectApiService {
   final DashboardServiceClient _dashboard;
   final String? _authToken;
 
-  ConnectApiService({
-    required String baseUrl,
-    String? authToken,
-  })  : _authToken = authToken,
-        _dashboard = DashboardServiceClient(
-          createCandelaTransport(baseUrl: baseUrl),
-        );
+  ConnectApiService({required String baseUrl, String? authToken})
+    : _authToken = authToken,
+      _dashboard = DashboardServiceClient(
+        createCandelaTransport(baseUrl: baseUrl),
+      );
 
   /// Injectable constructor for testing with a custom transport.
   @visibleForTesting
   ConnectApiService.withTransport(Transport transport, {String? authToken})
-      : _authToken = authToken,
-        _dashboard = DashboardServiceClient(transport);
+    : _authToken = authToken,
+      _dashboard = DashboardServiceClient(transport);
 
   Headers? get _headers {
     if (_authToken == null) return null;
@@ -159,20 +157,22 @@ class ConnectApiService {
       final provider = m.provider.isEmpty ? 'team' : m.provider;
 
       for (var i = 0; i < callCount; i++) {
-        spans.add(SpanRecord(
-          spanId: 'r-$model-$i',
-          traceId: 'r-$model',
-          model: model,
-          provider: provider,
-          inputTokens: (inputTok / callCount).round(),
-          outputTokens: (outputTok / callCount).round(),
-          totalTokens: ((inputTok + outputTok) / callCount).round(),
-          costUsd: cost / callCount,
-          durationMs: latency,
-          status: 'ok',
-          timestamp: _spread(start, end, i, callCount),
-          name: 'chat $model',
-        ));
+        spans.add(
+          SpanRecord(
+            spanId: 'r-$model-$i',
+            traceId: 'r-$model',
+            model: model,
+            provider: provider,
+            inputTokens: (inputTok / callCount).round(),
+            outputTokens: (outputTok / callCount).round(),
+            totalTokens: ((inputTok + outputTok) / callCount).round(),
+            costUsd: cost / callCount,
+            durationMs: latency,
+            status: 'ok',
+            timestamp: _spread(start, end, i, callCount),
+            name: 'chat $model',
+          ),
+        );
       }
     }
     return spans;
@@ -249,17 +249,19 @@ class ConnectApiService {
   /// through different providers isn't shown as duplicate rows.
   /// Uses the server's real call counts — avoids the synthetic-span clamp.
   static List<ModelBreakdown> modelBreakdownsFromProto(
-      List<ModelUsage> models) {
+    List<ModelUsage> models,
+  ) {
     // Aggregate by model name to merge entries with different providers.
     final map = <String, _ProtoAccum>{};
     for (final m in models) {
       final name = m.model.isEmpty ? 'unknown' : m.model;
       final a = map.putIfAbsent(
-          name,
-          () => _ProtoAccum(
-                model: name,
-                provider: m.provider.isEmpty ? 'team' : m.provider,
-              ));
+        name,
+        () => _ProtoAccum(
+          model: name,
+          provider: m.provider.isEmpty ? 'team' : m.provider,
+        ),
+      );
       final calls = m.callCount.toInt();
       a.callCount += calls;
       a.inputTokens += m.inputTokens.toInt();
@@ -271,18 +273,21 @@ class ConnectApiService {
       a.latencyWeightedSum += m.avgLatencyMs * calls;
     }
     return map.values
-        .map((a) => ModelBreakdown(
-              model: a.model,
-              provider: a.provider,
-              callCount: a.callCount,
-              inputTokens: a.inputTokens,
-              outputTokens: a.outputTokens,
-              costUsd: a.costUsd,
-              avgLatencyMs:
-                  a.callCount == 0 ? 0 : a.latencyWeightedSum / a.callCount,
-              cacheReadTokens: a.cacheReadTokens,
-              cacheCreationTokens: a.cacheCreationTokens,
-            ))
+        .map(
+          (a) => ModelBreakdown(
+            model: a.model,
+            provider: a.provider,
+            callCount: a.callCount,
+            inputTokens: a.inputTokens,
+            outputTokens: a.outputTokens,
+            costUsd: a.costUsd,
+            avgLatencyMs: a.callCount == 0
+                ? 0
+                : a.latencyWeightedSum / a.callCount,
+            cacheReadTokens: a.cacheReadTokens,
+            cacheCreationTokens: a.cacheCreationTokens,
+          ),
+        )
         .toList()
       ..sort((a, b) => b.costUsd.compareTo(a.costUsd));
   }
@@ -290,9 +295,9 @@ class ConnectApiService {
   /// Evenly spread synthetic spans across a time window.
   static DateTime _spread(DateTime start, DateTime end, int i, int total) {
     if (total <= 1) {
-      return start.add(Duration(
-        milliseconds: end.difference(start).inMilliseconds ~/ 2,
-      ));
+      return start.add(
+        Duration(milliseconds: end.difference(start).inMilliseconds ~/ 2),
+      );
     }
     final step = end.difference(start).inMilliseconds / total;
     return start.add(Duration(milliseconds: (step * (i + 0.5)).round()));

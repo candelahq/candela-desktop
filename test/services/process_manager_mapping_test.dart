@@ -71,30 +71,18 @@ void main() {
 
   group('ManagedProcess — state transitions (immutable)', () {
     test('state starts as detecting', () {
-      const p = ManagedProcess(
-        name: 'test',
-        displayName: 'Test',
-        icon: 'T',
-      );
+      const p = ManagedProcess(name: 'test', displayName: 'Test', icon: 'T');
       expect(p.state, ProcessState.detecting);
     });
 
     test('copyWith can transition to starting', () {
-      const p = ManagedProcess(
-        name: 'test',
-        displayName: 'Test',
-        icon: 'T',
-      );
+      const p = ManagedProcess(name: 'test', displayName: 'Test', icon: 'T');
       final updated = p.copyWith(state: ProcessState.starting);
       expect(updated.state, ProcessState.starting);
     });
 
     test('copyWith can transition to running', () {
-      const p = ManagedProcess(
-        name: 'test',
-        displayName: 'Test',
-        icon: 'T',
-      );
+      const p = ManagedProcess(name: 'test', displayName: 'Test', icon: 'T');
       final updated = p.copyWith(
         state: ProcessState.running,
         startedAt: () => DateTime.now(),
@@ -104,11 +92,7 @@ void main() {
     });
 
     test('copyWith can set error with message', () {
-      const p = ManagedProcess(
-        name: 'test',
-        displayName: 'Test',
-        icon: 'T',
-      );
+      const p = ManagedProcess(name: 'test', displayName: 'Test', icon: 'T');
       final updated = p.copyWith(
         state: ProcessState.error,
         errorMessage: () => 'Process crashed',
@@ -118,11 +102,7 @@ void main() {
     });
 
     test('uptimeString returns empty when not started', () {
-      const p = ManagedProcess(
-        name: 'test',
-        displayName: 'Test',
-        icon: 'T',
-      );
+      const p = ManagedProcess(name: 'test', displayName: 'Test', icon: 'T');
       expect(p.uptimeString, anyOf(isNull, isEmpty));
     });
 

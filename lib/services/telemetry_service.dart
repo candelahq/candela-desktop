@@ -52,7 +52,7 @@ class TelemetryService {
 
   /// Factory for creating a [ConnectApiService]. Injected in tests.
   final ConnectApiService Function(String baseUrl, String? authToken)
-      _connectApiFactory;
+  _connectApiFactory;
 
   // Security / resource limits.
   static const _maxBodyBytes = 5 * 1024 * 1024; // C5/H1: 5 MB response cap
@@ -64,11 +64,12 @@ class TelemetryService {
     this.authToken,
     http.Client? httpClient,
     ConnectApiService Function(String baseUrl, String? authToken)?
-        connectApiFactory,
-  })  : _client = httpClient ?? http.Client(),
-        _connectApiFactory = connectApiFactory ??
-            ((baseUrl, authToken) =>
-                ConnectApiService(baseUrl: baseUrl, authToken: authToken)) {
+    connectApiFactory,
+  }) : _client = httpClient ?? http.Client(),
+       _connectApiFactory =
+           connectApiFactory ??
+           ((baseUrl, authToken) =>
+               ConnectApiService(baseUrl: baseUrl, authToken: authToken)) {
     // H6: validate port range at construction time.
     if (port <= 0 || port > 65535) {
       throw ArgumentError.value(port, 'port', 'Must be 1–65535');
@@ -95,8 +96,10 @@ class TelemetryService {
   ///
   /// The returned [TelemetryResult] may carry a [TelemetryErrorKind] to let
   /// the UI show actionable error messages (e.g. "token expired").
-  Future<TelemetryResult?> fetch(TokenTimeRange range,
-      {UserScope? userScope}) async {
+  Future<TelemetryResult?> fetch(
+    TokenTimeRange range, {
+    UserScope? userScope,
+  }) async {
     // C2: reject unsafe remote URLs before making any request.
     if (remoteUrl != null && !isSafeUrl(remoteUrl!)) {
       return const TelemetryResult.withError(
@@ -125,7 +128,9 @@ class TelemetryService {
     if (spans.isEmpty) {
       if (errorKind != null) {
         return TelemetryResult.withError(
-            isTeamMode: isTeamMode, error: errorKind);
+          isTeamMode: isTeamMode,
+          error: errorKind,
+        );
       }
       // Return zeroed summary rather than null so the UI shows an empty state
       // ("no calls yet") rather than a misleading "cannot reach backend" error.
@@ -166,15 +171,17 @@ class TelemetryService {
   // ── Local ───────────────────────────────────────────────────────────────────
 
   Future<(List<SpanRecord>, TelemetryErrorKind?)> _fetchLocal(
-      TokenTimeRange range) async {
+    TokenTimeRange range,
+  ) async {
     // Use a larger limit for longer ranges — 500 is not enough for 7d/30d views.
     final limit =
         range == TokenTimeRange.h24 || range == TokenTimeRange.todayUtc
-            ? 500
-            : 2000;
+        ? 500
+        : 2000;
     try {
-      final uri = Uri.http(
-          'localhost:$port', '/_local/api/traces', {'limit': '$limit'});
+      final uri = Uri.http('localhost:$port', '/_local/api/traces', {
+        'limit': '$limit',
+      });
       final resp = await _client.get(uri).timeout(_localTimeout);
 
       // H1: reject oversized responses before decoding.
@@ -200,16 +207,20 @@ class TelemetryService {
   // ── Team / ConnectRPC ───────────────────────────────────────────────────────
 
   Future<
-          (
-            List<SpanRecord>,
-            TelemetryErrorKind?,
-            BudgetInfo?,
-            List<GrantInfo>,
-            double?,
-            List<ModelBreakdown>?,
-          )>
-      _fetchRemote(TokenTimeRange range, DateTime now,
-          {UserScope? userScope}) async {
+    (
+      List<SpanRecord>,
+      TelemetryErrorKind?,
+      BudgetInfo?,
+      List<GrantInfo>,
+      double?,
+      List<ModelBreakdown>?,
+    )
+  >
+  _fetchRemote(
+    TokenTimeRange range,
+    DateTime now, {
+    UserScope? userScope,
+  }) async {
     final base = remoteUrl!.replaceAll(RegExp(r'/$'), '');
     final start = range.startFrom(now);
 
@@ -217,8 +228,12 @@ class TelemetryService {
 
     try {
       // ── Consolidated path: single RPC (GetDashboardData) ─────────────────
-      return await _fetchDashboardData(api, start, now,
-          environment: userScope == UserScope.global ? 'global' : null);
+      return await _fetchDashboardData(
+        api,
+        start,
+        now,
+        environment: userScope == UserScope.global ? 'global' : null,
+      );
     } on ConnectException catch (e) {
       // Graceful rollback: if the server hasn't been updated yet, the new RPC
       // returns Unimplemented. Fall back to the legacy 3-RPC fan-out so the
@@ -246,7 +261,8 @@ class TelemetryService {
       // If server doesn't support GetDashboardData yet, fall back to legacy.
       if (e.code == Code.unimplemented) {
         debugPrint(
-            '[TelemetryService] GetDashboardData not available, falling back');
+          '[TelemetryService] GetDashboardData not available, falling back',
+        );
         try {
           return await _fetchRemoteLegacy(api, start, now);
         } on ConnectException catch (e2) {
@@ -293,14 +309,16 @@ class TelemetryService {
 
   /// Consolidated single-RPC fetch via GetDashboardData.
   Future<
-      (
-        List<SpanRecord>,
-        TelemetryErrorKind?,
-        BudgetInfo?,
-        List<GrantInfo>,
-        double?,
-        List<ModelBreakdown>?,
-      )> _fetchDashboardData(
+    (
+      List<SpanRecord>,
+      TelemetryErrorKind?,
+      BudgetInfo?,
+      List<GrantInfo>,
+      double?,
+      List<ModelBreakdown>?,
+    )
+  >
+  _fetchDashboardData(
     ConnectApiService api,
     DateTime start,
     DateTime now, {
@@ -318,10 +336,7 @@ class TelemetryService {
     List<GrantInfo> grants = [];
     double? totalRemainingUsd;
     try {
-      budget = ConnectApiService.budgetFromDashboard(
-        resp,
-        referenceNow: now,
-      );
+      budget = ConnectApiService.budgetFromDashboard(resp, referenceNow: now);
       grants = ConnectApiService.grantsFromDashboard(resp);
       if (resp.hasBudgetContext()) {
         final rawRemaining = resp.budgetContext.totalRemainingUsd;
@@ -342,14 +357,16 @@ class TelemetryService {
 
   /// Legacy 3-RPC fan-out fallback for servers that haven't been updated yet.
   Future<
-      (
-        List<SpanRecord>,
-        TelemetryErrorKind?,
-        BudgetInfo?,
-        List<GrantInfo>,
-        double?,
-        List<ModelBreakdown>?,
-      )> _fetchRemoteLegacy(
+    (
+      List<SpanRecord>,
+      TelemetryErrorKind?,
+      BudgetInfo?,
+      List<GrantInfo>,
+      double?,
+      List<ModelBreakdown>?,
+    )
+  >
+  _fetchRemoteLegacy(
     ConnectApiService api,
     DateTime start,
     DateTime now,
@@ -363,14 +380,11 @@ class TelemetryService {
           .getMyUsage(start: start, end: now)
           .then<GetMyUsageResponse?>((r) => r)
           .catchError((Object e) {
-        debugPrint('[TelemetryService] GetMyUsage failed (non-fatal): $e');
-        return null;
-      });
+            debugPrint('[TelemetryService] GetMyUsage failed (non-fatal): $e');
+            return null;
+          });
 
-      final results = await Future.wait([
-        modelsFuture,
-        usageFuture,
-      ]);
+      final results = await Future.wait([modelsFuture, usageFuture]);
 
       final modelsResp = results[0] as GetModelBreakdownResponse;
       final usageResp = results[1] as GetMyUsageResponse?;
@@ -393,11 +407,15 @@ class TelemetryService {
       }
 
       // Convert proto ModelUsage → SpanRecord for the chart pipeline.
-      final spans =
-          ConnectApiService.spansFromModels(modelsResp.models, start, now);
+      final spans = ConnectApiService.spansFromModels(
+        modelsResp.models,
+        start,
+        now,
+      );
       // Build model breakdowns directly from proto data (real call counts).
-      final models =
-          ConnectApiService.modelBreakdownsFromProto(modelsResp.models);
+      final models = ConnectApiService.modelBreakdownsFromProto(
+        modelsResp.models,
+      );
       return (spans, null, budget, grants, totalRemainingUsd, models);
     } on ConnectException catch (e) {
       if (e.code == Code.unauthenticated) {
@@ -435,7 +453,10 @@ class TelemetryService {
 
   /// H3: [now] is passed in from [fetch] to ensure consistent bucket alignment.
   UsageSummary buildSummary(
-      List<SpanRecord> spans, TokenTimeRange range, DateTime now) {
+    List<SpanRecord> spans,
+    TokenTimeRange range,
+    DateTime now,
+  ) {
     int totalIn = 0, totalOut = 0;
     double totalCost = 0, totalMs = 0;
     for (final s in spans) {
@@ -451,8 +472,12 @@ class TelemetryService {
       totalCostUsd: totalCost,
       avgLatencyMs: spans.isEmpty ? 0.0 : totalMs / spans.length,
       costOverTime: _series(spans, range, now, (s) => s.costUsd),
-      tokensOverTime:
-          _series(spans, range, now, (s) => s.totalTokens.toDouble()),
+      tokensOverTime: _series(
+        spans,
+        range,
+        now,
+        (s) => s.totalTokens.toDouble(),
+      ),
       callsOverTime: _series(spans, range, now, (_) => 1.0),
     );
   }
@@ -463,7 +488,9 @@ class TelemetryService {
       // Key by model name only — prevents duplicate rows when the same model
       // appears under different providers.
       final a = map.putIfAbsent(
-          s.model, () => _Accum(model: s.model, provider: s.provider));
+        s.model,
+        () => _Accum(model: s.model, provider: s.provider),
+      );
       a.callCount++;
       a.inputTokens += s.inputTokens;
       a.outputTokens += s.outputTokens;
@@ -471,15 +498,17 @@ class TelemetryService {
       a.latencySum += s.durationMs;
     }
     return map.values
-        .map((a) => ModelBreakdown(
-              model: a.model,
-              provider: a.provider,
-              callCount: a.callCount,
-              inputTokens: a.inputTokens,
-              outputTokens: a.outputTokens,
-              costUsd: a.costUsd,
-              avgLatencyMs: a.callCount == 0 ? 0 : a.latencySum / a.callCount,
-            ))
+        .map(
+          (a) => ModelBreakdown(
+            model: a.model,
+            provider: a.provider,
+            callCount: a.callCount,
+            inputTokens: a.inputTokens,
+            outputTokens: a.outputTokens,
+            costUsd: a.costUsd,
+            avgLatencyMs: a.callCount == 0 ? 0 : a.latencySum / a.callCount,
+          ),
+        )
         .toList()
       ..sort((a, b) => b.costUsd.compareTo(a.costUsd));
   }
@@ -571,12 +600,12 @@ class TelemetryResult {
   const TelemetryResult.withError({
     required this.isTeamMode,
     required TelemetryErrorKind this.error,
-  })  : summary = null,
-        models = const [],
-        spans = const [],
-        budget = null,
-        activeGrants = const [],
-        totalRemainingUsd = null;
+  }) : summary = null,
+       models = const [],
+       spans = const [],
+       budget = null,
+       activeGrants = const [],
+       totalRemainingUsd = null;
 
   /// Connected successfully but no spans in the selected time range.
   const TelemetryResult.empty({
@@ -584,10 +613,10 @@ class TelemetryResult {
     this.budget,
     this.activeGrants = const [],
     this.totalRemainingUsd,
-  })  : summary = null,
-        models = const [],
-        spans = const [],
-        error = null;
+  }) : summary = null,
+       models = const [],
+       spans = const [],
+       error = null;
 
   bool get hasData => summary != null;
 }

@@ -103,9 +103,7 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
       pmNotifier.configure(
         providerNames: config.providers.map((p) => p.name).toList(),
         proxyPort: config.port.toString(),
-        portOverrides: {
-          'lmstudio': config.lmStudioPort.toString(),
-        },
+        portOverrides: {'lmstudio': config.lmStudioPort.toString()},
       );
       await pmNotifier.detectRunning();
       if (!mounted || gen != _loadGeneration) return;
@@ -137,7 +135,10 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
   }
 
   Future<void> _runProviderTests(
-      CandelaConfig config, String? project, TokenInfo? token) async {
+    CandelaConfig config,
+    String? project,
+    TokenInfo? token,
+  ) async {
     // Reuse access token from already-fetched TokenInfo.
     String? accessToken;
     if (token != null && token.isValid) {
@@ -150,10 +151,11 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
     final loadingStatuses = <ProviderStatus>[
       // Proxy always shown.
       const ProviderStatus(
-          name: 'proxy',
-          displayName: 'Candela Proxy',
-          state: ProviderState.loading,
-          icon: '🕯'),
+        name: 'proxy',
+        displayName: 'Candela Proxy',
+        state: ProviderState.loading,
+        icon: '🕯',
+      ),
     ];
     final testFutures = <Future<ProviderStatus>>[
       _providerTest.testProxy(port: config.port),
@@ -162,37 +164,55 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
     // Cloud providers from config.
     final providerNames = config.providers.map((p) => p.name).toSet();
     if (providerNames.contains('google') || providerNames.contains('gemini')) {
-      loadingStatuses.add(const ProviderStatus(
+      loadingStatuses.add(
+        const ProviderStatus(
           name: 'google',
           displayName: 'Google / Vertex AI',
           state: ProviderState.loading,
-          icon: 'G'));
+          icon: 'G',
+        ),
+      );
       testFutures.add(
-          _providerTest.testGoogle(project: project, accessToken: accessToken));
+        _providerTest.testGoogle(project: project, accessToken: accessToken),
+      );
     }
     if (providerNames.contains('anthropic')) {
-      loadingStatuses.add(const ProviderStatus(
+      loadingStatuses.add(
+        const ProviderStatus(
           name: 'anthropic',
           displayName: 'Anthropic (Vertex)',
           state: ProviderState.loading,
-          icon: 'A'));
-      testFutures.add(_providerTest.testAnthropic(
-          project: project, region: region, accessToken: accessToken));
+          icon: 'A',
+        ),
+      );
+      testFutures.add(
+        _providerTest.testAnthropic(
+          project: project,
+          region: region,
+          accessToken: accessToken,
+        ),
+      );
     }
     if (providerNames.contains('openai')) {
-      loadingStatuses.add(const ProviderStatus(
+      loadingStatuses.add(
+        const ProviderStatus(
           name: 'openai',
           displayName: 'OpenAI',
           state: ProviderState.loading,
-          icon: 'O'));
+          icon: 'O',
+        ),
+      );
       testFutures.add(_providerTest.testOpenAI());
     }
     if (providerNames.contains('aws') || providerNames.contains('bedrock')) {
-      loadingStatuses.add(const ProviderStatus(
+      loadingStatuses.add(
+        const ProviderStatus(
           name: 'aws',
           displayName: 'AWS (Bedrock)',
           state: ProviderState.loading,
-          icon: 'A'));
+          icon: 'A',
+        ),
+      );
       testFutures.add(_providerTest.testAws());
     }
 
@@ -201,27 +221,36 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
 
     // Local providers from config.
     if (providerNames.contains('ollama')) {
-      loadingStatuses.add(const ProviderStatus(
+      loadingStatuses.add(
+        const ProviderStatus(
           name: 'ollama',
           displayName: 'Ollama',
           state: ProviderState.loading,
-          icon: '🦙'));
+          icon: '🦙',
+        ),
+      );
       testFutures.add(_providerTest.testOllama());
     }
     if (providerNames.contains('vllm')) {
-      loadingStatuses.add(const ProviderStatus(
+      loadingStatuses.add(
+        const ProviderStatus(
           name: 'vllm',
           displayName: 'vLLM',
           state: ProviderState.loading,
-          icon: 'V'));
+          icon: 'V',
+        ),
+      );
       testFutures.add(_providerTest.testVllm());
     }
     if (providerNames.contains('lmstudio')) {
-      loadingStatuses.add(const ProviderStatus(
+      loadingStatuses.add(
+        const ProviderStatus(
           name: 'lmstudio',
           displayName: 'LM Studio',
           state: ProviderState.loading,
-          icon: 'L'));
+          icon: 'L',
+        ),
+      );
       testFutures.add(_providerTest.testLmStudio());
     }
 
@@ -330,8 +359,9 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
     ];
 
     final configured = _config?.providers.map((p) => p.name).toSet() ?? {};
-    final choices =
-        allProviders.where((a) => !configured.contains(a.$1)).toList();
+    final choices = allProviders
+        .where((a) => !configured.contains(a.$1))
+        .toList();
 
     if (choices.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -357,33 +387,47 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
                     backgroundColor: _isLocalProvider(name)
                         ? CandelaColors.bgTertiary
                         : CandelaColors.accentDim,
-                    child: Text(icon,
-                        style: const TextStyle(fontWeight: FontWeight.w700)),
+                    child: Text(
+                      icon,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
                   ),
-                  title: Row(children: [
-                    Text(display),
-                    if (_isLocalProvider(name)) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 5, vertical: 1),
-                        decoration: BoxDecoration(
-                          color: CandelaColors.bgTertiary,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text('LOCAL',
+                  title: Row(
+                    children: [
+                      Text(display),
+                      if (_isLocalProvider(name)) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: CandelaColors.bgTertiary,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'LOCAL',
                             style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w600,
-                                color: CandelaColors.textMuted)),
-                      ),
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                              color: CandelaColors.textMuted,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
-                  ]),
-                  subtitle: Text(desc,
-                      style: const TextStyle(
-                          fontSize: 12, color: CandelaColors.textSecondary)),
+                  ),
+                  subtitle: Text(
+                    desc,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: CandelaColors.textSecondary,
+                    ),
+                  ),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   hoverColor: CandelaColors.bgHover,
                   onTap: () async {
                     Navigator.of(ctx).pop();
@@ -396,8 +440,9 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
         ],
       ),
     );
@@ -421,13 +466,16 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 24),
           decoration: const BoxDecoration(
             color: CandelaColors.bgSecondary,
-            border:
-                Border(bottom: BorderSide(color: CandelaColors.borderSubtle)),
+            border: Border(
+              bottom: BorderSide(color: CandelaColors.borderSubtle),
+            ),
           ),
           child: Row(
             children: [
-              const Text('Auth & Connectivity',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              const Text(
+                'Auth & Connectivity',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
               const Spacer(),
               OutlinedButton.icon(
                 onPressed: _loading ? null : _loadAll,
@@ -441,7 +489,8 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
         Expanded(
           child: _loading && _identity == null
               ? const Center(
-                  child: CircularProgressIndicator(color: CandelaColors.accent))
+                  child: CircularProgressIndicator(color: CandelaColors.accent),
+                )
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
                   child: Column(
@@ -491,9 +540,13 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
                       // Section 2: Providers (cloud + local unified)
                       Row(
                         children: [
-                          const Text('Providers',
-                              style: TextStyle(
-                                  fontSize: 15, fontWeight: FontWeight.w600)),
+                          const Text(
+                            'Providers',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                           const Spacer(),
                           Builder(
                             builder: (_) {
@@ -505,10 +558,12 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
                                 return Padding(
                                   padding: const EdgeInsets.only(right: 12),
                                   child: Text(
-                                      '$running process${running > 1 ? "es" : ""} running',
-                                      style: const TextStyle(
-                                          fontSize: 12,
-                                          color: CandelaColors.textMuted)),
+                                    '$running process${running > 1 ? "es" : ""} running',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: CandelaColors.textMuted,
+                                    ),
+                                  ),
                                 );
                               }
                               return const SizedBox.shrink();
@@ -525,12 +580,14 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
                       Builder(
                         builder: (context) {
                           final pmState = ref.watch(processManagerProvider);
-                          final pmNotifier =
-                              ref.read(processManagerProvider.notifier);
+                          final pmNotifier = ref.read(
+                            processManagerProvider.notifier,
+                          );
                           return LayoutBuilder(
                             builder: (context, constraints) {
-                              final crossCount =
-                                  constraints.maxWidth > 1000 ? 4 : 2;
+                              final crossCount = constraints.maxWidth > 1000
+                                  ? 4
+                                  : 2;
                               return GridView.count(
                                 crossAxisCount: crossCount,
                                 shrinkWrap: true,
@@ -542,13 +599,16 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
                                   for (final s in _providerStatuses)
                                     _isLocalProvider(s.name)
                                         ? RuntimeControlCard(
-                                            process: pmState.get(s.name) ??
+                                            process:
+                                                pmState.get(s.name) ??
                                                 ManagedProcess(
-                                                    name: s.name,
-                                                    displayName: s.displayName,
-                                                    icon: s.icon ?? '?'),
-                                            recentLogs:
-                                                pmNotifier.getLogs(s.name),
+                                                  name: s.name,
+                                                  displayName: s.displayName,
+                                                  icon: s.icon ?? '?',
+                                                ),
+                                            recentLogs: pmNotifier.getLogs(
+                                              s.name,
+                                            ),
                                             onStart: () =>
                                                 pmNotifier.start(s.name),
                                             onStop: () =>
@@ -557,18 +617,16 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
                                                 pmNotifier.restart(s.name),
                                             onRemove:
                                                 _isRemovableProvider(s.name)
-                                                    ? () =>
-                                                        _removeProvider(s.name)
-                                                    : null,
+                                                ? () => _removeProvider(s.name)
+                                                : null,
                                             providerStatus: s,
                                           )
                                         : ProviderCard(
                                             status: s,
                                             onRemove:
                                                 _isRemovableProvider(s.name)
-                                                    ? () =>
-                                                        _removeProvider(s.name)
-                                                    : null,
+                                                ? () => _removeProvider(s.name)
+                                                : null,
                                           ),
                                 ],
                               );
@@ -579,9 +637,13 @@ class _AuthDebugScreenState extends ConsumerState<AuthDebugScreen> {
                       const SizedBox(height: 24),
 
                       // Section 3: Diagnostic Log
-                      const Text('Diagnostic Log',
-                          style: TextStyle(
-                              fontSize: 15, fontWeight: FontWeight.w600)),
+                      const Text(
+                        'Diagnostic Log',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                       const SizedBox(height: 12),
                       DiagnosticLog(runner: _diagnostics),
                     ],

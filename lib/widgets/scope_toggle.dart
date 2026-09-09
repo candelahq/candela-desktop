@@ -47,8 +47,9 @@ class ScopeToggle extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color:
-              active ? CandelaColors.accent.withAlpha(30) : Colors.transparent,
+          color: active
+              ? CandelaColors.accent.withAlpha(30)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(5),
         ),
         child: Text(

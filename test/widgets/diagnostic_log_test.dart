@@ -9,12 +9,12 @@ import 'package:candela_desktop/theme/colors.dart';
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 Widget _wrap(Widget child) => MaterialApp(
-      theme: ThemeData.dark(),
-      home: Scaffold(
-        backgroundColor: CandelaColors.bgPrimary,
-        body: SizedBox(width: 600, height: 400, child: child),
-      ),
-    );
+  theme: ThemeData.dark(),
+  home: Scaffold(
+    backgroundColor: CandelaColors.bgPrimary,
+    body: SizedBox(width: 600, height: 400, child: child),
+  ),
+);
 
 DiagnosticEntry _entry(String message, DiagnosticStatus status) =>
     DiagnosticEntry(
@@ -138,11 +138,13 @@ void main() {
   group('DiagnosticLog — timestamp formatting', () {
     testWidgets('timestamp appears in HH:MM:SS format', (tester) async {
       final runner = _runner();
-      runner.history.add(DiagnosticEntry(
-        message: 'Timed entry',
-        status: DiagnosticStatus.pass,
-        timestamp: DateTime(2024, 1, 1, 10, 5, 3),
-      ));
+      runner.history.add(
+        DiagnosticEntry(
+          message: 'Timed entry',
+          status: DiagnosticStatus.pass,
+          timestamp: DateTime(2024, 1, 1, 10, 5, 3),
+        ),
+      );
       await tester.pumpWidget(_wrap(DiagnosticLog(runner: runner)));
       await tester.pump();
 
@@ -150,14 +152,17 @@ void main() {
       expect(find.textContaining('10:05:03'), findsOneWidget);
     });
 
-    testWidgets('zero-padded timestamp for single-digit components',
-        (tester) async {
+    testWidgets('zero-padded timestamp for single-digit components', (
+      tester,
+    ) async {
       final runner = _runner();
-      runner.history.add(DiagnosticEntry(
-        message: 'Padded entry',
-        status: DiagnosticStatus.info,
-        timestamp: DateTime(2024, 1, 1, 1, 2, 3),
-      ));
+      runner.history.add(
+        DiagnosticEntry(
+          message: 'Padded entry',
+          status: DiagnosticStatus.info,
+          timestamp: DateTime(2024, 1, 1, 1, 2, 3),
+        ),
+      );
       await tester.pumpWidget(_wrap(DiagnosticLog(runner: runner)));
       await tester.pump();
 

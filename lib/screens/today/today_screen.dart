@@ -84,8 +84,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
     final todayRange = TokenTimeRange.todayUtc;
     final cutoff = todayRange.startFrom(DateTime.now());
-    final spans =
-        result.spans.where((s) => s.timestamp.isAfter(cutoff)).toList();
+    final spans = result.spans
+        .where((s) => s.timestamp.isAfter(cutoff))
+        .toList();
     if (spans.isEmpty) return [];
 
     // Group by model and aggregate.
@@ -157,8 +158,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           Expanded(
             child: state.loading && state.result == null
                 ? const Center(
-                    child:
-                        CircularProgressIndicator(color: CandelaColors.accent))
+                    child: CircularProgressIndicator(
+                      color: CandelaColors.accent,
+                    ),
+                  )
                 : SingleChildScrollView(
                     padding: const EdgeInsets.all(24),
                     child: _buildBody(summary, state, error, todayModels),
@@ -169,8 +172,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     );
   }
 
-  Widget _buildHeader(List<String> uniqueModels, DashboardState state,
-      DashboardNotifier notifier) {
+  Widget _buildHeader(
+    List<String> uniqueModels,
+    DashboardState state,
+    DashboardNotifier notifier,
+  ) {
     final dateStr = DateFormat.yMMMMEEEEd().format(DateTime.now());
 
     return Container(
@@ -197,7 +203,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               Text(
                 dateStr,
                 style: const TextStyle(
-                    fontSize: 12, color: CandelaColors.textMuted),
+                  fontSize: 12,
+                  color: CandelaColors.textMuted,
+                ),
               ),
             ],
           ),
@@ -220,20 +228,29 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             const SizedBox(width: 10),
           ],
           _RefreshButton(
-              onRefresh: () => notifier.fetch(), loading: state.loading),
+            onRefresh: () => notifier.fetch(),
+            loading: state.loading,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildBody(UsageSummary? summary, DashboardState state, String? error,
-      List<ModelBreakdown> todayModels) {
+  Widget _buildBody(
+    UsageSummary? summary,
+    DashboardState state,
+    String? error,
+    List<ModelBreakdown> todayModels,
+  ) {
     if (error != null && state.result == null) {
-      return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        _ErrorCard(message: error),
-        const SizedBox(height: 16),
-        const LocalServicesCard(),
-      ]);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _ErrorCard(message: error),
+          const SizedBox(height: 16),
+          const LocalServicesCard(),
+        ],
+      );
     }
 
     final budget = state.result?.budget;
@@ -266,9 +283,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           const SizedBox(height: 16),
         ],
         // ── Top models today ──
-        if (todayModels.isNotEmpty) ...[
-          _TopModelsCard(models: todayModels),
-        ],
+        if (todayModels.isNotEmpty) ...[_TopModelsCard(models: todayModels)],
         // ── Local Services ──
         if (!state.isTeamMode) ...[
           const LocalServicesCard(),
@@ -299,8 +314,8 @@ class _HeroCard extends StatelessWidget {
     final barColor = fraction >= 0.9
         ? CandelaColors.error
         : fraction >= 0.7
-            ? CandelaColors.warning
-            : CandelaColors.success;
+        ? CandelaColors.warning
+        : CandelaColors.success;
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -399,8 +414,10 @@ class _HeroCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   const Text(
                     'budget + grants',
-                    style:
-                        TextStyle(fontSize: 10, color: CandelaColors.textMuted),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: CandelaColors.textMuted,
+                    ),
                   ),
                 ],
               ),
@@ -555,8 +572,8 @@ class _BudgetDetailCard extends StatelessWidget {
             barColor: budget.isExhausted
                 ? CandelaColors.error
                 : budget.isNearLimit
-                    ? CandelaColors.warning
-                    : CandelaColors.success,
+                ? CandelaColors.warning
+                : CandelaColors.success,
           ),
           // Grant rows
           for (final g in grants) ...[
@@ -569,9 +586,11 @@ class _BudgetDetailCard extends StatelessWidget {
               subtitle: g.expiresAt != null
                   ? 'expires ${_daysLabel(g.expiresAt!, now)}'
                   : 'no expiry',
-              barColor:
-                  g.isExhausted ? CandelaColors.error : CandelaColors.accent,
-              isExpiringSoon: g.expiresAt != null &&
+              barColor: g.isExhausted
+                  ? CandelaColors.error
+                  : CandelaColors.accent,
+              isExpiringSoon:
+                  g.expiresAt != null &&
                   g.expiresAt!.difference(now).inDays < 7,
               grantedBy: g.grantedBy.isNotEmpty ? g.grantedBy : null,
             ),
@@ -622,7 +641,9 @@ class _DetailRow extends StatelessWidget {
               child: Text(
                 label,
                 style: const TextStyle(
-                    fontSize: 12, color: CandelaColors.textSecondary),
+                  fontSize: 12,
+                  color: CandelaColors.textSecondary,
+                ),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -666,14 +687,16 @@ class _DetailRow extends StatelessWidget {
                   color: CandelaColors.warning.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(4),
                   border: Border.all(
-                      color: CandelaColors.warning.withValues(alpha: 0.4)),
+                    color: CandelaColors.warning.withValues(alpha: 0.4),
+                  ),
                 ),
                 child: const Text(
                   '⚠ expiring',
                   style: TextStyle(
-                      fontSize: 9,
-                      color: CandelaColors.warning,
-                      fontWeight: FontWeight.w500),
+                    fontSize: 9,
+                    color: CandelaColors.warning,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
@@ -686,8 +709,10 @@ class _DetailRow extends StatelessWidget {
             grantedBy != null && grantedBy!.isNotEmpty
                 ? 'by $grantedBy · $subtitle'
                 : subtitle,
-            style:
-                const TextStyle(fontSize: 10, color: CandelaColors.textMuted),
+            style: const TextStyle(
+              fontSize: 10,
+              color: CandelaColors.textMuted,
+            ),
           ),
         ),
       ],
@@ -777,7 +802,9 @@ class _ModelRow extends StatelessWidget {
           child: Text(
             '${model.callCount} calls',
             style: const TextStyle(
-                fontSize: 11, color: CandelaColors.textSecondary),
+              fontSize: 11,
+              color: CandelaColors.textSecondary,
+            ),
           ),
         ),
         SizedBox(
@@ -828,7 +855,9 @@ class _EmptyState extends StatelessWidget {
                   ? 'LLM calls through your team gateway will appear here.'
                   : 'Start your proxy and route traffic to see activity.',
               style: const TextStyle(
-                  fontSize: 13, color: CandelaColors.textSecondary),
+                fontSize: 13,
+                color: CandelaColors.textSecondary,
+              ),
             ),
           ],
         ),
@@ -895,9 +924,15 @@ class _RefreshButton extends StatelessWidget {
                   width: 14,
                   height: 14,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: CandelaColors.accent))
-              : const Icon(Icons.refresh,
-                  size: 16, color: CandelaColors.textMuted),
+                    strokeWidth: 2,
+                    color: CandelaColors.accent,
+                  ),
+                )
+              : const Icon(
+                  Icons.refresh,
+                  size: 16,
+                  color: CandelaColors.textMuted,
+                ),
         ),
       ),
     );
@@ -919,13 +954,18 @@ class _ErrorCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded,
-              size: 16, color: Color(0xFFEF4444)),
+          const Icon(
+            Icons.warning_amber_rounded,
+            size: 16,
+            color: Color(0xFFEF4444),
+          ),
           const SizedBox(width: 10),
           Expanded(
-              child: Text(message,
-                  style:
-                      const TextStyle(fontSize: 12, color: Color(0xFFFCA5A5)))),
+            child: Text(
+              message,
+              style: const TextStyle(fontSize: 12, color: Color(0xFFFCA5A5)),
+            ),
+          ),
         ],
       ),
     );

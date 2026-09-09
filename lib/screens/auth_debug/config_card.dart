@@ -12,14 +12,15 @@ class ConfigCard extends StatelessWidget {
   final ValueChanged<String>? onSwitchToTeam;
   final void Function(String field, int port)? onPortChanged;
   final VoidCallback? onConfigReloaded;
-  const ConfigCard(
-      {super.key,
-      required this.config,
-      required this.configService,
-      this.onSwitchToSolo,
-      this.onSwitchToTeam,
-      this.onPortChanged,
-      this.onConfigReloaded});
+  const ConfigCard({
+    super.key,
+    required this.config,
+    required this.configService,
+    this.onSwitchToSolo,
+    this.onSwitchToTeam,
+    this.onPortChanged,
+    this.onConfigReloaded,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -42,22 +43,32 @@ class ConfigCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.description_outlined,
-                    size: 18, color: CandelaColors.textSecondary),
+                const Icon(
+                  Icons.description_outlined,
+                  size: 18,
+                  color: CandelaColors.textSecondary,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(config.path,
-                      style: const TextStyle(
-                          fontSize: 12,
-                          fontFamily: 'SF Mono, monospace',
-                          color: CandelaColors.textSecondary)),
+                  child: Text(
+                    config.path,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontFamily: 'SF Mono, monospace',
+                      color: CandelaColors.textSecondary,
+                    ),
+                  ),
                 ),
                 if (config.lastModified != null)
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
-                    child: Text(_formatTime(config.lastModified!),
-                        style: const TextStyle(
-                            fontSize: 11, color: CandelaColors.textMuted)),
+                    child: Text(
+                      _formatTime(config.lastModified!),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: CandelaColors.textMuted,
+                      ),
+                    ),
                   ),
                 Tooltip(
                   message: 'Edit raw YAML config',
@@ -70,8 +81,11 @@ class ConfigCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(4),
                         color: CandelaColors.bgTertiary,
                       ),
-                      child: const Icon(Icons.edit_note,
-                          size: 16, color: CandelaColors.textMuted),
+                      child: const Icon(
+                        Icons.edit_note,
+                        size: 16,
+                        color: CandelaColors.textMuted,
+                      ),
                     ),
                   ),
                 ),
@@ -88,21 +102,27 @@ class ConfigCard extends StatelessWidget {
                     onTap: () => _showModeDialog(context),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: modeColor.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(100),
-                        border:
-                            Border.all(color: modeColor.withValues(alpha: 0.3)),
+                        border: Border.all(
+                          color: modeColor.withValues(alpha: 0.3),
+                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(modeLabel,
-                              style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: modeColor)),
+                          Text(
+                            modeLabel,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: modeColor,
+                            ),
+                          ),
                           const SizedBox(width: 4),
                           Icon(Icons.swap_horiz, size: 12, color: modeColor),
                         ],
@@ -113,17 +133,22 @@ class ConfigCard extends StatelessWidget {
                 const SizedBox(width: 12),
                 if (config.remote != null)
                   Expanded(
-                      child: Text(
-                    config.remote!,
-                    style: const TextStyle(
-                        fontSize: 11, color: CandelaColors.textSecondary),
-                    overflow: TextOverflow.ellipsis,
-                  )),
+                    child: Text(
+                      config.remote!,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: CandelaColors.textSecondary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 if (config.providers.isNotEmpty && config.remote == null)
                   Text(
                     'Providers: ${config.providers.map((p) => p.name).join(", ")}',
                     style: const TextStyle(
-                        fontSize: 12, color: CandelaColors.textSecondary),
+                      fontSize: 12,
+                      color: CandelaColors.textSecondary,
+                    ),
                   ),
               ],
             ),
@@ -133,10 +158,20 @@ class ConfigCard extends StatelessWidget {
               spacing: 12,
               runSpacing: 6,
               children: [
-                _portChip(context, 'API', 'port', config.port,
-                    'OpenAI-compatible API endpoint'),
-                _portChip(context, 'IDE', 'lmstudio_port', config.lmStudioPort,
-                    'OpenAI-compatible IDE endpoint'),
+                _portChip(
+                  context,
+                  'API',
+                  'port',
+                  config.port,
+                  'OpenAI-compatible API endpoint',
+                ),
+                _portChip(
+                  context,
+                  'IDE',
+                  'lmstudio_port',
+                  config.lmStudioPort,
+                  'OpenAI-compatible IDE endpoint',
+                ),
               ],
             ),
             // Issues
@@ -151,25 +186,27 @@ class ConfigCard extends StatelessWidget {
                         issue.severity == IssueSeverity.error
                             ? Icons.error_outline
                             : issue.severity == IssueSeverity.warning
-                                ? Icons.warning_amber_outlined
-                                : Icons.info_outline,
+                            ? Icons.warning_amber_outlined
+                            : Icons.info_outline,
                         size: 14,
                         color: issue.severity == IssueSeverity.error
                             ? CandelaColors.error
                             : issue.severity == IssueSeverity.warning
-                                ? CandelaColors.warning
-                                : CandelaColors.info,
+                            ? CandelaColors.warning
+                            : CandelaColors.info,
                       ),
                       const SizedBox(width: 6),
-                      Text(issue.message,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: issue.severity == IssueSeverity.error
-                                ? CandelaColors.error
-                                : issue.severity == IssueSeverity.warning
-                                    ? CandelaColors.warning
-                                    : CandelaColors.textSecondary,
-                          )),
+                      Text(
+                        issue.message,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: issue.severity == IssueSeverity.error
+                              ? CandelaColors.error
+                              : issue.severity == IssueSeverity.warning
+                              ? CandelaColors.warning
+                              : CandelaColors.textSecondary,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -193,17 +230,22 @@ class ConfigCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: Icon(Icons.person,
-                    color: isTeam
-                        ? CandelaColors.textMuted
-                        : CandelaColors.accent),
+                leading: Icon(
+                  Icons.person,
+                  color: isTeam
+                      ? CandelaColors.textMuted
+                      : CandelaColors.accent,
+                ),
                 title: const Text('Solo / Dev Mode'),
-                subtitle: const Text('Local only — no remote server',
-                    style: TextStyle(fontSize: 12)),
+                subtitle: const Text(
+                  'Local only — no remote server',
+                  style: TextStyle(fontSize: 12),
+                ),
                 selected: !isTeam,
                 selectedTileColor: CandelaColors.accentDim,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 onTap: () {
                   Navigator.of(ctx).pop();
                   if (isTeam) {
@@ -215,10 +257,12 @@ class ConfigCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               ListTile(
-                leading: Icon(Icons.groups,
-                    color: isTeam
-                        ? CandelaColors.success
-                        : CandelaColors.textMuted),
+                leading: Icon(
+                  Icons.groups,
+                  color: isTeam
+                      ? CandelaColors.success
+                      : CandelaColors.textMuted,
+                ),
                 title: const Text('Team Mode'),
                 subtitle: Text(
                   isTeam
@@ -229,7 +273,8 @@ class ConfigCard extends StatelessWidget {
                 selected: isTeam,
                 selectedTileColor: CandelaColors.success.withValues(alpha: 0.1),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 onTap: () {
                   Navigator.of(ctx).pop();
                   _showTeamUrlDialog(context);
@@ -240,8 +285,9 @@ class ConfigCard extends StatelessWidget {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
         ],
       ),
     );
@@ -268,8 +314,9 @@ class ConfigCard extends StatelessWidget {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () async {
               final url = controller.text.trim();
@@ -279,9 +326,9 @@ class ConfigCard extends StatelessWidget {
               final error = await UrlValidator.validateWithDnsCheck(url);
               if (error != null) {
                 if (ctx.mounted) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(
-                    SnackBar(content: Text(error)),
-                  );
+                  ScaffoldMessenger.of(
+                    ctx,
+                  ).showSnackBar(SnackBar(content: Text(error)));
                 }
                 return;
               }
@@ -315,36 +362,54 @@ class ConfigCard extends StatelessWidget {
                   color: CandelaColors.bgTertiary,
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Text(config.remote ?? '',
-                    style: const TextStyle(
-                        fontSize: 12, fontFamily: 'SF Mono, monospace')),
+                child: Text(
+                  config.remote ?? '',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'SF Mono, monospace',
+                  ),
+                ),
               ),
               const SizedBox(height: 12),
-              const Row(children: [
-                Icon(Icons.warning_amber,
-                    size: 14, color: CandelaColors.warning),
-                SizedBox(width: 6),
-                Expanded(
+              const Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber,
+                    size: 14,
+                    color: CandelaColors.warning,
+                  ),
+                  SizedBox(width: 6),
+                  Expanded(
                     child: Text(
-                        'Traces and cost data will not be sent to the team dashboard.',
-                        style: TextStyle(
-                            fontSize: 12, color: CandelaColors.warning))),
-              ]),
+                      'Traces and cost data will not be sent to the team dashboard.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: CandelaColors.warning,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 8),
               const Text(
-                  'You can switch back anytime — the URL will be remembered.',
-                  style: TextStyle(
-                      fontSize: 12, color: CandelaColors.textSecondary)),
+                'You can switch back anytime — the URL will be remembered.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: CandelaColors.textSecondary,
+                ),
+              ),
             ],
           ),
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-                backgroundColor: CandelaColors.warning),
+              backgroundColor: CandelaColors.warning,
+            ),
             onPressed: () {
               Navigator.of(ctx).pop();
               onSwitchToSolo?.call();
@@ -356,8 +421,13 @@ class ConfigCard extends StatelessWidget {
     );
   }
 
-  Widget _portChip(BuildContext context, String label, String field, int port,
-      String tooltip) {
+  Widget _portChip(
+    BuildContext context,
+    String label,
+    String field,
+    int port,
+    String tooltip,
+  ) {
     return Tooltip(
       message: '$tooltip\nlocalhost:$port\nClick to edit',
       child: InkWell(
@@ -381,15 +451,21 @@ class ConfigCard extends StatelessWidget {
                 color: CandelaColors.textMuted,
               ),
               const SizedBox(width: 4),
-              Text('$label :$port',
-                  style: const TextStyle(
-                      fontSize: 11,
-                      fontFamily: 'SF Mono, monospace',
-                      color: CandelaColors.textSecondary)),
+              Text(
+                '$label :$port',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontFamily: 'SF Mono, monospace',
+                  color: CandelaColors.textSecondary,
+                ),
+              ),
               if (onPortChanged != null) ...[
                 const SizedBox(width: 4),
-                const Icon(Icons.edit,
-                    size: 10, color: CandelaColors.textMuted),
+                const Icon(
+                  Icons.edit,
+                  size: 10,
+                  color: CandelaColors.textMuted,
+                ),
               ],
             ],
           ),
@@ -399,7 +475,11 @@ class ConfigCard extends StatelessWidget {
   }
 
   void _showPortEditor(
-      BuildContext context, String label, String field, int currentPort) {
+    BuildContext context,
+    String label,
+    String field,
+    int currentPort,
+  ) {
     final controller = TextEditingController(text: '$currentPort');
     showDialog(
       context: context,
@@ -424,8 +504,9 @@ class ConfigCard extends StatelessWidget {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () {
               final port = int.tryParse(controller.text.trim());
@@ -462,36 +543,55 @@ class ConfigCard extends StatelessWidget {
 
           return AlertDialog(
             backgroundColor: CandelaColors.bgSecondary,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            titlePadding:
-                const EdgeInsets.only(left: 20, right: 20, top: 16, bottom: 8),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
-            actionsPadding:
-                const EdgeInsets.only(right: 16, bottom: 12, top: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            titlePadding: const EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 16,
+              bottom: 8,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 0,
+            ),
+            actionsPadding: const EdgeInsets.only(
+              right: 16,
+              bottom: 12,
+              top: 8,
+            ),
             title: Row(
               children: [
-                const Icon(Icons.edit_note,
-                    size: 20, color: CandelaColors.accent),
+                const Icon(
+                  Icons.edit_note,
+                  size: 20,
+                  color: CandelaColors.accent,
+                ),
                 const SizedBox(width: 8),
-                const Text('Edit Config',
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                const Text(
+                  'Edit Config',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
                 const Spacer(),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: CandelaColors.bgTertiary,
                     borderRadius: BorderRadius.circular(4),
                     border: Border.all(color: CandelaColors.borderSubtle),
                   ),
-                  child: Text(config.path.split('/').last,
-                      style: const TextStyle(
-                          fontSize: 11,
-                          fontFamily: 'JetBrains Mono, SF Mono, monospace',
-                          color: CandelaColors.textMuted)),
+                  child: Text(
+                    config.path.split('/').last,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontFamily: 'JetBrains Mono, SF Mono, monospace',
+                      color: CandelaColors.textMuted,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -506,9 +606,10 @@ class ConfigCard extends StatelessWidget {
                         color: const Color(0xFF0D1117),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                            color: errorText != null
-                                ? CandelaColors.error.withValues(alpha: 0.6)
-                                : CandelaColors.borderSubtle),
+                          color: errorText != null
+                              ? CandelaColors.error.withValues(alpha: 0.6)
+                              : CandelaColors.borderSubtle,
+                        ),
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
@@ -541,10 +642,7 @@ class ConfigCard extends StatelessWidget {
                               ),
                             ),
                             // Separator
-                            Container(
-                              width: 1,
-                              color: const Color(0xFF1C2333),
-                            ),
+                            Container(width: 1, color: const Color(0xFF1C2333)),
                             // Editor
                             Expanded(
                               child: TextField(
@@ -568,12 +666,14 @@ class ConfigCard extends StatelessWidget {
                                   hintText:
                                       '# Candela config\nport: 8181\nproviders:\n  - name: ollama\n    base_url: http://localhost:11434',
                                   hintStyle: TextStyle(
-                                      fontFamily:
-                                          'JetBrains Mono, SF Mono, monospace',
-                                      fontSize: 13,
-                                      height: 1.5,
-                                      color: CandelaColors.textMuted
-                                          .withValues(alpha: 0.3)),
+                                    fontFamily:
+                                        'JetBrains Mono, SF Mono, monospace',
+                                    fontSize: 13,
+                                    height: 1.5,
+                                    color: CandelaColors.textMuted.withValues(
+                                      alpha: 0.3,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
@@ -610,7 +710,9 @@ class ConfigCard extends StatelessWidget {
                       // Line count badge
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: CandelaColors.bgTertiary,
                           borderRadius: BorderRadius.circular(4),
@@ -618,7 +720,9 @@ class ConfigCard extends StatelessWidget {
                         child: Text(
                           '$lineCount lines',
                           style: const TextStyle(
-                              fontSize: 10, color: CandelaColors.textMuted),
+                            fontSize: 10,
+                            color: CandelaColors.textMuted,
+                          ),
                         ),
                       ),
                     ],

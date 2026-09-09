@@ -75,8 +75,9 @@ class _ModelBreakdownTableState extends State<ModelBreakdownTable> {
             Text(
               'No model data yet',
               style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: CandelaColors.textPrimary),
+                fontWeight: FontWeight.w600,
+                color: CandelaColors.textPrimary,
+              ),
             ),
             SizedBox(height: 6),
             Text(
@@ -114,8 +115,10 @@ class _ModelBreakdownTableState extends State<ModelBreakdownTable> {
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: CandelaColors.bgTertiary,
                     borderRadius: BorderRadius.circular(4),
@@ -123,7 +126,9 @@ class _ModelBreakdownTableState extends State<ModelBreakdownTable> {
                   child: Text(
                     '${sorted.length} model${sorted.length != 1 ? 's' : ''}',
                     style: const TextStyle(
-                        fontSize: 10, color: CandelaColors.textMuted),
+                      fontSize: 10,
+                      color: CandelaColors.textMuted,
+                    ),
                   ),
                 ),
               ],
@@ -137,14 +142,29 @@ class _ModelBreakdownTableState extends State<ModelBreakdownTable> {
             child: Row(
               children: [
                 const Expanded(flex: 3, child: SizedBox()),
-                _ColHeader('Calls', _SortCol.calls, _sortCol, _ascending,
-                    (c) => _setSort(c)),
+                _ColHeader(
+                  'Calls',
+                  _SortCol.calls,
+                  _sortCol,
+                  _ascending,
+                  (c) => _setSort(c),
+                ),
                 _ColHeader('Input', null, _sortCol, _ascending, null),
                 _ColHeader('Output', null, _sortCol, _ascending, null),
-                _ColHeader('Cost', _SortCol.cost, _sortCol, _ascending,
-                    (c) => _setSort(c)),
-                _ColHeader('Latency', _SortCol.latency, _sortCol, _ascending,
-                    (c) => _setSort(c)),
+                _ColHeader(
+                  'Cost',
+                  _SortCol.cost,
+                  _sortCol,
+                  _ascending,
+                  (c) => _setSort(c),
+                ),
+                _ColHeader(
+                  'Latency',
+                  _SortCol.latency,
+                  _sortCol,
+                  _ascending,
+                  (c) => _setSort(c),
+                ),
                 const SizedBox(width: 100),
               ],
             ),
@@ -179,7 +199,12 @@ class _ColHeader extends StatelessWidget {
   final void Function(_SortCol)? onSort;
 
   const _ColHeader(
-      this.label, this.col, this.activeCol, this.ascending, this.onSort);
+    this.label,
+    this.col,
+    this.activeCol,
+    this.ascending,
+    this.onSort,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -194,8 +219,9 @@ class _ColHeader extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color:
-                    isActive ? CandelaColors.accent : CandelaColors.textMuted,
+                color: isActive
+                    ? CandelaColors.accent
+                    : CandelaColors.textMuted,
                 letterSpacing: 0.4,
               ),
             ),
@@ -259,7 +285,9 @@ class _ModelRowState extends State<_ModelRow> {
                   Text(
                     m.provider,
                     style: const TextStyle(
-                        fontSize: 10, color: CandelaColors.textMuted),
+                      fontSize: 10,
+                      color: CandelaColors.textMuted,
+                    ),
                   ),
                 ],
               ),
@@ -272,13 +300,9 @@ class _ModelRowState extends State<_ModelRow> {
               ),
             ),
             // Input tokens
-            Expanded(
-              child: Text(_fmtTokens(m.inputTokens), style: _mono),
-            ),
+            Expanded(child: Text(_fmtTokens(m.inputTokens), style: _mono)),
             // Output tokens
-            Expanded(
-              child: Text(_fmtTokens(m.outputTokens), style: _mono),
-            ),
+            Expanded(child: Text(_fmtTokens(m.outputTokens), style: _mono)),
             // Cost
             Expanded(
               child: Text(

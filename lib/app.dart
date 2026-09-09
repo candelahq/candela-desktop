@@ -81,10 +81,7 @@ class _AppRouter extends ConsumerStatefulWidget {
   final ThemeMode themeMode;
   final ValueChanged<ThemeMode> onThemeModeChanged;
 
-  const _AppRouter({
-    required this.themeMode,
-    required this.onThemeModeChanged,
-  });
+  const _AppRouter({required this.themeMode, required this.onThemeModeChanged});
 
   @override
   ConsumerState<_AppRouter> createState() => _AppRouterState();
@@ -222,16 +219,14 @@ class _AppShellState extends ConsumerState<AppShell>
           content: Text(
             Platform.isMacOS
                 ? '🕯️ Candela is still running in your menu bar. '
-                    'Right-click the tray icon to quit.'
+                      'Right-click the tray icon to quit.'
                 : '🕯️ Candela is still running in the system tray. '
-                    'Right-click the tray icon to quit.',
+                      'Right-click the tray icon to quit.',
           ),
           duration: const Duration(seconds: 4),
           behavior: SnackBarBehavior.floating,
           backgroundColor: CandelaColors.bgTertiary,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       );
       // Small delay so the snackbar is visible before hiding.
@@ -247,18 +242,18 @@ class _AppShellState extends ConsumerState<AppShell>
   }
 
   List<Widget> get _pages => [
-        const TodayScreen(),
-        const AuthDebugScreen(),
-        const DashboardScreen(),
-        const TracesScreen(),
-        const SearchWebViewScreen(),
-        const ModelsScreen(),
-        const CatalogScreen(),
-        SettingsScreen(
-          currentThemeMode: widget.themeMode,
-          onThemeModeChanged: widget.onThemeModeChanged,
-        ),
-      ];
+    const TodayScreen(),
+    const AuthDebugScreen(),
+    const DashboardScreen(),
+    const TracesScreen(),
+    const SearchWebViewScreen(),
+    const ModelsScreen(),
+    const CatalogScreen(),
+    SettingsScreen(
+      currentThemeMode: widget.themeMode,
+      onThemeModeChanged: widget.onThemeModeChanged,
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {

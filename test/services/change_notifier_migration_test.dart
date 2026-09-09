@@ -90,8 +90,12 @@ void main() {
       expect(channel, svc.detectChannel()); // cached
       expect(
         channel,
-        anyOf(InstallChannel.direct, InstallChannel.homebrew,
-            InstallChannel.nix, InstallChannel.unknown),
+        anyOf(
+          InstallChannel.direct,
+          InstallChannel.homebrew,
+          InstallChannel.nix,
+          InstallChannel.unknown,
+        ),
       );
       svc.dispose();
     });
@@ -104,15 +108,17 @@ void main() {
       svc.dispose();
     });
 
-    test('concurrent checkForUpdate calls do not crash after dispose',
-        () async {
-      final svc = UpdateService();
-      // Start an async operation, then immediately dispose.
-      final future = svc.checkForUpdate('0.1.0');
-      svc.dispose();
+    test(
+      'concurrent checkForUpdate calls do not crash after dispose',
+      () async {
+        final svc = UpdateService();
+        // Start an async operation, then immediately dispose.
+        final future = svc.checkForUpdate('0.1.0');
+        svc.dispose();
 
-      // The future should complete without throwing.
-      await expectLater(future, completes);
-    });
+        // The future should complete without throwing.
+        await expectLater(future, completes);
+      },
+    );
   });
 }

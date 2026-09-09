@@ -64,7 +64,8 @@ class CliStatusBanner extends StatelessWidget {
     } else if (!isBrewAvailable && Platform.isMacOS) {
       bannerColor = CandelaColors.warning;
       icon = Icons.warning_amber_rounded;
-      message = 'Homebrew is required to install the Candela CLI. '
+      message =
+          'Homebrew is required to install the Candela CLI. '
           'Visit https://brew.sh to install it.';
       buttonLabel = null;
     } else if (!isInstalled) {
@@ -123,8 +124,10 @@ class CliStatusBanner extends StatelessWidget {
                 style: TextButton.styleFrom(
                   backgroundColor: bannerColor.withAlpha(30),
                   foregroundColor: bannerColor,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(6),
                   ),

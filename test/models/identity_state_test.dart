@@ -22,9 +22,7 @@ void main() {
     test('returns false when token is expired', () {
       final state = IdentityState(
         email: 'user@corp.com',
-        tokenInfo: TokenInfo(
-          expiresAt: _farPast,
-        ),
+        tokenInfo: TokenInfo(expiresAt: _farPast),
       );
       expect(state.isAuthenticated, isFalse);
     });
@@ -32,9 +30,7 @@ void main() {
     test('returns true when email present and token valid', () {
       final state = IdentityState(
         email: 'user@corp.com',
-        tokenInfo: TokenInfo(
-          expiresAt: _farFuture,
-        ),
+        tokenInfo: TokenInfo(expiresAt: _farFuture),
       );
       expect(state.isAuthenticated, isTrue);
     });
@@ -85,34 +81,36 @@ void main() {
       expect(adc.isServiceAccount, isFalse);
     });
 
-    test('canDirectRefresh requires user credentials with all OAuth2 fields',
-        () {
-      const withAll = AdcInfo(
-        path: '/p',
-        type: 'authorized_user',
-        clientId: 'cid',
-        clientSecret: 'csecret',
-        refreshToken: 'rtoken',
-      );
-      expect(withAll.canDirectRefresh, isTrue);
+    test(
+      'canDirectRefresh requires user credentials with all OAuth2 fields',
+      () {
+        const withAll = AdcInfo(
+          path: '/p',
+          type: 'authorized_user',
+          clientId: 'cid',
+          clientSecret: 'csecret',
+          refreshToken: 'rtoken',
+        );
+        expect(withAll.canDirectRefresh, isTrue);
 
-      const withoutSecret = AdcInfo(
-        path: '/p',
-        type: 'authorized_user',
-        clientId: 'cid',
-        refreshToken: 'rtoken',
-      );
-      expect(withoutSecret.canDirectRefresh, isFalse);
+        const withoutSecret = AdcInfo(
+          path: '/p',
+          type: 'authorized_user',
+          clientId: 'cid',
+          refreshToken: 'rtoken',
+        );
+        expect(withoutSecret.canDirectRefresh, isFalse);
 
-      const saWithAll = AdcInfo(
-        path: '/p',
-        type: 'service_account',
-        clientId: 'cid',
-        clientSecret: 'csecret',
-        refreshToken: 'rtoken',
-      );
-      expect(saWithAll.canDirectRefresh, isFalse);
-    });
+        const saWithAll = AdcInfo(
+          path: '/p',
+          type: 'service_account',
+          clientId: 'cid',
+          clientSecret: 'csecret',
+          refreshToken: 'rtoken',
+        );
+        expect(saWithAll.canDirectRefresh, isFalse);
+      },
+    );
 
     test('displayType returns human-readable type', () {
       const sa = AdcInfo(path: '/p', type: 'service_account');

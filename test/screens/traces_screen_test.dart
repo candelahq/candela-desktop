@@ -13,48 +13,54 @@ SpanRecord _span({
   double duration = 500,
   DateTime? ts,
   String? spanId,
-}) =>
-    SpanRecord(
-      traceId: 'trace-1',
-      spanId: spanId ?? 'span-${model.hashCode}',
-      name: 'chat',
-      model: model,
-      provider: provider,
-      status: status,
-      inputTokens: input,
-      outputTokens: output,
-      totalTokens: input + output,
-      costUsd: cost,
-      durationMs: duration,
-      timestamp: ts ?? DateTime(2025, 1, 1),
-    );
+}) => SpanRecord(
+  traceId: 'trace-1',
+  spanId: spanId ?? 'span-${model.hashCode}',
+  name: 'chat',
+  model: model,
+  provider: provider,
+  status: status,
+  inputTokens: input,
+  outputTokens: output,
+  totalTokens: input + output,
+  costUsd: cost,
+  durationMs: duration,
+  timestamp: ts ?? DateTime(2025, 1, 1),
+);
 
 void main() {
   group('Trace filtering', () {
     final spans = [
       _span(model: 'gpt-4', provider: 'openai', status: 'ok', spanId: 's1'),
       _span(
-          model: 'claude-3',
-          provider: 'anthropic',
-          status: 'error',
-          spanId: 's2'),
+        model: 'claude-3',
+        provider: 'anthropic',
+        status: 'error',
+        spanId: 's2',
+      ),
       _span(model: 'gpt-4', provider: 'openai', status: 'ok', spanId: 's3'),
       _span(
-          model: 'gemini-pro', provider: 'google', status: 'ok', spanId: 's4'),
+        model: 'gemini-pro',
+        provider: 'google',
+        status: 'ok',
+        spanId: 's4',
+      ),
     ];
 
     test('search by model name', () {
       final q = 'claude';
-      final result =
-          spans.where((s) => s.model.toLowerCase().contains(q)).toList();
+      final result = spans
+          .where((s) => s.model.toLowerCase().contains(q))
+          .toList();
       expect(result.length, 1);
       expect(result.first.model, 'claude-3');
     });
 
     test('search by provider', () {
       final q = 'anthropic';
-      final result =
-          spans.where((s) => s.provider.toLowerCase().contains(q)).toList();
+      final result = spans
+          .where((s) => s.provider.toLowerCase().contains(q))
+          .toList();
       expect(result.length, 1);
     });
 
@@ -80,22 +86,25 @@ void main() {
 
     test('search with no matches returns empty', () {
       final q = 'nonexistent';
-      final result =
-          spans.where((s) => s.model.toLowerCase().contains(q)).toList();
+      final result = spans
+          .where((s) => s.model.toLowerCase().contains(q))
+          .toList();
       expect(result, isEmpty);
     });
 
     test('search by trace ID', () {
       final q = 'trace-1';
-      final result =
-          spans.where((s) => s.traceId.toLowerCase().contains(q)).toList();
+      final result = spans
+          .where((s) => s.traceId.toLowerCase().contains(q))
+          .toList();
       expect(result.length, 4);
     });
 
     test('search by span ID', () {
       final q = 's2';
-      final result =
-          spans.where((s) => s.spanId.toLowerCase().contains(q)).toList();
+      final result = spans
+          .where((s) => s.spanId.toLowerCase().contains(q))
+          .toList();
       expect(result.length, 1);
     });
 
@@ -111,29 +120,32 @@ void main() {
   group('Trace sorting', () {
     final spans = [
       _span(
-          model: 'a',
-          cost: 0.05,
-          duration: 100,
-          input: 500,
-          output: 200,
-          ts: DateTime(2025, 1, 3),
-          spanId: 'sa'),
+        model: 'a',
+        cost: 0.05,
+        duration: 100,
+        input: 500,
+        output: 200,
+        ts: DateTime(2025, 1, 3),
+        spanId: 'sa',
+      ),
       _span(
-          model: 'c',
-          cost: 0.01,
-          duration: 300,
-          input: 100,
-          output: 50,
-          ts: DateTime(2025, 1, 1),
-          spanId: 'sc'),
+        model: 'c',
+        cost: 0.01,
+        duration: 300,
+        input: 100,
+        output: 50,
+        ts: DateTime(2025, 1, 1),
+        spanId: 'sc',
+      ),
       _span(
-          model: 'b',
-          cost: 0.10,
-          duration: 200,
-          input: 300,
-          output: 100,
-          ts: DateTime(2025, 1, 2),
-          spanId: 'sb'),
+        model: 'b',
+        cost: 0.10,
+        duration: 200,
+        input: 300,
+        output: 100,
+        ts: DateTime(2025, 1, 2),
+        spanId: 'sb',
+      ),
     ];
 
     test('sort by timestamp descending', () {

@@ -112,8 +112,8 @@ class DashboardController {
     TelemetryService? telemetry,
     CandelaAuthService? candelaAuth,
     this.cacheTtl = const Duration(seconds: 50),
-  })  : _telemetry = telemetry,
-        _candelaAuth = candelaAuth ?? CandelaAuthService();
+  }) : _telemetry = telemetry,
+       _candelaAuth = candelaAuth ?? CandelaAuthService();
 
   // ── Configuration ─────────────────────────────────────────────────────────
 
@@ -127,7 +127,8 @@ class DashboardController {
   /// catch-all route. The desktop app does NOT need to manage IAP tokens
   /// for dashboard requests — it simply points ConnectRPC at the proxy.
   Future<void> configure(CandelaConfig config) async {
-    final isTeam = config.mode == CandelaMode.team &&
+    final isTeam =
+        config.mode == CandelaMode.team &&
         config.remote != null &&
         config.remote!.isNotEmpty;
 
@@ -200,19 +201,14 @@ class DashboardController {
     state = state.copyWith(loading: true, clearError: true);
 
     try {
-      final result =
-          await _telemetry!.fetch(state.range, userScope: state.userScope);
+      final result = await _telemetry!.fetch(
+        state.range,
+        userScope: state.userScope,
+      );
       _lastFetchAt = DateTime.now().toUtc();
-      state = state.copyWith(
-        result: result,
-        loading: false,
-        clearError: true,
-      );
+      state = state.copyWith(result: result, loading: false, clearError: true);
     } catch (e) {
-      state = state.copyWith(
-        loading: false,
-        errorMessage: e.toString(),
-      );
+      state = state.copyWith(loading: false, errorMessage: e.toString());
     }
   }
 
@@ -247,8 +243,9 @@ class DashboardController {
   UsageSummary? buildFilteredSummary(String? selectedModel) {
     if (_telemetry == null || state.result == null) return null;
     if (selectedModel == null) return state.summary;
-    final filtered =
-        state.spans.where((s) => s.model == selectedModel).toList();
+    final filtered = state.spans
+        .where((s) => s.model == selectedModel)
+        .toList();
     if (filtered.isEmpty) return null;
     return _telemetry!.buildSummary(filtered, state.range, DateTime.now());
   }

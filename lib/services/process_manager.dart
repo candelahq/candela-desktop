@@ -16,7 +16,7 @@ enum ProcessState {
   running,
   stopping,
   error,
-  notInstalled
+  notInstalled,
 }
 
 /// An immutable snapshot of a locally managed process (Ollama, vLLM, LM Studio, Proxy).
@@ -149,9 +149,7 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
   }) {
     // Build the set of names that should remain after reconfiguration.
     final desiredNames = {'proxy', ...providerNames};
-    final existingByName = {
-      for (final p in state.processes) p.name: p,
-    };
+    final existingByName = {for (final p in state.processes) p.name: p};
 
     // Kill handles and cancel timers for processes being removed.
     for (final name in existingByName.keys) {
@@ -169,16 +167,16 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
     // Proxy is always managed — preserve existing state if present.
     final existingProxy = existingByName['proxy'];
     if (existingProxy != null) {
-      newProcesses.add(existingProxy.copyWith(
-        port: () => proxyPort ?? '8181',
-      ));
+      newProcesses.add(existingProxy.copyWith(port: () => proxyPort ?? '8181'));
     } else {
-      newProcesses.add(ManagedProcess(
-        name: 'proxy',
-        displayName: 'Candela Proxy',
-        icon: '🕯️',
-        port: proxyPort ?? '8181',
-      ));
+      newProcesses.add(
+        ManagedProcess(
+          name: 'proxy',
+          displayName: 'Candela Proxy',
+          icon: '🕯️',
+          port: proxyPort ?? '8181',
+        ),
+      );
     }
 
     // Add local providers — preserve existing state when available.
@@ -206,26 +204,26 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
   }
 
   static ManagedProcess? _runtimeInfo(String name) => switch (name) {
-        'ollama' => const ManagedProcess(
-            name: 'ollama',
-            displayName: 'Ollama',
-            icon: '🦙',
-            port: '11434',
-          ),
-        'vllm' => const ManagedProcess(
-            name: 'vllm',
-            displayName: 'vLLM',
-            icon: 'V',
-            port: '8000',
-          ),
-        'lmstudio' => const ManagedProcess(
-            name: 'lmstudio',
-            displayName: 'LM Studio',
-            icon: 'L',
-            port: '1234',
-          ),
-        _ => null,
-      };
+    'ollama' => const ManagedProcess(
+      name: 'ollama',
+      displayName: 'Ollama',
+      icon: '🦙',
+      port: '11434',
+    ),
+    'vllm' => const ManagedProcess(
+      name: 'vllm',
+      displayName: 'vLLM',
+      icon: 'V',
+      port: '8000',
+    ),
+    'lmstudio' => const ManagedProcess(
+      name: 'lmstudio',
+      displayName: 'LM Studio',
+      icon: 'L',
+      port: '1234',
+    ),
+    _ => null,
+  };
 
   /// Check if a binary is installed.
   Future<bool> isInstalled(String name) async {
@@ -261,10 +259,9 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
     for (var i = 0; i < processes.length; i++) {
       final p = processes[i];
       if (results[i].healthy) {
-        updated.add(p.copyWith(
-          state: ProcessState.running,
-          pid: () => results[i].pid,
-        ));
+        updated.add(
+          p.copyWith(state: ProcessState.running, pid: () => results[i].pid),
+        );
         _startHealthPolling(p.name);
       } else if (!results[i].installed) {
         updated.add(p.copyWith(state: ProcessState.notInstalled));
@@ -286,20 +283,19 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
 
     if (!await isInstalled(name)) {
       _updateProcess(
-          name,
-          (p) => p.copyWith(
-                state: ProcessState.notInstalled,
-                errorMessage: () => '$binary not found in PATH',
-              ));
+        name,
+        (p) => p.copyWith(
+          state: ProcessState.notInstalled,
+          errorMessage: () => '$binary not found in PATH',
+        ),
+      );
       return;
     }
 
     _updateProcess(
-        name,
-        (p) => p.copyWith(
-              state: ProcessState.starting,
-              errorMessage: () => null,
-            ));
+      name,
+      (p) => p.copyWith(state: ProcessState.starting, errorMessage: () => null),
+    );
     _logBuffers[name] = [];
 
     try {
@@ -354,20 +350,21 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
 
       if (healthy) {
         _updateProcess(
-            name,
-            (p) => p.copyWith(
-                  state: ProcessState.running,
-                  startedAt: () => DateTime.now(),
-                ));
+          name,
+          (p) => p.copyWith(
+            state: ProcessState.running,
+            startedAt: () => DateTime.now(),
+          ),
+        );
         _startHealthPolling(name);
       } else {
         _updateProcess(
-            name,
-            (p) => p.copyWith(
-                  state: ProcessState.error,
-                  errorMessage: () =>
-                      'Started but health check failed after 15s',
-                ));
+          name,
+          (p) => p.copyWith(
+            state: ProcessState.error,
+            errorMessage: () => 'Started but health check failed after 15s',
+          ),
+        );
       }
 
       // Handle unexpected exit.
@@ -376,22 +373,24 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
         if (currentState == ProcessState.running ||
             currentState == ProcessState.starting) {
           _updateProcess(
-              name,
-              (p) => p.copyWith(
-                    state: ProcessState.error,
-                    errorMessage: () => 'Process exited with code $code',
-                  ));
+            name,
+            (p) => p.copyWith(
+              state: ProcessState.error,
+              errorMessage: () => 'Process exited with code $code',
+            ),
+          );
           _handles.remove(name);
           _healthTimers[name]?.cancel();
         }
       });
     } catch (e) {
       _updateProcess(
-          name,
-          (p) => p.copyWith(
-                state: ProcessState.error,
-                errorMessage: () => e.toString(),
-              ));
+        name,
+        (p) => p.copyWith(
+          state: ProcessState.error,
+          errorMessage: () => e.toString(),
+        ),
+      );
     }
   }
 
@@ -444,12 +443,13 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
     }
 
     _updateProcess(
-        name,
-        (p) => p.copyWith(
-              state: ProcessState.stopped,
-              pid: () => null,
-              startedAt: () => null,
-            ));
+      name,
+      (p) => p.copyWith(
+        state: ProcessState.stopped,
+        pid: () => null,
+        startedAt: () => null,
+      ),
+    );
   }
 
   /// Restart a process.
@@ -484,7 +484,9 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
 
   /// Update a single process in state by name.
   void _updateProcess(
-      String name, ManagedProcess Function(ManagedProcess) updater) {
+    String name,
+    ManagedProcess Function(ManagedProcess) updater,
+  ) {
     state = state.copyWith(
       processes: [
         for (final p in state.processes)
@@ -531,8 +533,12 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
   Future<void> _forceKillTree(int targetPid) async {
     if (Platform.isWindows) {
       try {
-        final result =
-            await _runner.run('taskkill', ['/T', '/F', '/PID', '$targetPid']);
+        final result = await _runner.run('taskkill', [
+          '/T',
+          '/F',
+          '/PID',
+          '$targetPid',
+        ]);
         if (result.exitCode != 0) {
           // taskkill returned non-zero (e.g. PID not found) — fallback.
           Process.killPid(targetPid);
@@ -547,19 +553,19 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
   }
 
   String? _binaryName(String name) => switch (name) {
-        'ollama' => 'ollama',
-        'proxy' => 'candela',
-        'vllm' => 'vllm',
-        'lmstudio' => null, // LM Studio is a GUI app, can't start from CLI
-        _ => null,
-      };
+    'ollama' => 'ollama',
+    'proxy' => 'candela',
+    'vllm' => 'vllm',
+    'lmstudio' => null, // LM Studio is a GUI app, can't start from CLI
+    _ => null,
+  };
 
   List<String> _binaryArgs(String name) => switch (name) {
-        'ollama' => ['serve'],
-        'proxy' => ['run'], // `candela run` = foreground mode
-        'vllm' => ['serve'],
-        _ => [],
-      };
+    'ollama' => ['serve'],
+    'proxy' => ['run'], // `candela run` = foreground mode
+    'vllm' => ['serve'],
+    _ => [],
+  };
 
   /// Build the environment map for a process. Starts with the augmented
   /// PATH (so gcloud, candela, etc. are discoverable) and merges any
@@ -575,8 +581,8 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
     }
     final overrides = switch (name) {
       'ollama' => {
-          'OLLAMA_HOST': '0.0.0.0:${state.get('ollama')?.port ?? '11434'}',
-        },
+        'OLLAMA_HOST': '0.0.0.0:${state.get('ollama')?.port ?? '11434'}',
+      },
       _ => <String, String>{},
     };
     return {...base, ...overrides};
@@ -586,8 +592,9 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
     final url = _healthUrl(name);
     if (url == null) return false;
     try {
-      final resp =
-          await _client.get(Uri.parse(url)).timeout(const Duration(seconds: 2));
+      final resp = await _client
+          .get(Uri.parse(url))
+          .timeout(const Duration(seconds: 2));
       return resp.statusCode == 200;
     } catch (_) {
       return false;
@@ -626,18 +633,18 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
       if (healthy && current.state == ProcessState.error) {
         // Recovered from transient failure.
         _updateProcess(
-            name,
-            (p) => p.copyWith(
-                  state: ProcessState.running,
-                  errorMessage: () => null,
-                ));
+          name,
+          (p) =>
+              p.copyWith(state: ProcessState.running, errorMessage: () => null),
+        );
       } else if (!healthy && current.state == ProcessState.running) {
         _updateProcess(
-            name,
-            (p) => p.copyWith(
-                  state: ProcessState.error,
-                  errorMessage: () => 'Health check failed',
-                ));
+          name,
+          (p) => p.copyWith(
+            state: ProcessState.error,
+            errorMessage: () => 'Health check failed',
+          ),
+        );
       }
     });
   }
@@ -692,10 +699,9 @@ class ProcessManagerNotifier extends _$ProcessManagerNotifier {
   ///   TCP    0.0.0.0:8080           0.0.0.0:0              LISTENING       1234
   Future<int?> _findPidForPortWindows(int port) async {
     try {
-      final result = await _runner.run(
-        'netstat',
-        ['-ano'],
-      ).timeout(const Duration(seconds: 3));
+      final result = await _runner
+          .run('netstat', ['-ano'])
+          .timeout(const Duration(seconds: 3));
       if (result.exitCode != 0) return null;
 
       final portSuffix = ':$port';

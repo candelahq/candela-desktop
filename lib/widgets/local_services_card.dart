@@ -29,8 +29,11 @@ class LocalServicesCard extends ConsumerWidget {
         children: [
           const Row(
             children: [
-              Icon(Icons.router_outlined,
-                  size: 16, color: CandelaColors.textMuted),
+              Icon(
+                Icons.router_outlined,
+                size: 16,
+                color: CandelaColors.textMuted,
+              ),
               SizedBox(width: 8),
               Text(
                 'Local Services',
@@ -76,7 +79,8 @@ class _ProcessRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isRunning = process.state == ProcessState.running;
     final isError = process.state == ProcessState.error;
-    final isWorking = process.state == ProcessState.starting ||
+    final isWorking =
+        process.state == ProcessState.starting ||
         process.state == ProcessState.stopping ||
         process.state == ProcessState.detecting;
     final notInstalled = process.state == ProcessState.notInstalled;
@@ -92,10 +96,7 @@ class _ProcessRow extends StatelessWidget {
             border: Border.all(color: CandelaColors.border),
           ),
           child: Center(
-            child: Text(
-              process.icon,
-              style: const TextStyle(fontSize: 16),
-            ),
+            child: Text(process.icon, style: const TextStyle(fontSize: 16)),
           ),
         ),
         const SizedBox(width: 12),
@@ -148,8 +149,11 @@ class _ProcessRow extends StatelessWidget {
                 Row(
                   children: [
                     if (process.port != null) ...[
-                      const Icon(Icons.cable,
-                          size: 10, color: CandelaColors.textMuted),
+                      const Icon(
+                        Icons.cable,
+                        size: 10,
+                        color: CandelaColors.textMuted,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         ':${process.port}',
@@ -162,8 +166,11 @@ class _ProcessRow extends StatelessWidget {
                       const SizedBox(width: 12),
                     ],
                     if (process.uptime != null) ...[
-                      const Icon(Icons.schedule,
-                          size: 10, color: CandelaColors.textMuted),
+                      const Icon(
+                        Icons.schedule,
+                        size: 10,
+                        color: CandelaColors.textMuted,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         process.uptimeString,

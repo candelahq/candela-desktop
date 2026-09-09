@@ -73,19 +73,21 @@ void main() {
         expect(version, '1.2.0');
       });
 
-      test('extracts latest stable version from formulae[0].versions.stable',
-          () {
-        final json = _makeBrewInfoJson(
-          installedVersions: ['1.0.0'],
-          stableVersion: '2.0.0',
-        );
+      test(
+        'extracts latest stable version from formulae[0].versions.stable',
+        () {
+          final json = _makeBrewInfoJson(
+            installedVersions: ['1.0.0'],
+            stableVersion: '2.0.0',
+          );
 
-        final formulae = json['formulae'] as List;
-        final versions = formulae[0]['versions'] as Map<String, dynamic>;
-        final stable = versions['stable'] as String;
+          final formulae = json['formulae'] as List;
+          final versions = formulae[0]['versions'] as Map<String, dynamic>;
+          final stable = versions['stable'] as String;
 
-        expect(stable, '2.0.0');
-      });
+          expect(stable, '2.0.0');
+        },
+      );
 
       test('handles empty installed list', () {
         final json = _makeBrewInfoJson(
@@ -103,10 +105,7 @@ void main() {
         final json = <String, dynamic>{
           'formulae': <dynamic>[],
           'casks': [
-            {
-              'installed': '3.5.0',
-              'version': '4.0.0',
-            }
+            {'installed': '3.5.0', 'version': '4.0.0'},
           ],
         };
 
@@ -124,16 +123,13 @@ void main() {
           'formulae': [
             {
               'installed': [
-                {'version': '1.0.0'}
+                {'version': '1.0.0'},
               ],
               'versions': {'stable': '1.1.0'},
-            }
+            },
           ],
           'casks': [
-            {
-              'installed': '2.0.0',
-              'version': '2.1.0',
-            }
+            {'installed': '2.0.0', 'version': '2.1.0'},
           ],
         };
 
@@ -153,8 +149,9 @@ void main() {
         );
 
         // Replicate the formulaVersions parsing logic.
-        final (installed, latest) =
-            BrewService.parseFormulaVersionsFromJson(json);
+        final (installed, latest) = BrewService.parseFormulaVersionsFromJson(
+          json,
+        );
 
         expect(installed, '0.2.0');
         expect(latest, '0.3.0');
@@ -166,8 +163,9 @@ void main() {
           'casks': <dynamic>[],
         };
 
-        final (installed, latest) =
-            BrewService.parseFormulaVersionsFromJson(json);
+        final (installed, latest) = BrewService.parseFormulaVersionsFromJson(
+          json,
+        );
 
         expect(installed, isNull);
         expect(latest, isNull);
@@ -177,15 +175,13 @@ void main() {
         final json = <String, dynamic>{
           'formulae': <dynamic>[],
           'casks': [
-            {
-              'installed': '5.0.0',
-              'version': '5.1.0',
-            }
+            {'installed': '5.0.0', 'version': '5.1.0'},
           ],
         };
 
-        final (installed, latest) =
-            BrewService.parseFormulaVersionsFromJson(json);
+        final (installed, latest) = BrewService.parseFormulaVersionsFromJson(
+          json,
+        );
 
         expect(installed, '5.0.0');
         expect(latest, '5.1.0');
@@ -197,8 +193,9 @@ void main() {
           stableVersion: '1.0.0',
         );
 
-        final (installed, latest) =
-            BrewService.parseFormulaVersionsFromJson(json);
+        final (installed, latest) = BrewService.parseFormulaVersionsFromJson(
+          json,
+        );
 
         expect(installed, isNull);
         expect(latest, '1.0.0');
@@ -209,16 +206,17 @@ void main() {
           'formulae': [
             {
               'installed': [
-                {'version': '1.0.0'}
+                {'version': '1.0.0'},
               ],
               // No 'versions' key.
-            }
+            },
           ],
           'casks': <dynamic>[],
         };
 
-        final (installed, latest) =
-            BrewService.parseFormulaVersionsFromJson(json);
+        final (installed, latest) = BrewService.parseFormulaVersionsFromJson(
+          json,
+        );
 
         expect(installed, '1.0.0');
         expect(latest, isNull);
@@ -239,10 +237,7 @@ void main() {
 
         final formulae = deserialized['formulae'] as List;
         expect(formulae.isNotEmpty, isTrue);
-        expect(
-          (formulae[0]['installed'] as List).first['version'],
-          '1.0.0',
-        );
+        expect((formulae[0]['installed'] as List).first['version'], '1.0.0');
       });
     });
 

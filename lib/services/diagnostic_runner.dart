@@ -38,11 +38,11 @@ class DiagnosticRunner {
     AdcService? adc,
     ProviderTestService? providers,
     http.Client? client,
-  })  : _config = config,
-        _candelaAuth = candelaAuth ?? CandelaAuthService(client: client),
-        _adc = adc ?? AdcService(client: client),
-        _providers = providers ?? ProviderTestService(),
-        _client = client ?? http.Client();
+  }) : _config = config,
+       _candelaAuth = candelaAuth ?? CandelaAuthService(client: client),
+       _adc = adc ?? AdcService(client: client),
+       _providers = providers ?? ProviderTestService(),
+       _client = client ?? http.Client();
 
   /// Run all diagnostic checks. Returns summary when complete.
   /// Rejects concurrent runs by returning the in-flight future.
@@ -84,10 +84,11 @@ class DiagnosticRunner {
       passed++;
     } else {
       _emit(
-          Platform.isMacOS
-              ? 'Candela CLI not found — install via: brew install candelahq/tap/candela'
-              : 'Candela CLI not found — download from github.com/candelahq/candela/releases',
-          DiagnosticStatus.warn);
+        Platform.isMacOS
+            ? 'Candela CLI not found — install via: brew install candelahq/tap/candela'
+            : 'Candela CLI not found — download from github.com/candelahq/candela/releases',
+        DiagnosticStatus.warn,
+      );
       warned++;
       // NOT a gate — diagnostics continue regardless.
     }
@@ -96,8 +97,9 @@ class DiagnosticRunner {
     _emit('Reading config file...', DiagnosticStatus.running);
     final config = await _config.load();
     if (config.issues.any((i) => i.severity == IssueSeverity.error)) {
-      for (final issue
-          in config.issues.where((i) => i.severity == IssueSeverity.error)) {
+      for (final issue in config.issues.where(
+        (i) => i.severity == IssueSeverity.error,
+      )) {
         _emit('Config: ${issue.message}', DiagnosticStatus.fail);
         failed++;
       }
@@ -108,10 +110,13 @@ class DiagnosticRunner {
         CandelaMode.team => 'Team Mode',
       };
       _emit(
-          'Config loaded ($modeLabel) — ${config.path}', DiagnosticStatus.pass);
+        'Config loaded ($modeLabel) — ${config.path}',
+        DiagnosticStatus.pass,
+      );
       passed++;
-      for (final issue
-          in config.issues.where((i) => i.severity == IssueSeverity.warning)) {
+      for (final issue in config.issues.where(
+        (i) => i.severity == IssueSeverity.warning,
+      )) {
         _emit('Config: ${issue.message}', DiagnosticStatus.warn);
         warned++;
       }
@@ -121,17 +126,23 @@ class DiagnosticRunner {
     if (_disposed) {
       return DiagnosticSummary(passed: passed, failed: failed, warned: warned);
     }
-    _emit('Checking Application Default Credentials...',
-        DiagnosticStatus.running);
+    _emit(
+      'Checking Application Default Credentials...',
+      DiagnosticStatus.running,
+    );
     final adc = await _adc.readAdcFile();
     if (adc == null) {
-      _emit('No ADC found', DiagnosticStatus.fail,
-          fixCommand: 'candela auth login');
+      _emit(
+        'No ADC found',
+        DiagnosticStatus.fail,
+        fixCommand: 'candela auth login',
+      );
       failed++;
     } else {
       _emit(
-          'ADC: ${adc.displayType}${adc.clientEmail != null ? ' (${adc.clientEmail})' : ''}',
-          DiagnosticStatus.pass);
+        'ADC: ${adc.displayType}${adc.clientEmail != null ? ' (${adc.clientEmail})' : ''}',
+        DiagnosticStatus.pass,
+      );
       passed++;
     }
 
@@ -139,10 +150,11 @@ class DiagnosticRunner {
     final credOverride = await _candelaAuth.detectCredentialOverride();
     if (credOverride != null) {
       _emit(
-          'GOOGLE_APPLICATION_CREDENTIALS is set: ${credOverride.path} — '
-          'client libraries may use different credentials than ADC. '
-          'Run "unset GOOGLE_APPLICATION_CREDENTIALS" to clear.',
-          DiagnosticStatus.warn);
+        'GOOGLE_APPLICATION_CREDENTIALS is set: ${credOverride.path} — '
+        'client libraries may use different credentials than ADC. '
+        'Run "unset GOOGLE_APPLICATION_CREDENTIALS" to clear.',
+        DiagnosticStatus.warn,
+      );
       warned++;
     }
 
@@ -154,16 +166,24 @@ class DiagnosticRunner {
     final token = await _adc.refreshAccessToken(adcInfo: adc);
     String? accessTokenStr;
     if (token == null) {
-      _emit('Could not acquire token', DiagnosticStatus.fail,
-          fixCommand: 'candela auth login');
+      _emit(
+        'Could not acquire token',
+        DiagnosticStatus.fail,
+        fixCommand: 'candela auth login',
+      );
       failed++;
     } else if (!token.isValid) {
-      _emit('Token expired', DiagnosticStatus.fail,
-          fixCommand: 'candela auth login');
+      _emit(
+        'Token expired',
+        DiagnosticStatus.fail,
+        fixCommand: 'candela auth login',
+      );
       failed++;
     } else {
-      _emit('Token valid (expires in ${token.expiryDisplay})',
-          DiagnosticStatus.pass);
+      _emit(
+        'Token valid (expires in ${token.expiryDisplay})',
+        DiagnosticStatus.pass,
+      );
       passed++;
       accessTokenStr = token.accessToken;
     }
@@ -174,7 +194,10 @@ class DiagnosticRunner {
         config.remote!.isNotEmpty) {
       if (_disposed) {
         return DiagnosticSummary(
-            passed: passed, failed: failed, warned: warned);
+          passed: passed,
+          failed: failed,
+          warned: warned,
+        );
       }
 
       // Test audience-specific ID token if configured.
@@ -183,19 +206,24 @@ class DiagnosticRunner {
           config.iapServiceAccount != null &&
           config.iapServiceAccount!.isNotEmpty &&
           adc != null) {
-        _emit('Validating team auth (ID token for ${config.audience})...',
-            DiagnosticStatus.running);
+        _emit(
+          'Validating team auth (ID token for ${config.audience})...',
+          DiagnosticStatus.running,
+        );
         final idToken = await _candelaAuth.getIdToken(
           audience: config.audience!,
           serviceAccount: config.iapServiceAccount!,
         );
         if (idToken == null) {
-          _emit('Could not acquire ID token for team backend',
-              DiagnosticStatus.fail,
-              detail: 'IAM generateIdToken failed. Ensure you have '
-                  'roles/iam.serviceAccountTokenCreator on '
-                  '${config.iapServiceAccount}.',
-              fixCommand: 'candela auth login');
+          _emit(
+            'Could not acquire ID token for team backend',
+            DiagnosticStatus.fail,
+            detail:
+                'IAM generateIdToken failed. Ensure you have '
+                'roles/iam.serviceAccountTokenCreator on '
+                '${config.iapServiceAccount}.',
+            fixCommand: 'candela auth login',
+          );
           failed++;
         } else {
           _emit('Team auth: ID token acquired', DiagnosticStatus.pass);
@@ -204,25 +232,35 @@ class DiagnosticRunner {
       }
 
       // Test connectivity to the remote backend.
-      _emit('Testing team backend (${config.remote})...',
-          DiagnosticStatus.running);
+      _emit(
+        'Testing team backend (${config.remote})...',
+        DiagnosticStatus.running,
+      );
       try {
         final uri = Uri.parse(config.remote!);
         final healthUri = uri.replace(path: '/healthz');
-        final resp =
-            await _client.get(healthUri).timeout(const Duration(seconds: 5));
+        final resp = await _client
+            .get(healthUri)
+            .timeout(const Duration(seconds: 5));
         if (resp.statusCode == 200 || resp.statusCode == 204) {
           _emit('Team backend: Reachable', DiagnosticStatus.pass);
           passed++;
         } else {
-          _emit('Team backend: HTTP ${resp.statusCode}', DiagnosticStatus.warn,
-              detail: 'Backend responded but health check returned '
-                  '${resp.statusCode}');
+          _emit(
+            'Team backend: HTTP ${resp.statusCode}',
+            DiagnosticStatus.warn,
+            detail:
+                'Backend responded but health check returned '
+                '${resp.statusCode}',
+          );
           warned++;
         }
       } catch (e) {
-        _emit('Team backend: Unreachable', DiagnosticStatus.fail,
-            detail: 'Could not connect to ${config.remote}');
+        _emit(
+          'Team backend: Unreachable',
+          DiagnosticStatus.fail,
+          detail: 'Could not connect to ${config.remote}',
+        );
         failed++;
       }
     }
@@ -237,9 +275,12 @@ class DiagnosticRunner {
       _emit('Project: $project', DiagnosticStatus.pass);
       passed++;
     } else {
-      _emit('No GCP project configured', DiagnosticStatus.warn,
-          detail:
-              'Set vertex_ai.project in ~/.candela/config.yaml or quota_project_id in ADC');
+      _emit(
+        'No GCP project configured',
+        DiagnosticStatus.warn,
+        detail:
+            'Set vertex_ai.project in ~/.candela/config.yaml or quota_project_id in ADC',
+      );
       warned++;
     }
 
@@ -250,15 +291,22 @@ class DiagnosticRunner {
 
     // Always test the proxy.
     _emit(
-        'Testing Candela Proxy (:${config.port})...', DiagnosticStatus.running);
+      'Testing Candela Proxy (:${config.port})...',
+      DiagnosticStatus.running,
+    );
     final proxyStatus = await _providers.testProxy(port: config.port);
     if (proxyStatus.isHealthy) {
-      _emit('Proxy: Running — ${proxyStatus.models.length} models available',
-          DiagnosticStatus.pass);
+      _emit(
+        'Proxy: Running — ${proxyStatus.models.length} models available',
+        DiagnosticStatus.pass,
+      );
       passed++;
     } else {
-      _emit('Proxy: ${proxyStatus.statusMessage}', DiagnosticStatus.fail,
-          fixCommand: proxyStatus.fixCommand);
+      _emit(
+        'Proxy: ${proxyStatus.statusMessage}',
+        DiagnosticStatus.fail,
+        fixCommand: proxyStatus.fixCommand,
+      );
       failed++;
     }
 
@@ -268,14 +316,22 @@ class DiagnosticRunner {
     if (providerNames.contains('google') || providerNames.contains('gemini')) {
       _emit('Testing Google / Vertex AI...', DiagnosticStatus.running);
       final googleStatus = await _providers.testGoogle(
-          project: project, accessToken: accessTokenStr);
+        project: project,
+        accessToken: accessTokenStr,
+      );
       if (googleStatus.isHealthy) {
-        _emit('Google: Connected (${googleStatus.latency?.inMilliseconds}ms)',
-            DiagnosticStatus.pass);
+        _emit(
+          'Google: Connected (${googleStatus.latency?.inMilliseconds}ms)',
+          DiagnosticStatus.pass,
+        );
         passed++;
       } else {
-        _emit('Google: ${googleStatus.statusMessage}', DiagnosticStatus.fail,
-            fixCommand: googleStatus.fixCommand, fixUrl: googleStatus.fixUrl);
+        _emit(
+          'Google: ${googleStatus.statusMessage}',
+          DiagnosticStatus.fail,
+          fixCommand: googleStatus.fixCommand,
+          fixUrl: googleStatus.fixUrl,
+        );
         failed++;
       }
     }
@@ -283,19 +339,23 @@ class DiagnosticRunner {
     if (providerNames.contains('anthropic')) {
       _emit('Testing Anthropic (Vertex AI)...', DiagnosticStatus.running);
       final anthropicStatus = await _providers.testAnthropic(
-          project: project,
-          region: config.vertexAI?.effectiveRegion ?? 'us-central1',
-          accessToken: accessTokenStr);
+        project: project,
+        region: config.vertexAI?.effectiveRegion ?? 'us-central1',
+        accessToken: accessTokenStr,
+      );
       if (anthropicStatus.isHealthy) {
         _emit(
-            'Anthropic: Connected (${anthropicStatus.latency?.inMilliseconds}ms)',
-            DiagnosticStatus.pass);
+          'Anthropic: Connected (${anthropicStatus.latency?.inMilliseconds}ms)',
+          DiagnosticStatus.pass,
+        );
         passed++;
       } else {
-        _emit('Anthropic: ${anthropicStatus.statusMessage}',
-            DiagnosticStatus.fail,
-            detail: anthropicStatus.errorDetail,
-            fixUrl: anthropicStatus.fixUrl);
+        _emit(
+          'Anthropic: ${anthropicStatus.statusMessage}',
+          DiagnosticStatus.fail,
+          detail: anthropicStatus.errorDetail,
+          fixUrl: anthropicStatus.fixUrl,
+        );
         failed++;
       }
     }
@@ -304,12 +364,17 @@ class DiagnosticRunner {
       _emit('Testing OpenAI...', DiagnosticStatus.running);
       final openaiStatus = await _providers.testOpenAI();
       if (openaiStatus.isHealthy) {
-        _emit('OpenAI: Connected (${openaiStatus.latency?.inMilliseconds}ms)',
-            DiagnosticStatus.pass);
+        _emit(
+          'OpenAI: Connected (${openaiStatus.latency?.inMilliseconds}ms)',
+          DiagnosticStatus.pass,
+        );
         passed++;
       } else {
-        _emit('OpenAI: ${openaiStatus.statusMessage}', DiagnosticStatus.fail,
-            fixCommand: openaiStatus.fixCommand);
+        _emit(
+          'OpenAI: ${openaiStatus.statusMessage}',
+          DiagnosticStatus.fail,
+          fixCommand: openaiStatus.fixCommand,
+        );
         failed++;
       }
     }
@@ -319,14 +384,19 @@ class DiagnosticRunner {
       _emit('Testing Ollama (local)...', DiagnosticStatus.running);
       final ollamaStatus = await _providers.testOllama();
       if (ollamaStatus.isHealthy) {
-        _emit('Ollama: Running — ${ollamaStatus.models.length} models',
-            DiagnosticStatus.pass);
+        _emit(
+          'Ollama: Running — ${ollamaStatus.models.length} models',
+          DiagnosticStatus.pass,
+        );
         passed++;
       } else if (ollamaStatus.state == ProviderState.notInstalled) {
         _emit('Ollama: Not installed', DiagnosticStatus.info);
       } else {
-        _emit('Ollama: ${ollamaStatus.statusMessage}', DiagnosticStatus.warn,
-            fixCommand: ollamaStatus.fixCommand);
+        _emit(
+          'Ollama: ${ollamaStatus.statusMessage}',
+          DiagnosticStatus.warn,
+          fixCommand: ollamaStatus.fixCommand,
+        );
         warned++;
       }
     }
@@ -335,16 +405,22 @@ class DiagnosticRunner {
     return DiagnosticSummary(passed: passed, failed: failed, warned: warned);
   }
 
-  void _emit(String message, DiagnosticStatus status,
-      {String? detail, String? fixCommand, String? fixUrl}) {
+  void _emit(
+    String message,
+    DiagnosticStatus status, {
+    String? detail,
+    String? fixCommand,
+    String? fixUrl,
+  }) {
     if (_disposed) return; // Guard: controller may already be closed.
     final entry = DiagnosticEntry(
-        timestamp: DateTime.now(),
-        message: message,
-        status: status,
-        detail: detail,
-        fixCommand: fixCommand,
-        fixUrl: fixUrl);
+      timestamp: DateTime.now(),
+      message: message,
+      status: status,
+      detail: detail,
+      fixCommand: fixCommand,
+      fixUrl: fixUrl,
+    );
     history.add(entry);
     _controller.add(entry);
   }

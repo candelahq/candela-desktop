@@ -7,36 +7,33 @@ import 'package:candela_desktop/theme/colors.dart';
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 Widget _wrap(Widget child) => MaterialApp(
-      theme: ThemeData.dark(),
-      home: Scaffold(
-        backgroundColor: CandelaColors.bgPrimary,
-        body: SizedBox(width: 600, height: 400, child: child),
-      ),
-    );
+  theme: ThemeData.dark(),
+  home: Scaffold(
+    backgroundColor: CandelaColors.bgPrimary,
+    body: SizedBox(width: 600, height: 400, child: child),
+  ),
+);
 
 List<TimeSeriesPoint> _points(int n, {double base = 1.0}) => List.generate(
-      n,
-      (i) => TimeSeriesPoint(label: '${i}h', value: base + i.toDouble()),
-    );
+  n,
+  (i) => TimeSeriesPoint(label: '${i}h', value: base + i.toDouble()),
+);
 
-List<TimeSeriesPoint> _zeroPoints(int n) => List.generate(
-      n,
-      (i) => const TimeSeriesPoint(label: 'x', value: 0),
-    );
+List<TimeSeriesPoint> _zeroPoints(int n) =>
+    List.generate(n, (i) => const TimeSeriesPoint(label: 'x', value: 0));
 
 CandelaAreaChart _chart({
   List<TimeSeriesPoint>? data,
   double height = 200,
   Color color = Colors.green,
   String emptyMessage = 'No data yet',
-}) =>
-    CandelaAreaChart(
-      data: data ?? _points(24),
-      height: height,
-      color: color,
-      formatValue: (v) => '\$${v.toStringAsFixed(2)}',
-      emptyMessage: emptyMessage,
-    );
+}) => CandelaAreaChart(
+  data: data ?? _points(24),
+  height: height,
+  color: color,
+  formatValue: (v) => '\$${v.toStringAsFixed(2)}',
+  emptyMessage: emptyMessage,
+);
 
 // ── Empty / zero-value states ─────────────────────────────────────────────────
 
@@ -53,8 +50,9 @@ void main() {
     });
 
     testWidgets('custom emptyMessage is shown', (tester) async {
-      await tester
-          .pumpWidget(_wrap(_chart(data: [], emptyMessage: 'No cost data')));
+      await tester.pumpWidget(
+        _wrap(_chart(data: [], emptyMessage: 'No cost data')),
+      );
       expect(find.text('No cost data'), findsOneWidget);
     });
 
@@ -72,50 +70,65 @@ void main() {
   // ── Data rendering ────────────────────────────────────────────────────────
 
   group('CandelaAreaChart — with data', () {
-    testWidgets('renders CustomPaint when data has non-zero values',
-        (tester) async {
+    testWidgets('renders CustomPaint when data has non-zero values', (
+      tester,
+    ) async {
       await tester.pumpWidget(_wrap(_chart()));
       // Scaffold adds its own CustomPaint; our chart adds at least one more.
       expect(find.byType(CustomPaint), findsWidgets);
       // Specifically, CandelaAreaChart's CustomPaint is present.
       expect(
-          find.descendant(
-            of: find.byType(CandelaAreaChart),
-            matching: find.byType(CustomPaint),
-          ),
-          findsOneWidget);
+        find.descendant(
+          of: find.byType(CandelaAreaChart),
+          matching: find.byType(CustomPaint),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('renders MouseRegion for hover interaction', (tester) async {
       await tester.pumpWidget(_wrap(_chart()));
       // MouseRegion is used by CandelaAreaChart for hover.
       expect(
-          find.descendant(
-            of: find.byType(CandelaAreaChart),
-            matching: find.byType(MouseRegion),
-          ),
-          findsOneWidget);
+        find.descendant(
+          of: find.byType(CandelaAreaChart),
+          matching: find.byType(MouseRegion),
+        ),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('renders with a single data point without throwing',
-        (tester) async {
-      await tester.pumpWidget(_wrap(
-          _chart(data: [const TimeSeriesPoint(label: '00:00', value: 5.0)])));
+    testWidgets('renders with a single data point without throwing', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          _chart(data: [const TimeSeriesPoint(label: '00:00', value: 5.0)]),
+        ),
+      );
       expect(tester.takeException(), isNull);
       expect(
-          find.descendant(
-            of: find.byType(CandelaAreaChart),
-            matching: find.byType(CustomPaint),
-          ),
-          findsOneWidget);
+        find.descendant(
+          of: find.byType(CandelaAreaChart),
+          matching: find.byType(CustomPaint),
+        ),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('renders with two data points without throwing',
-        (tester) async {
-      await tester.pumpWidget(_wrap(_chart(data: [
-        const TimeSeriesPoint(label: '00:00', value: 1.0),
-        const TimeSeriesPoint(label: '01:00', value: 2.0),
-      ])));
+    testWidgets('renders with two data points without throwing', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          _chart(
+            data: [
+              const TimeSeriesPoint(label: '00:00', value: 1.0),
+              const TimeSeriesPoint(label: '01:00', value: 2.0),
+            ],
+          ),
+        ),
+      );
       expect(tester.takeException(), isNull);
     });
 
@@ -126,20 +139,25 @@ void main() {
 
     testWidgets('different color does not throw', (tester) async {
       await tester.pumpWidget(
-          _wrap(_chart(data: _points(8), color: const Color(0xFF60A5FA))));
+        _wrap(_chart(data: _points(8), color: const Color(0xFF60A5FA))),
+      );
       expect(tester.takeException(), isNull);
     });
 
     testWidgets('large values render correctly', (tester) async {
       final bigData = List.generate(
-          24, (i) => TimeSeriesPoint(label: '$i', value: 1000000.0 * i));
+        24,
+        (i) => TimeSeriesPoint(label: '$i', value: 1000000.0 * i),
+      );
       await tester.pumpWidget(_wrap(_chart(data: bigData)));
       expect(tester.takeException(), isNull);
     });
 
     testWidgets('tiny fractional values render correctly', (tester) async {
       final tinyData = List.generate(
-          24, (i) => TimeSeriesPoint(label: '$i', value: 0.00001 * (i + 1)));
+        24,
+        (i) => TimeSeriesPoint(label: '$i', value: 0.00001 * (i + 1)),
+      );
       await tester.pumpWidget(_wrap(_chart(data: tinyData)));
       expect(tester.takeException(), isNull);
     });
@@ -159,25 +177,28 @@ void main() {
     testWidgets('MouseRegion is present inside chart', (tester) async {
       await tester.pumpWidget(_wrap(_chart(data: _points(24))));
       expect(
-          find.descendant(
-            of: find.byType(CandelaAreaChart),
-            matching: find.byType(MouseRegion),
-          ),
-          findsOneWidget);
+        find.descendant(
+          of: find.byType(CandelaAreaChart),
+          matching: find.byType(MouseRegion),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('Stack is used for tooltip overlay layer', (tester) async {
       await tester.pumpWidget(_wrap(_chart(data: _points(24))));
       expect(
-          find.descendant(
-            of: find.byType(CandelaAreaChart),
-            matching: find.byType(Stack),
-          ),
-          findsOneWidget);
+        find.descendant(
+          of: find.byType(CandelaAreaChart),
+          matching: find.byType(Stack),
+        ),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('chart stays mounted through multiple pump cycles',
-        (tester) async {
+    testWidgets('chart stays mounted through multiple pump cycles', (
+      tester,
+    ) async {
       await tester.pumpWidget(_wrap(_chart(data: _points(24))));
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pump(const Duration(milliseconds: 100));
@@ -201,23 +222,30 @@ void main() {
       List<TimeSeriesPoint> data = _points(24);
       late StateSetter outerSetState;
 
-      await tester.pumpWidget(StatefulBuilder(builder: (ctx, setState) {
-        outerSetState = setState;
-        return _wrap(CandelaAreaChart(
-          data: data,
-          height: 200,
-          color: Colors.blue,
-          formatValue: (v) => '${v.round()}',
-          emptyMessage: 'empty',
-        ));
-      }));
+      await tester.pumpWidget(
+        StatefulBuilder(
+          builder: (ctx, setState) {
+            outerSetState = setState;
+            return _wrap(
+              CandelaAreaChart(
+                data: data,
+                height: 200,
+                color: Colors.blue,
+                formatValue: (v) => '${v.round()}',
+                emptyMessage: 'empty',
+              ),
+            );
+          },
+        ),
+      );
 
       expect(
-          find.descendant(
-            of: find.byType(CandelaAreaChart),
-            matching: find.byType(CustomPaint),
-          ),
-          findsOneWidget);
+        find.descendant(
+          of: find.byType(CandelaAreaChart),
+          matching: find.byType(CustomPaint),
+        ),
+        findsOneWidget,
+      );
 
       outerSetState(() => data = []);
       await tester.pump();

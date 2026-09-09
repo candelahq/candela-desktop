@@ -28,22 +28,26 @@ class ModelSelectorDropdown extends StatelessWidget {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String?>(
           value: selected,
-          hint: const Text('All Models',
-              style: TextStyle(fontSize: 12, color: CandelaColors.textMuted)),
-          icon: const Icon(Icons.arrow_drop_down,
-              size: 16, color: CandelaColors.textMuted),
-          style:
-              const TextStyle(fontSize: 12, color: CandelaColors.textPrimary),
+          hint: const Text(
+            'All Models',
+            style: TextStyle(fontSize: 12, color: CandelaColors.textMuted),
+          ),
+          icon: const Icon(
+            Icons.arrow_drop_down,
+            size: 16,
+            color: CandelaColors.textMuted,
+          ),
+          style: const TextStyle(
+            fontSize: 12,
+            color: CandelaColors.textPrimary,
+          ),
           dropdownColor: CandelaColors.bgTertiary,
           items: [
             const DropdownMenuItem<String?>(
               value: null,
               child: Text('All Models'),
             ),
-            ...models.map((m) => DropdownMenuItem(
-                  value: m,
-                  child: Text(m),
-                )),
+            ...models.map((m) => DropdownMenuItem(value: m, child: Text(m))),
           ],
           onChanged: onChanged,
         ),

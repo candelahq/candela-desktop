@@ -53,8 +53,10 @@ void main() {
     });
 
     test('categorizes claude models', () {
-      expect(ProviderTestService.modelCategory('claude-sonnet-4-20250514'),
-          'anthropic');
+      expect(
+        ProviderTestService.modelCategory('claude-sonnet-4-20250514'),
+        'anthropic',
+      );
     });
 
     test('categorizes gpt models', () {

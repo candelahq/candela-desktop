@@ -10,10 +10,7 @@ void main() {
       return MaterialApp(
         theme: CandelaTheme.dark,
         home: Scaffold(
-          body: IdentityCard(
-            identity: identity,
-            onRefresh: () {},
-          ),
+          body: IdentityCard(identity: identity, onRefresh: () {}),
         ),
       );
     }
@@ -31,8 +28,9 @@ void main() {
       expect(find.text('alice@example.com'), findsOneWidget);
     });
 
-    testWidgets('shows Not authenticated when no email',
-        (WidgetTester tester) async {
+    testWidgets('shows Not authenticated when no email', (
+      WidgetTester tester,
+    ) async {
       const identity = IdentityState();
       await tester.pumpWidget(buildApp(identity));
       expect(find.text('Not authenticated'), findsOneWidget);
@@ -64,9 +62,7 @@ void main() {
     });
 
     testWidgets('shows no token status', (WidgetTester tester) async {
-      const identity = IdentityState(
-        email: 'user@test.com',
-      );
+      const identity = IdentityState(email: 'user@test.com');
 
       await tester.pumpWidget(buildApp(identity));
       expect(find.textContaining('No token'), findsOneWidget);
@@ -97,8 +93,9 @@ void main() {
       expect(find.text('AB'), findsOneWidget);
     });
 
-    testWidgets('shows single initial for simple email',
-        (WidgetTester tester) async {
+    testWidgets('shows single initial for simple email', (
+      WidgetTester tester,
+    ) async {
       final identity = IdentityState(
         email: 'alice@example.com',
         tokenInfo: TokenInfo(

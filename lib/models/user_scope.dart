@@ -4,7 +4,4 @@
 /// Replaces the proto-generated `UserScope` enum that was removed in
 /// proto v0.6.0 (`GetDashboardDataRequest.user_scope` → `environment` +
 /// `project_id`).
-enum UserScope {
-  personal,
-  global,
-}
+enum UserScope { personal, global }

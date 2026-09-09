@@ -8,7 +8,7 @@ Native macOS desktop app for [Candela](https://github.com/candelahq/candela) —
 ## Install
 
 ```bash
-# macOS (Apple Silicon — runs via Rosetta 2 on Intel)
+# macOS (Apple Silicon / arm64)
 brew install --cask candelahq/tap/candela-desktop
 ```
 

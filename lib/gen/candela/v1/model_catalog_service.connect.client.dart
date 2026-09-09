@@ -14,7 +14,7 @@ extension type ModelCatalogServiceClient(connect.Transport _transport) {
   /// ListModelCatalog returns all models in the catalog.
   /// Non-admin callers always receive enabled-only models regardless of include_disabled.
   Future<candelav1model_catalog_service.ListModelCatalogResponse>
-      listModelCatalog(
+  listModelCatalog(
     candelav1model_catalog_service.ListModelCatalogRequest input, {
     connect.Headers? headers,
     connect.AbortSignal? signal,
@@ -34,7 +34,7 @@ extension type ModelCatalogServiceClient(connect.Transport _transport) {
   /// UpdateModelCatalogEntry updates a single model entry.
   /// Admin-only. Returns Unimplemented when the catalog backend is read-only (e.g., config file).
   Future<candelav1model_catalog_service.UpdateModelCatalogEntryResponse>
-      updateModelCatalogEntry(
+  updateModelCatalogEntry(
     candelav1model_catalog_service.UpdateModelCatalogEntryRequest input, {
     connect.Headers? headers,
     connect.AbortSignal? signal,
@@ -56,7 +56,7 @@ extension type ModelCatalogServiceClient(connect.Transport _transport) {
   /// Semantics: hard delete from the store. To soft-delete, use UpdateModelCatalogEntry
   /// with update_mask: ["enabled"] and enabled: false.
   Future<candelav1model_catalog_service.DeleteModelCatalogEntryResponse>
-      deleteModelCatalogEntry(
+  deleteModelCatalogEntry(
     candelav1model_catalog_service.DeleteModelCatalogEntryRequest input, {
     connect.Headers? headers,
     connect.AbortSignal? signal,

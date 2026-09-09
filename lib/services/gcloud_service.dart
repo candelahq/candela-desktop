@@ -20,8 +20,8 @@ class GCloudService {
   final ProcessRunner _runner;
 
   GCloudService({AdcService? adcService, ProcessRunner? runner})
-      : _adcService = adcService ?? AdcService(),
-        _runner = runner ?? const SystemProcessRunner();
+    : _adcService = adcService ?? AdcService(),
+      _runner = runner ?? const SystemProcessRunner();
 
   /// Augmented PATH that includes common gcloud install locations.
   /// macOS GUI apps don't inherit shell PATH, so we search explicitly.
@@ -68,11 +68,7 @@ class GCloudService {
   /// Get the current GCP project from gcloud config.
   Future<String?> getProject() async {
     try {
-      final result = await _run([
-        'config',
-        'get',
-        'project',
-      ]);
+      final result = await _run(['config', 'get', 'project']);
       if (result.exitCode != 0) return null;
       final output = (result.stdout as String).trim();
       return output.isEmpty ? null : output;
@@ -125,11 +121,11 @@ class GCloudService {
       ]);
       if (result.exitCode != 0) {
         // Fall back to regular access token (works with userinfo validation).
-        return getAccessToken();
+        return await getAccessToken();
       }
 
       final token = (result.stdout as String).trim();
-      if (token.isEmpty) return getAccessToken();
+      if (token.isEmpty) return await getAccessToken();
 
       return _decodeJwt(token);
     } catch (_) {
@@ -233,18 +229,22 @@ class GCloudService {
     if (parts.length >= 2) {
       try {
         final normalized = base64Url.normalize(parts[1]);
-        final payload = json.decode(utf8.decode(base64Url.decode(normalized)))
-            as Map<String, dynamic>;
+        final payload =
+            json.decode(utf8.decode(base64Url.decode(normalized)))
+                as Map<String, dynamic>;
         final exp = payload['exp'] as int?;
         // CRITICAL-3: validate email before storing — cap length and ensure
         // it is a plain string (guards against crafted/poisoned token caches).
         final rawEmail = payload['email'];
-        final email =
-            rawEmail is String && rawEmail.length <= 254 ? rawEmail : null;
+        final email = rawEmail is String && rawEmail.length <= 254
+            ? rawEmail
+            : null;
 
         if (exp != null) {
-          final expiresAt =
-              DateTime.fromMillisecondsSinceEpoch(exp * 1000, isUtc: true);
+          final expiresAt = DateTime.fromMillisecondsSinceEpoch(
+            exp * 1000,
+            isUtc: true,
+          );
           return TokenInfo(
             email: email,
             accessToken: token,
@@ -260,10 +260,7 @@ class GCloudService {
     // (Google OAuth2 access tokens have a 3600-second lifetime).
     final expiresAt =
         knownExpiry ?? DateTime.now().toUtc().add(const Duration(minutes: 60));
-    return TokenInfo(
-      accessToken: token,
-      expiresAt: expiresAt,
-    );
+    return TokenInfo(accessToken: token, expiresAt: expiresAt);
   }
 
   /// Expose JWT decoding for testing.

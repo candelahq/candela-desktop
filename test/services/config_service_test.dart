@@ -69,8 +69,10 @@ providers:
       await service.addProvider('ollama');
       final config = await service.load();
       expect(config.providers.length, 2);
-      expect(
-          config.providers.map((p) => p.name).toList(), ['google', 'ollama']);
+      expect(config.providers.map((p) => p.name).toList(), [
+        'google',
+        'ollama',
+      ]);
     });
 
     test('removeProvider removes from list', () async {
@@ -137,10 +139,7 @@ port: 8181
 
     test('setPort rejects out-of-range port', () async {
       File(testConfigPath).writeAsStringSync('port: 8181\n');
-      expect(
-        () => service.setPort('port', 0),
-        throwsA(isA<ArgumentError>()),
-      );
+      expect(() => service.setPort('port', 0), throwsA(isA<ArgumentError>()));
       expect(
         () => service.setPort('port', 70000),
         throwsA(isA<ArgumentError>()),
@@ -222,8 +221,9 @@ providers:
   - name: google
 ''');
       final config = await service.load();
-      final projectIssue =
-          config.issues.where((i) => i.field == 'vertex_ai.project');
+      final projectIssue = config.issues.where(
+        (i) => i.field == 'vertex_ai.project',
+      );
       expect(projectIssue, isNotEmpty);
     });
 
@@ -235,8 +235,9 @@ vertex_ai:
   project: my-project
 ''');
       final config = await service.load();
-      final regionIssue =
-          config.issues.where((i) => i.field == 'vertex_ai.region');
+      final regionIssue = config.issues.where(
+        (i) => i.field == 'vertex_ai.region',
+      );
       expect(regionIssue, isNotEmpty);
       expect(regionIssue.first.severity, IssueSeverity.warning);
     });
@@ -251,14 +252,22 @@ providers:
 ''');
       final config = await service.load();
       expect(config.mode, CandelaMode.team);
-      final projectIssues =
-          config.issues.where((i) => i.field == 'vertex_ai.project');
-      final regionIssues =
-          config.issues.where((i) => i.field == 'vertex_ai.region');
-      expect(projectIssues, isEmpty,
-          reason: 'team mode should not require vertex_ai.project');
-      expect(regionIssues, isEmpty,
-          reason: 'team mode should not warn about vertex_ai.region');
+      final projectIssues = config.issues.where(
+        (i) => i.field == 'vertex_ai.project',
+      );
+      final regionIssues = config.issues.where(
+        (i) => i.field == 'vertex_ai.region',
+      );
+      expect(
+        projectIssues,
+        isEmpty,
+        reason: 'team mode should not require vertex_ai.project',
+      );
+      expect(
+        regionIssues,
+        isEmpty,
+        reason: 'team mode should not warn about vertex_ai.region',
+      );
     });
 
     // --- vertex_ai parsing ---
@@ -320,8 +329,10 @@ providers:
       - gemini-1.5-flash
 ''');
       final config = await service.load();
-      expect(
-          config.providers[0].models, ['gemini-1.5-pro', 'gemini-1.5-flash']);
+      expect(config.providers[0].models, [
+        'gemini-1.5-pro',
+        'gemini-1.5-flash',
+      ]);
     });
 
     // --- Port boundary values ---
@@ -373,7 +384,9 @@ providers:
     test('setMode with audience persists both fields', () async {
       File(testConfigPath).writeAsStringSync('port: 8181\n');
       await service.setMode(
-          remote: 'https://candela.example.com', audience: 'my-audience-id');
+        remote: 'https://candela.example.com',
+        audience: 'my-audience-id',
+      );
       final config = await service.load();
       expect(config.remote, 'https://candela.example.com');
       expect(config.audience, 'my-audience-id');
@@ -422,9 +435,15 @@ providers:
       expect(config.providers.length, 1);
       // Should not error on unknown keys.
       expect(
-          config.issues.where((i) => i.severity == IssueSeverity.error),
-          isNot(contains(predicate<ConfigIssue>(
-              (i) => i.message.contains('unknown_future_key')))));
+        config.issues.where((i) => i.severity == IssueSeverity.error),
+        isNot(
+          contains(
+            predicate<ConfigIssue>(
+              (i) => i.message.contains('unknown_future_key'),
+            ),
+          ),
+        ),
+      );
     });
 
     test('addProvider to minimal file creates providers list', () async {
@@ -437,8 +456,10 @@ providers:
 
     test('_yamlValue quotes numeric-looking strings on round-trip', () async {
       File(testConfigPath).writeAsStringSync('port: 8181\n');
-      await service.addProvider('test-provider',
-          models: ['3.14', '0777', '0xDEAD', '1e10']);
+      await service.addProvider(
+        'test-provider',
+        models: ['3.14', '0777', '0xDEAD', '1e10'],
+      );
       final config = await service.load();
       // All should survive as strings, not be parsed as numbers.
       expect(config.providers.first.models, ['3.14', '0777', '0xDEAD', '1e10']);
@@ -446,10 +467,7 @@ providers:
 
     test('setPort with negative port throws ArgumentError', () async {
       File(testConfigPath).writeAsStringSync('port: 8181\n');
-      expect(
-        () => service.setPort('port', -1),
-        throwsA(isA<ArgumentError>()),
-      );
+      expect(() => service.setPort('port', -1), throwsA(isA<ArgumentError>()));
     });
 
     // --- Config hardening: new feature tests ---

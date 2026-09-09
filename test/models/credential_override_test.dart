@@ -26,8 +26,10 @@ void main() {
         type: 'service_account',
         clientEmail: 'my-sa@project.iam.gserviceaccount.com',
       );
-      expect(override.displayLabel,
-          'Service Account: my-sa@project.iam.gserviceaccount.com');
+      expect(
+        override.displayLabel,
+        'Service Account: my-sa@project.iam.gserviceaccount.com',
+      );
     });
 
     test('displayLabel shows type when no email', () {
@@ -39,9 +41,7 @@ void main() {
     });
 
     test('displayLabel falls back to path when no type', () {
-      const override = CredentialOverride(
-        path: '/path/to/unknown-creds.json',
-      );
+      const override = CredentialOverride(path: '/path/to/unknown-creds.json');
       expect(override.displayLabel, '/path/to/unknown-creds.json');
     });
 
@@ -51,8 +51,10 @@ void main() {
         type: 'service_account',
         clientEmail: 'deployer@prod-project.iam.gserviceaccount.com',
       );
-      expect(override.displayLabel,
-          'Service Account: deployer@prod-project.iam.gserviceaccount.com');
+      expect(
+        override.displayLabel,
+        'Service Account: deployer@prod-project.iam.gserviceaccount.com',
+      );
     });
   });
 
@@ -71,8 +73,10 @@ void main() {
       const state = IdentityState(credentialOverride: override);
       expect(state.credentialOverride, isNotNull);
       expect(state.credentialOverride!.isServiceAccount, isTrue);
-      expect(state.credentialOverride!.clientEmail,
-          'sa@project.iam.gserviceaccount.com');
+      expect(
+        state.credentialOverride!.clientEmail,
+        'sa@project.iam.gserviceaccount.com',
+      );
     });
   });
 }

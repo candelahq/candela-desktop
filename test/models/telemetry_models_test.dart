@@ -211,8 +211,9 @@ void main() {
 
   group('DashboardState edge cases', () {
     test('copyWith with both error and clearError prioritizes clear', () {
-      final s = const DashboardState(errorMessage: 'old')
-          .copyWith(errorMessage: 'new', clearError: true);
+      final s = const DashboardState(
+        errorMessage: 'old',
+      ).copyWith(errorMessage: 'new', clearError: true);
       expect(s.errorMessage, isNull);
     });
 

@@ -60,6 +60,12 @@ class _FakeBrewService extends BrewService {
     if (throwOnUpgrade) throw Exception('brew not found');
     return nextUpgradeCaskResult;
   }
+
+  @override
+  Future<BrewResult> upgrade(String formula) async {
+    if (throwOnUpgrade) throw Exception('brew not found');
+    return const BrewResult(success: false, errorMessage: 'failed');
+  }
 }
 
 void main() {
@@ -94,6 +100,9 @@ void main() {
     test('higher pre-release is newer than lower pre-release', () {
       expect(UpdateService.isNewer('0.2.0-beta.2', '0.2.0-beta.1'), isTrue);
       expect(UpdateService.isNewer('0.2.0-beta.1', '0.2.0-beta.2'), isFalse);
+      // Numeric pre-release precedence: beta.10 > beta.2
+      expect(UpdateService.isNewer('0.8.2-beta.10', '0.8.2-beta.2'), isTrue);
+      expect(UpdateService.isNewer('0.8.2-beta.2', '0.8.2-beta.10'), isFalse);
     });
 
     test('build number suffix is stripped for comparison', () {
@@ -296,25 +305,32 @@ void main() {
 
   group('UpdateService — performBrewUpgrade', () {
     test(
-      'delegates to BrewService.upgradeCask with correct cask name',
+      'delegates to BrewService.upgradeCask and relaunches app on success',
       () async {
         if (!Platform.isMacOS) return;
         final fakeBrew = _FakeBrewService();
-        // Simulate failure so we don't hit exit(0).
         fakeBrew.nextUpgradeCaskResult = const BrewResult(
-          success: false,
-          errorMessage: 'no cask',
+          success: true,
+          output: 'upgraded',
         );
         final runner = _FakeProcessRunner();
-        final service = UpdateService(runner: runner, brew: fakeBrew);
-
-        await service.performBrewUpgrade();
-
-        expect(fakeBrew.upgradeCaskCalls, hasLength(1));
-        expect(
-          fakeBrew.upgradeCaskCalls.first,
-          'candelahq/tap/candela-desktop',
+        var exited = false;
+        final service = UpdateService(
+          runner: runner,
+          brew: fakeBrew,
+          onExit: (_) => exited = true,
         );
+
+        final result = await service.performBrewUpgrade();
+
+        expect(result, isTrue);
+        expect(exited, isTrue);
+        expect(
+          fakeBrew.upgradeCaskCalls,
+          contains('candelahq/tap/candela-desktop'),
+        );
+        expect(runner.startCalls, hasLength(1));
+        expect(runner.startCalls.first.executable, 'open');
       },
     );
 
@@ -327,7 +343,11 @@ void main() {
         errorMessage: 'Error: cask not found',
       );
       final runner = _FakeProcessRunner();
-      final service = UpdateService(runner: runner, brew: fakeBrew);
+      final service = UpdateService(
+        runner: runner,
+        brew: fakeBrew,
+        onExit: (_) {},
+      );
 
       final states = <UpdateStatus>[];
       service.addListener(() => states.add(service.status));
@@ -349,7 +369,11 @@ void main() {
       final fakeBrew = _FakeBrewService();
       fakeBrew.throwOnUpgrade = true;
       final runner = _FakeProcessRunner();
-      final service = UpdateService(runner: runner, brew: fakeBrew);
+      final service = UpdateService(
+        runner: runner,
+        brew: fakeBrew,
+        onExit: (_) {},
+      );
 
       final result = await service.performBrewUpgrade();
 
@@ -368,7 +392,7 @@ void main() {
         final runner = _FakeProcessRunner();
         // Make `which brew` fail and `brew` commands fail, so we don't hit exit(0).
         runner.nextRunResult = ProcessResult(0, 1, '', 'not found');
-        final service = UpdateService(runner: runner);
+        final service = UpdateService(runner: runner, onExit: (_) {});
 
         final result = await service.performBrewUpgrade();
 

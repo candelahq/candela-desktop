@@ -35,12 +35,12 @@ class BrewService {
     if (_resolveFuture != null) return _resolveFuture!;
     return _resolveFuture = () async {
       try {
-        if ((await _runner.run('which', ['brew'])).exitCode == 0) {
-          _brewPath = 'brew';
-        } else if (File('/opt/homebrew/bin/brew').existsSync()) {
+        if (File('/opt/homebrew/bin/brew').existsSync()) {
           _brewPath = '/opt/homebrew/bin/brew';
         } else if (File('/usr/local/bin/brew').existsSync()) {
           _brewPath = '/usr/local/bin/brew';
+        } else if ((await _runner.run('which', ['brew'])).exitCode == 0) {
+          _brewPath = 'brew';
         } else {
           _resolveFuture = null; // brew not found — allow retry later
         }

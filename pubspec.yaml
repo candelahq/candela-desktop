@@ -1,7 +1,7 @@
 name: candela_desktop
 description: Candela — LLM Observability for your machine
 publish_to: 'none'
-version: 0.7.1
+version: 0.8.2
 
 environment:
   sdk: '>=3.10.0 <4.0.0'
@@ -53,6 +53,9 @@ dependencies:
 
   # Lightweight key-value persistence (theme mode, UI prefs)
   shared_preferences: ^2.5.3
+
+  # Semver parsing & comparison
+  pub_semver: ^2.1.4
 
   # Budget threshold notifications (macOS/Linux/Windows banners)
   flutter_local_notifications: ^18.0.1

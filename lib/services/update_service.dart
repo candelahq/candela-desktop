@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:pub_semver/pub_semver.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'brew_service.dart';
@@ -44,6 +45,7 @@ class UpdateService extends ChangeNotifier {
   final http.Client _client;
   final ProcessRunner _runner;
   final BrewService _brew;
+  final void Function(int code) _onExit;
 
   String? _latestVersion;
   InstallChannel? _cachedChannel;
@@ -63,10 +65,15 @@ class UpdateService extends ChangeNotifier {
     }
   }
 
-  UpdateService({http.Client? client, ProcessRunner? runner, BrewService? brew})
-    : _client = client ?? http.Client(),
-      _runner = runner ?? const SystemProcessRunner(),
-      _brew = brew ?? BrewService(runner: runner);
+  UpdateService({
+    http.Client? client,
+    ProcessRunner? runner,
+    BrewService? brew,
+    void Function(int code)? onExit,
+  }) : _client = client ?? http.Client(),
+       _runner = runner ?? const SystemProcessRunner(),
+       _brew = brew ?? BrewService(runner: runner),
+       _onExit = onExit ?? exit;
 
   /// Current update status.
   UpdateStatus get status => _status;
@@ -138,10 +145,18 @@ class UpdateService extends ChangeNotifier {
         return null;
       }
 
-      final latest = tagName.startsWith('v') ? tagName.substring(1) : tagName;
+      final cleanCurrent =
+          currentVersion.trim().startsWith('v') ||
+              currentVersion.trim().startsWith('V')
+          ? currentVersion.trim().substring(1)
+          : currentVersion.trim();
+      final latest =
+          tagName.trim().startsWith('v') || tagName.trim().startsWith('V')
+          ? tagName.trim().substring(1)
+          : tagName.trim();
       _latestVersion = latest;
 
-      if (isNewer(latest, currentVersion)) {
+      if (isNewer(latest, cleanCurrent)) {
         _setStatus(UpdateStatus.available);
         return latest;
       } else {
@@ -183,47 +198,22 @@ class UpdateService extends ChangeNotifier {
 
   /// Semver comparison: is [a] newer than [b]?
   static bool isNewer(String a, String b) {
-    final aParsed = _parseSemver(a);
-    final bParsed = _parseSemver(b);
-
-    for (var i = 0; i < 3; i++) {
-      if (aParsed.version[i] > bParsed.version[i]) return true;
-      if (aParsed.version[i] < bParsed.version[i]) return false;
+    try {
+      final vA = Version.parse(_cleanVersion(a));
+      final vB = Version.parse(_cleanVersion(b));
+      return vA > vB;
+    } catch (_) {
+      return false;
     }
-
-    if (aParsed.preRelease == null && bParsed.preRelease != null) return true;
-    if (aParsed.preRelease != null && bParsed.preRelease == null) return false;
-    if (aParsed.preRelease != null && bParsed.preRelease != null) {
-      return aParsed.preRelease!.compareTo(bParsed.preRelease!) > 0;
-    }
-
-    return false;
   }
 
-  static _SemverParts _parseSemver(String version) {
-    if (version.startsWith('v') || version.startsWith('V')) {
-      version = version.substring(1);
+  static String _cleanVersion(String v) {
+    v = v.trim();
+    if (v.startsWith('v') || v.startsWith('V')) {
+      v = v.substring(1);
     }
-
-    final plusIdx = version.indexOf('+');
-    final withoutBuild = plusIdx == -1
-        ? version
-        : version.substring(0, plusIdx);
-
-    final dashIdx = withoutBuild.indexOf('-');
-    final base = dashIdx == -1
-        ? withoutBuild
-        : withoutBuild.substring(0, dashIdx);
-    final preRelease = dashIdx == -1
-        ? null
-        : withoutBuild.substring(dashIdx + 1);
-
-    final parts = base.split('.').map((s) => int.tryParse(s) ?? 0).toList();
-    while (parts.length < 3) {
-      parts.add(0);
-    }
-
-    return _SemverParts(parts.sublist(0, 3), preRelease);
+    final plusIdx = v.indexOf('+');
+    return plusIdx == -1 ? v : v.substring(0, plusIdx);
   }
 
   /// Perform a Homebrew cask upgrade and relaunch the app.
@@ -235,9 +225,21 @@ class UpdateService extends ChangeNotifier {
     if (!Platform.isMacOS) return false;
     _setStatus(UpdateStatus.checking);
     try {
-      final result = await _brew.upgradeCask('candelahq/tap/candela-desktop');
+      var result = await _brew.upgradeCask('candelahq/tap/candela-desktop');
+      if (!result.success) {
+        result = await _brew.upgrade('candelahq/tap/candela-desktop');
+      }
+      if (!result.success) {
+        result = await _brew.upgradeCask('candela-desktop');
+      }
+      if (!result.success) {
+        result = await _brew.upgrade('candela');
+      }
 
       if (!result.success) {
+        debugPrint(
+          '[UpdateService] brew upgrade failed: ${result.errorMessage}',
+        );
         _setStatus(UpdateStatus.error);
         return false;
       }
@@ -248,8 +250,10 @@ class UpdateService extends ChangeNotifier {
         'Candela',
       ], mode: ProcessStartMode.detached);
 
-      exit(0);
-    } catch (_) {
+      _onExit(0);
+      return true;
+    } catch (e) {
+      debugPrint('[UpdateService] Error performing brew upgrade: $e');
       _setStatus(UpdateStatus.error);
       return false;
     }
@@ -261,10 +265,4 @@ class UpdateService extends ChangeNotifier {
     _client.close();
     super.dispose();
   }
-}
-
-class _SemverParts {
-  final List<int> version;
-  final String? preRelease;
-  const _SemverParts(this.version, this.preRelease);
 }

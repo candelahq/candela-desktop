@@ -103,6 +103,50 @@ void main() {
     });
   });
 
+  // ── SpanRecord cache fields ───────────────────────────────────────────────
+
+  group('SpanRecord cache fields', () {
+    test('parses cache_read_tokens and cache_creation_tokens', () {
+      final s = SpanRecord.fromJson({
+        'input_tokens': 1000,
+        'cache_read_tokens': 750,
+        'cache_creation_tokens': 250,
+      });
+      expect(s.cacheReadTokens, 750);
+      expect(s.cacheCreationTokens, 250);
+      expect(s.cache.effectiveHitRate, closeTo(0.75, 1e-9));
+      expect(s.cache.percentLabel, '75.0%');
+    });
+
+    test('omitted cache fields default to zero', () {
+      final s = SpanRecord.fromJson({'input_tokens': 1000});
+      expect(s.cacheReadTokens, 0);
+      expect(s.cacheCreationTokens, 0);
+      expect(s.cache.hasActivity, isFalse);
+      expect(s.cache.effectiveHitRate, isNull);
+    });
+
+    test('cache fields accept num values', () {
+      final s = SpanRecord.fromJson({
+        'input_tokens': 1000,
+        'cache_read_tokens': 500.0,
+        'cache_creation_tokens': 125.0,
+      });
+      expect(s.cacheReadTokens, 500);
+      expect(s.cacheCreationTokens, 125);
+    });
+
+    test('creation-only span has activity but no rate', () {
+      final s = SpanRecord.fromJson({
+        'input_tokens': 1000,
+        'cache_creation_tokens': 900,
+      });
+      expect(s.cache.hasActivity, isTrue);
+      expect(s.cache.hasRate, isFalse);
+      expect(s.cache.percentLabel, '—');
+    });
+  });
+
   // ── UsageSummary ─────────────────────────────────────────────────────────
 
   group('UsageSummary', () {

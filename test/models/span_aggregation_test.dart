@@ -12,6 +12,8 @@ SpanRecord _span({
   String provider = 'google',
   int inputTokens = 100,
   int outputTokens = 50,
+  int cacheReadTokens = 0,
+  int cacheCreationTokens = 0,
   double costUsd = 0.01,
   double durationMs = 500.0,
   DateTime? timestamp,
@@ -28,6 +30,8 @@ SpanRecord _span({
   status: 'ok',
   timestamp: timestamp ?? DateTime.now(),
   name: 'chat',
+  cacheReadTokens: cacheReadTokens,
+  cacheCreationTokens: cacheCreationTokens,
 );
 
 void main() {
@@ -190,6 +194,48 @@ void main() {
       final slow = models.firstWhere((m) => m.model == 'slow');
       expect(fast.avgLatencyMs, 200.0); // (100+300)/2
       expect(slow.avgLatencyMs, 2000.0);
+    });
+  });
+
+  group('cache totals', () {
+    test('buildSummaryFromSpans sums cache read and creation tokens', () {
+      final summary = buildSummaryFromSpans([
+        _span(
+          model: 'claude-sonnet-4',
+          inputTokens: 1000,
+          cacheReadTokens: 400,
+          cacheCreationTokens: 100,
+        ),
+        _span(
+          model: 'claude-sonnet-4',
+          inputTokens: 1000,
+          cacheReadTokens: 600,
+        ),
+      ]);
+      expect(summary.totalCacheReadTokens, 1000);
+      expect(summary.totalCacheCreationTokens, 100);
+      expect(summary.cache.effectiveHitRate, closeTo(0.5, 1e-9));
+      expect(summary.cache.percentLabel, '50.0%');
+    });
+
+    test('buildModelBreakdownFromSpans keeps cache tokens per model', () {
+      final models = buildModelBreakdownFromSpans([
+        _span(
+          model: 'cached',
+          inputTokens: 1000,
+          cacheReadTokens: 800,
+          cacheCreationTokens: 200,
+          costUsd: 0.01,
+        ),
+        _span(model: 'uncached', costUsd: 0.05),
+      ]);
+      final cached = models.firstWhere((m) => m.model == 'cached');
+      final uncached = models.firstWhere((m) => m.model == 'uncached');
+      expect(cached.cacheReadTokens, 800);
+      expect(cached.cacheCreationTokens, 200);
+      expect(cached.cache.effectiveHitRate, closeTo(0.8, 1e-9));
+      expect(uncached.cache.hasActivity, isFalse);
+      expect(uncached.cache.effectiveHitRate, isNull);
     });
   });
 

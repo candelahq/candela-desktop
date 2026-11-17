@@ -67,6 +67,40 @@ void main() {
       expect(spans.every((s) => s.costUsd == 0.25), isTrue);
     });
 
+    test('distributes cache tokens across spans', () {
+      final model = ModelUsage()
+        ..model = 'claude-sonnet-4'
+        ..provider = 'anthropic'
+        ..callCount = Int64(4)
+        ..inputTokens = Int64(4000)
+        ..outputTokens = Int64(200)
+        ..cacheReadTokens = Int64(1200)
+        ..cacheCreationTokens = Int64(80)
+        ..costUsd = 0.04
+        ..avgLatencyMs = 100.0;
+
+      final spans = ConnectApiService.spansFromModels([model], start, end);
+      expect(spans.every((s) => s.cacheReadTokens == 300), isTrue);
+      expect(spans.every((s) => s.cacheCreationTokens == 20), isTrue);
+    });
+
+    test('team spans carry no prompt size, so the hit rate stays unknown', () {
+      final model = ModelUsage()
+        ..model = 'claude-sonnet-4'
+        ..provider = 'anthropic'
+        ..callCount = Int64(1)
+        ..inputTokens = Int64(4000)
+        ..cacheReadTokens = Int64(1200)
+        ..costUsd = 0.04;
+
+      final spans = ConnectApiService.spansFromModels([model], start, end);
+      expect(spans.single.promptTokens, 0);
+      expect(spans.single.cacheCostUsd, isNull);
+      expect(spans.single.cache.hasActivity, isTrue);
+      expect(spans.single.cache.percentLabel, '—');
+      expect(spans.single.cache.costLabel, '—');
+    });
+
     test('clamps callCount to maxSyntheticSpans', () {
       final model = ModelUsage()
         ..model = 'gpt-4o'

@@ -4,6 +4,8 @@
 /// `/_local/api/traces` endpoint (see traces_handler.go).
 library;
 
+import '../data/cache_efficiency.dart';
+
 // ── Raw span from the server ────────────────────────────────────────────────
 
 class SpanRecord {
@@ -19,6 +21,15 @@ class SpanRecord {
   final String status; // "ok" | "error" | "unset"
   final DateTime timestamp;
   final String name;
+  final int cacheReadTokens;
+  final int cacheCreationTokens;
+
+  /// True prompt size reported by the proxy, 0 when the span predates it.
+  final int promptTokens;
+
+  /// Dollars charged for this call's cache reads and writes, null when the span
+  /// predates the field.
+  final double? cacheCostUsd;
 
   const SpanRecord({
     required this.spanId,
@@ -33,6 +44,10 @@ class SpanRecord {
     required this.status,
     required this.timestamp,
     required this.name,
+    this.cacheReadTokens = 0,
+    this.cacheCreationTokens = 0,
+    this.promptTokens = 0,
+    this.cacheCostUsd,
   });
 
   factory SpanRecord.fromJson(Map<String, dynamic> j) => SpanRecord(
@@ -49,6 +64,19 @@ class SpanRecord {
     timestamp:
         DateTime.tryParse(j['timestamp'] as String? ?? '') ?? DateTime.now(),
     name: j['name'] as String? ?? '',
+    cacheReadTokens: (j['cache_read_tokens'] as num?)?.toInt() ?? 0,
+    cacheCreationTokens: (j['cache_creation_tokens'] as num?)?.toInt() ?? 0,
+    promptTokens: (j['prompt_tokens'] as num?)?.toInt() ?? 0,
+    cacheCostUsd: (j['cache_cost_usd'] as num?)?.toDouble(),
+  );
+
+  /// Cache telemetry for this call. Attach the proxy TTL with
+  /// [CacheTelemetry.withTtl] where the config is in reach.
+  CacheTelemetry get cache => CacheTelemetry(
+    readTokens: cacheReadTokens,
+    creationTokens: cacheCreationTokens,
+    promptTokens: promptTokens,
+    costUsd: cacheCostUsd,
   );
 }
 
@@ -71,6 +99,14 @@ class UsageSummary {
   final List<TimeSeriesPoint> costOverTime;
   final List<TimeSeriesPoint> tokensOverTime;
   final List<TimeSeriesPoint> callsOverTime;
+  final int totalCacheReadTokens;
+  final int totalCacheCreationTokens;
+
+  /// True prompt tokens across the window, 0 when any span did not report them.
+  final int totalPromptTokens;
+
+  /// Cache dollars across the window, null when any span did not report them.
+  final double? totalCacheCostUsd;
 
   const UsageSummary({
     required this.totalCalls,
@@ -81,9 +117,22 @@ class UsageSummary {
     required this.costOverTime,
     required this.tokensOverTime,
     required this.callsOverTime,
+    this.totalCacheReadTokens = 0,
+    this.totalCacheCreationTokens = 0,
+    this.totalPromptTokens = 0,
+    this.totalCacheCostUsd,
   });
 
   int get totalTokens => totalInputTokens + totalOutputTokens;
+
+  /// Cache telemetry for the whole window. Attach the proxy TTL with
+  /// [CacheTelemetry.withTtl] where the config is in reach.
+  CacheTelemetry get cache => CacheTelemetry(
+    readTokens: totalCacheReadTokens,
+    creationTokens: totalCacheCreationTokens,
+    promptTokens: totalPromptTokens,
+    costUsd: totalCacheCostUsd,
+  );
 }
 
 /// Per-model cost & token breakdown row.
@@ -105,6 +154,14 @@ class ModelBreakdown {
   final int cacheReadTokens;
   final int cacheCreationTokens;
 
+  /// True prompt tokens for this model, 0 when any of its spans did not report
+  /// them.
+  final int promptTokens;
+
+  /// Cache dollars for this model, null when any of its spans did not report
+  /// them.
+  final double? cacheCostUsd;
+
   const ModelBreakdown({
     required this.model,
     required this.provider,
@@ -117,9 +174,20 @@ class ModelBreakdown {
     this.outputPricePerMillion,
     this.cacheReadTokens = 0,
     this.cacheCreationTokens = 0,
+    this.promptTokens = 0,
+    this.cacheCostUsd,
   });
 
   int get totalTokens => inputTokens + outputTokens;
+
+  /// Cache telemetry for this model. Attach the proxy TTL with
+  /// [CacheTelemetry.withTtl] where the config is in reach.
+  CacheTelemetry get cache => CacheTelemetry(
+    readTokens: cacheReadTokens,
+    creationTokens: cacheCreationTokens,
+    promptTokens: promptTokens,
+    costUsd: cacheCostUsd,
+  );
 
   /// Returns a copy with pricing data enriched from the static registry.
   ModelBreakdown withPricing({
@@ -138,6 +206,8 @@ class ModelBreakdown {
       outputPricePerMillion: outputPerMillion ?? outputPricePerMillion,
       cacheReadTokens: cacheReadTokens,
       cacheCreationTokens: cacheCreationTokens,
+      promptTokens: promptTokens,
+      cacheCostUsd: cacheCostUsd,
     );
   }
 }
@@ -173,19 +243,56 @@ enum TokenTimeRange {
 
 // ── Span aggregation helpers ────────────────────────────────────────────────
 
+/// Prompt size and cache dollars for a group of spans.
+///
+/// Both totals are all or nothing. One span that did not report a value would
+/// understate the group, so the total is unknown instead. An unknown prompt
+/// count is 0 and an unknown cost is null, which every surface renders as an em
+/// dash.
+({int promptTokens, double? costUsd}) spanCacheTotals(
+  Iterable<SpanRecord> spans,
+) {
+  var promptTokens = 0;
+  var promptKnown = true;
+  var costUsd = 0.0;
+  var costKnown = true;
+  for (final s in spans) {
+    if (s.promptTokens > 0) {
+      promptTokens += s.promptTokens;
+    } else {
+      promptKnown = false;
+    }
+    final cost = s.cacheCostUsd;
+    if (cost != null) {
+      costUsd += cost;
+    } else if (s.cacheReadTokens > 0 || s.cacheCreationTokens > 0) {
+      // No cache tokens means no cache charge, so only a span that used the
+      // cache can leave the cost unknown.
+      costKnown = false;
+    }
+  }
+  return (
+    promptTokens: promptKnown ? promptTokens : 0,
+    costUsd: costKnown ? costUsd : null,
+  );
+}
+
 /// Aggregate a list of spans into a [UsageSummary].
 ///
-/// This is the pure-logic equivalent of TodayScreen._buildSummaryFromSpans,
-/// extracted here so it can be unit tested.
+/// The Today screen aggregates its UTC-day window through this helper, so
+/// the stat cards and the cache strip share one implementation.
 UsageSummary buildSummaryFromSpans(List<SpanRecord> spans) {
-  int totalIn = 0, totalOut = 0;
+  int totalIn = 0, totalOut = 0, totalCacheRead = 0, totalCacheCreation = 0;
   double totalCost = 0, totalMs = 0;
   for (final s in spans) {
     totalIn += s.inputTokens;
     totalOut += s.outputTokens;
     totalCost += s.costUsd;
     totalMs += s.durationMs;
+    totalCacheRead += s.cacheReadTokens;
+    totalCacheCreation += s.cacheCreationTokens;
   }
+  final cacheTotals = spanCacheTotals(spans);
   return UsageSummary(
     totalCalls: spans.length,
     totalInputTokens: totalIn,
@@ -195,14 +302,17 @@ UsageSummary buildSummaryFromSpans(List<SpanRecord> spans) {
     costOverTime: const [],
     tokensOverTime: const [],
     callsOverTime: const [],
+    totalCacheReadTokens: totalCacheRead,
+    totalCacheCreationTokens: totalCacheCreation,
+    totalPromptTokens: cacheTotals.promptTokens,
+    totalCacheCostUsd: cacheTotals.costUsd,
   );
 }
 
 /// Aggregate a list of spans into per-model [ModelBreakdown] entries,
 /// sorted by cost descending.
 ///
-/// This is the pure-logic equivalent of TodayScreen._buildTodayModels,
-/// extracted here so it can be unit tested.
+/// The Today screen builds "Top Models Today" through this helper.
 List<ModelBreakdown> buildModelBreakdownFromSpans(List<SpanRecord> spans) {
   if (spans.isEmpty) return [];
 
@@ -213,14 +323,17 @@ List<ModelBreakdown> buildModelBreakdownFromSpans(List<SpanRecord> spans) {
 
   final models = byModel.entries.map((e) {
     final group = e.value;
-    int inTok = 0, outTok = 0;
+    int inTok = 0, outTok = 0, cacheRead = 0, cacheCreation = 0;
     double cost = 0, ms = 0;
     for (final s in group) {
       inTok += s.inputTokens;
       outTok += s.outputTokens;
       cost += s.costUsd;
       ms += s.durationMs;
+      cacheRead += s.cacheReadTokens;
+      cacheCreation += s.cacheCreationTokens;
     }
+    final cacheTotals = spanCacheTotals(group);
     return ModelBreakdown(
       model: e.key,
       provider: group.first.provider,
@@ -229,6 +342,10 @@ List<ModelBreakdown> buildModelBreakdownFromSpans(List<SpanRecord> spans) {
       outputTokens: outTok,
       costUsd: cost,
       avgLatencyMs: group.isEmpty ? 0.0 : ms / group.length,
+      cacheReadTokens: cacheRead,
+      cacheCreationTokens: cacheCreation,
+      promptTokens: cacheTotals.promptTokens,
+      cacheCostUsd: cacheTotals.costUsd,
     );
   }).toList();
 

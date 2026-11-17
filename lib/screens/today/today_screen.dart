@@ -10,6 +10,7 @@ import '../../theme/colors.dart';
 import '../../widgets/scope_toggle.dart';
 import '../../providers.dart';
 import '../../utils/format.dart';
+import '../../widgets/cache_summary_strip.dart';
 import '../../widgets/local_services_card.dart';
 import '../../widgets/model_selector_dropdown.dart';
 
@@ -50,29 +51,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     }
 
     if (spans.isEmpty) return null;
-    return _buildSummaryFromSpans(spans);
-  }
-
-  /// Simple local aggregation for today's filtered spans.
-  UsageSummary _buildSummaryFromSpans(List<SpanRecord> spans) {
-    int totalIn = 0, totalOut = 0;
-    double totalCost = 0, totalMs = 0;
-    for (final s in spans) {
-      totalIn += s.inputTokens;
-      totalOut += s.outputTokens;
-      totalCost += s.costUsd;
-      totalMs += s.durationMs;
-    }
-    return UsageSummary(
-      totalCalls: spans.length,
-      totalInputTokens: totalIn,
-      totalOutputTokens: totalOut,
-      totalCostUsd: totalCost,
-      avgLatencyMs: spans.isEmpty ? 0.0 : totalMs / spans.length,
-      costOverTime: const [],
-      tokensOverTime: const [],
-      callsOverTime: const [],
-    );
+    return buildSummaryFromSpans(spans);
   }
 
   /// Build today-scoped model breakdowns from today-filtered spans.
@@ -89,36 +68,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         .toList();
     if (spans.isEmpty) return [];
 
-    // Group by model and aggregate.
-    final byModel = <String, List<SpanRecord>>{};
-    for (final s in spans) {
-      byModel.putIfAbsent(s.model, () => []).add(s);
-    }
-
-    final models = byModel.entries.map((e) {
-      final spans = e.value;
-      int inTok = 0, outTok = 0;
-      double cost = 0, ms = 0;
-      for (final s in spans) {
-        inTok += s.inputTokens;
-        outTok += s.outputTokens;
-        cost += s.costUsd;
-        ms += s.durationMs;
-      }
-      return ModelBreakdown(
-        model: e.key,
-        provider: spans.first.provider,
-        callCount: spans.length,
-        inputTokens: inTok,
-        outputTokens: outTok,
-        costUsd: cost,
-        avgLatencyMs: spans.isEmpty ? 0.0 : ms / spans.length,
-      );
-    }).toList();
-
-    // Sort by cost descending.
-    models.sort((a, b) => b.costUsd.compareTo(a.costUsd));
-    return models;
+    return buildModelBreakdownFromSpans(spans);
   }
 
   String? _errorMessage(DashboardState state) {
@@ -144,9 +94,13 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(dashboardProvider);
     final notifier = ref.read(dashboardProvider.notifier);
+    final config = ref.watch(configProvider).value;
     final summary = _buildTodaySummary(state);
     final error = _errorMessage(state);
     final todayModels = _buildTodayModels(state);
+    final cacheTtl = config?.vertexAI?.cachingEnabled == true
+        ? config?.vertexAI?.cacheTTL
+        : null;
     final uniqueModels =
         state.result?.models.map((m) => m.model).toSet().toList() ?? [];
 
@@ -164,7 +118,13 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                   )
                 : SingleChildScrollView(
                     padding: const EdgeInsets.all(24),
-                    child: _buildBody(summary, state, error, todayModels),
+                    child: _buildBody(
+                      summary,
+                      state,
+                      error,
+                      todayModels,
+                      cacheTtl,
+                    ),
                   ),
           ),
         ],
@@ -241,6 +201,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     DashboardState state,
     String? error,
     List<ModelBreakdown> todayModels,
+    String? cacheTtl,
   ) {
     if (error != null && state.result == null) {
       return Column(
@@ -276,6 +237,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         const SizedBox(height: 16),
         // ── Quick Stats Row ──
         _QuickStats(summary: summary),
+        if (summary != null && summary.cache.hasActivity) ...[
+          const SizedBox(height: 12),
+          CacheSummaryStrip(cache: summary.cache.withTtl(cacheTtl)),
+        ],
         const SizedBox(height: 16),
         // ── Budget + Grants breakdown ──
         if (budget != null) ...[

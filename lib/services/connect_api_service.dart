@@ -151,6 +151,8 @@ class ConnectApiService {
       final callCount = m.callCount.toInt().clamp(1, maxSyntheticSpans);
       final inputTok = m.inputTokens.toInt();
       final outputTok = m.outputTokens.toInt();
+      final cacheRead = m.cacheReadTokens.toInt();
+      final cacheCreation = m.cacheCreationTokens.toInt();
       final cost = m.costUsd;
       final latency = m.avgLatencyMs;
       final model = m.model.isEmpty ? 'unknown' : m.model;
@@ -171,6 +173,8 @@ class ConnectApiService {
             status: 'ok',
             timestamp: _spread(start, end, i, callCount),
             name: 'chat $model',
+            cacheReadTokens: (cacheRead / callCount).round(),
+            cacheCreationTokens: (cacheCreation / callCount).round(),
           ),
         );
       }

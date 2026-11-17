@@ -24,6 +24,13 @@ class SpanRecord {
   final int cacheReadTokens;
   final int cacheCreationTokens;
 
+  /// True prompt size reported by the proxy, 0 when the span predates it.
+  final int promptTokens;
+
+  /// Dollars charged for this call's cache reads and writes, null when the span
+  /// predates the field.
+  final double? cacheCostUsd;
+
   const SpanRecord({
     required this.spanId,
     required this.traceId,
@@ -39,6 +46,8 @@ class SpanRecord {
     required this.name,
     this.cacheReadTokens = 0,
     this.cacheCreationTokens = 0,
+    this.promptTokens = 0,
+    this.cacheCostUsd,
   });
 
   factory SpanRecord.fromJson(Map<String, dynamic> j) => SpanRecord(
@@ -57,6 +66,8 @@ class SpanRecord {
     name: j['name'] as String? ?? '',
     cacheReadTokens: (j['cache_read_tokens'] as num?)?.toInt() ?? 0,
     cacheCreationTokens: (j['cache_creation_tokens'] as num?)?.toInt() ?? 0,
+    promptTokens: (j['prompt_tokens'] as num?)?.toInt() ?? 0,
+    cacheCostUsd: (j['cache_cost_usd'] as num?)?.toDouble(),
   );
 
   /// Cache telemetry for this call. Attach the proxy TTL with
@@ -64,7 +75,8 @@ class SpanRecord {
   CacheTelemetry get cache => CacheTelemetry(
     readTokens: cacheReadTokens,
     creationTokens: cacheCreationTokens,
-    inputTokens: inputTokens,
+    promptTokens: promptTokens,
+    costUsd: cacheCostUsd,
   );
 }
 
@@ -90,6 +102,12 @@ class UsageSummary {
   final int totalCacheReadTokens;
   final int totalCacheCreationTokens;
 
+  /// True prompt tokens across the window, 0 when any span did not report them.
+  final int totalPromptTokens;
+
+  /// Cache dollars across the window, null when any span did not report them.
+  final double? totalCacheCostUsd;
+
   const UsageSummary({
     required this.totalCalls,
     required this.totalInputTokens,
@@ -101,6 +119,8 @@ class UsageSummary {
     required this.callsOverTime,
     this.totalCacheReadTokens = 0,
     this.totalCacheCreationTokens = 0,
+    this.totalPromptTokens = 0,
+    this.totalCacheCostUsd,
   });
 
   int get totalTokens => totalInputTokens + totalOutputTokens;
@@ -110,7 +130,8 @@ class UsageSummary {
   CacheTelemetry get cache => CacheTelemetry(
     readTokens: totalCacheReadTokens,
     creationTokens: totalCacheCreationTokens,
-    inputTokens: totalInputTokens,
+    promptTokens: totalPromptTokens,
+    costUsd: totalCacheCostUsd,
   );
 }
 
@@ -133,6 +154,14 @@ class ModelBreakdown {
   final int cacheReadTokens;
   final int cacheCreationTokens;
 
+  /// True prompt tokens for this model, 0 when any of its spans did not report
+  /// them.
+  final int promptTokens;
+
+  /// Cache dollars for this model, null when any of its spans did not report
+  /// them.
+  final double? cacheCostUsd;
+
   const ModelBreakdown({
     required this.model,
     required this.provider,
@@ -145,6 +174,8 @@ class ModelBreakdown {
     this.outputPricePerMillion,
     this.cacheReadTokens = 0,
     this.cacheCreationTokens = 0,
+    this.promptTokens = 0,
+    this.cacheCostUsd,
   });
 
   int get totalTokens => inputTokens + outputTokens;
@@ -154,7 +185,8 @@ class ModelBreakdown {
   CacheTelemetry get cache => CacheTelemetry(
     readTokens: cacheReadTokens,
     creationTokens: cacheCreationTokens,
-    inputTokens: inputTokens,
+    promptTokens: promptTokens,
+    costUsd: cacheCostUsd,
   );
 
   /// Returns a copy with pricing data enriched from the static registry.
@@ -174,6 +206,8 @@ class ModelBreakdown {
       outputPricePerMillion: outputPerMillion ?? outputPricePerMillion,
       cacheReadTokens: cacheReadTokens,
       cacheCreationTokens: cacheCreationTokens,
+      promptTokens: promptTokens,
+      cacheCostUsd: cacheCostUsd,
     );
   }
 }
@@ -209,6 +243,40 @@ enum TokenTimeRange {
 
 // ── Span aggregation helpers ────────────────────────────────────────────────
 
+/// Prompt size and cache dollars for a group of spans.
+///
+/// Both totals are all or nothing. One span that did not report a value would
+/// understate the group, so the total is unknown instead. An unknown prompt
+/// count is 0 and an unknown cost is null, which every surface renders as an em
+/// dash.
+({int promptTokens, double? costUsd}) spanCacheTotals(
+  Iterable<SpanRecord> spans,
+) {
+  var promptTokens = 0;
+  var promptKnown = true;
+  var costUsd = 0.0;
+  var costKnown = true;
+  for (final s in spans) {
+    if (s.promptTokens > 0) {
+      promptTokens += s.promptTokens;
+    } else {
+      promptKnown = false;
+    }
+    final cost = s.cacheCostUsd;
+    if (cost != null) {
+      costUsd += cost;
+    } else if (s.cacheReadTokens > 0 || s.cacheCreationTokens > 0) {
+      // No cache tokens means no cache charge, so only a span that used the
+      // cache can leave the cost unknown.
+      costKnown = false;
+    }
+  }
+  return (
+    promptTokens: promptKnown ? promptTokens : 0,
+    costUsd: costKnown ? costUsd : null,
+  );
+}
+
 /// Aggregate a list of spans into a [UsageSummary].
 ///
 /// The Today screen aggregates its UTC-day window through this helper, so
@@ -224,6 +292,7 @@ UsageSummary buildSummaryFromSpans(List<SpanRecord> spans) {
     totalCacheRead += s.cacheReadTokens;
     totalCacheCreation += s.cacheCreationTokens;
   }
+  final cacheTotals = spanCacheTotals(spans);
   return UsageSummary(
     totalCalls: spans.length,
     totalInputTokens: totalIn,
@@ -235,6 +304,8 @@ UsageSummary buildSummaryFromSpans(List<SpanRecord> spans) {
     callsOverTime: const [],
     totalCacheReadTokens: totalCacheRead,
     totalCacheCreationTokens: totalCacheCreation,
+    totalPromptTokens: cacheTotals.promptTokens,
+    totalCacheCostUsd: cacheTotals.costUsd,
   );
 }
 
@@ -262,6 +333,7 @@ List<ModelBreakdown> buildModelBreakdownFromSpans(List<SpanRecord> spans) {
       cacheRead += s.cacheReadTokens;
       cacheCreation += s.cacheCreationTokens;
     }
+    final cacheTotals = spanCacheTotals(group);
     return ModelBreakdown(
       model: e.key,
       provider: group.first.provider,
@@ -272,6 +344,8 @@ List<ModelBreakdown> buildModelBreakdownFromSpans(List<SpanRecord> spans) {
       avgLatencyMs: group.isEmpty ? 0.0 : ms / group.length,
       cacheReadTokens: cacheRead,
       cacheCreationTokens: cacheCreation,
+      promptTokens: cacheTotals.promptTokens,
+      cacheCostUsd: cacheTotals.costUsd,
     );
   }).toList();
 

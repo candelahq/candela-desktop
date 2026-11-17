@@ -1558,9 +1558,9 @@ class _UsageDetail extends StatelessWidget {
               CacheSummaryStrip(cache: model.cache.withTtl(cacheTtl)),
               const SizedBox(height: 6),
               const Text(
-                'Effective hit rate divides cache reads by the prompt tokens '
-                'the proxy reports, which are cost-normalized. The web '
-                'dashboard uses the same formula.',
+                'Hit rate divides cache reads by the true prompt tokens: fresh '
+                'tokens plus cache reads and cache writes. A dash means one of '
+                "this model's spans did not report its prompt size.",
                 style: TextStyle(
                   fontSize: 10,
                   height: 1.4,

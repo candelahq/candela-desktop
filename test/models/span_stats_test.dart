@@ -111,19 +111,45 @@ void main() {
         'input_tokens': 1000,
         'cache_read_tokens': 750,
         'cache_creation_tokens': 250,
+        'prompt_tokens': 3000,
       });
       expect(s.cacheReadTokens, 750);
       expect(s.cacheCreationTokens, 250);
-      expect(s.cache.effectiveHitRate, closeTo(0.75, 1e-9));
-      expect(s.cache.percentLabel, '75.0%');
+      expect(s.cache.effectiveHitRate, closeTo(0.25, 1e-9));
+      expect(s.cache.percentLabel, '25.0%');
     });
 
-    test('omitted cache fields default to zero', () {
+    test('parses prompt_tokens and cache_cost_usd', () {
+      final s = SpanRecord.fromJson({
+        'prompt_tokens': 12000,
+        'cache_cost_usd': 0.0735,
+      });
+      expect(s.promptTokens, 12000);
+      expect(s.cacheCostUsd, closeTo(0.0735, 1e-9));
+      expect(s.cache.costLabel, '\$0.07');
+    });
+
+    test('omitted cache fields default to zero and an unknown cost', () {
       final s = SpanRecord.fromJson({'input_tokens': 1000});
       expect(s.cacheReadTokens, 0);
       expect(s.cacheCreationTokens, 0);
+      expect(s.promptTokens, 0);
+      expect(s.cacheCostUsd, isNull);
       expect(s.cache.hasActivity, isFalse);
       expect(s.cache.effectiveHitRate, isNull);
+      expect(s.cache.costLabel, '—');
+    });
+
+    test('a span without prompt_tokens reports an unknown rate', () {
+      final s = SpanRecord.fromJson({
+        'input_tokens': 1000,
+        'cache_read_tokens': 800,
+        'cache_cost_usd': 0.02,
+      });
+      expect(s.cache.hasActivity, isTrue);
+      expect(s.cache.hasRate, isFalse);
+      expect(s.cache.percentLabel, '—');
+      expect(s.cache.costLabel, '\$0.02');
     });
 
     test('cache fields accept num values', () {
@@ -131,15 +157,20 @@ void main() {
         'input_tokens': 1000,
         'cache_read_tokens': 500.0,
         'cache_creation_tokens': 125.0,
+        'prompt_tokens': 2500.0,
+        'cache_cost_usd': 1,
       });
       expect(s.cacheReadTokens, 500);
       expect(s.cacheCreationTokens, 125);
+      expect(s.promptTokens, 2500);
+      expect(s.cacheCostUsd, 1.0);
     });
 
     test('creation-only span has activity but no rate', () {
       final s = SpanRecord.fromJson({
         'input_tokens': 1000,
         'cache_creation_tokens': 900,
+        'prompt_tokens': 1900,
       });
       expect(s.cache.hasActivity, isTrue);
       expect(s.cache.hasRate, isFalse);

@@ -4,7 +4,8 @@ import '../data/cache_efficiency.dart';
 import '../theme/colors.dart';
 import '../utils/format.dart';
 
-/// Compact strip showing cache read, cache write, and the effective hit rate.
+/// Compact strip showing cache read, cache write, hit rate, cache dollars, and
+/// the proxy TTL.
 ///
 /// Renders nothing when no cache tokens were recorded, so surfaces without
 /// caching stay uncluttered. [CacheTelemetry.ttl] carries the proxy's cache
@@ -16,9 +17,14 @@ class CacheSummaryStrip extends StatelessWidget {
   const CacheSummaryStrip({super.key, required this.cache});
 
   static const _denominatorNote =
-      'Cache read tokens divided by the proxy input tokens, which are '
-      'cost-normalized. The web dashboard shows the same figure as '
-      'Effective Hit Rate.';
+      'Cache read tokens divided by the true prompt tokens: fresh tokens plus '
+      'cache reads and cache writes, or the inclusive prompt count where the '
+      'provider reports one number. A dash means the spans behind this figure '
+      'did not all report their prompt size.';
+
+  static const _costNote =
+      'Dollars charged for cache reads and cache writes. A dash means a span '
+      'that used the cache did not report its cost.';
 
   static const _ttlNote =
       'Current proxy cache setting. Spans do not record a per-request TTL.';
@@ -60,10 +66,14 @@ class CacheSummaryStrip extends StatelessWidget {
           Tooltip(
             message: _denominatorNote,
             child: _metric(
-              'Effective hit rate',
+              'Hit rate',
               cache.hasRate ? '${cache.percentLabel} ${cache.tierLabel}' : '—',
               color: cache.hasRate ? cacheTierColor(cache.tier) : null,
             ),
+          ),
+          Tooltip(
+            message: _costNote,
+            child: _metric('Cache cost', cache.costLabel),
           ),
           if (cache.ttl != null)
             Tooltip(

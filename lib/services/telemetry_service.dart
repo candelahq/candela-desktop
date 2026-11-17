@@ -496,6 +496,8 @@ class TelemetryService {
       a.outputTokens += s.outputTokens;
       a.costUsd += s.costUsd;
       a.latencySum += s.durationMs;
+      a.cacheReadTokens += s.cacheReadTokens;
+      a.cacheCreationTokens += s.cacheCreationTokens;
     }
     return map.values
         .map(
@@ -507,6 +509,8 @@ class TelemetryService {
             outputTokens: a.outputTokens,
             costUsd: a.costUsd,
             avgLatencyMs: a.callCount == 0 ? 0 : a.latencySum / a.callCount,
+            cacheReadTokens: a.cacheReadTokens,
+            cacheCreationTokens: a.cacheCreationTokens,
           ),
         )
         .toList()
@@ -629,6 +633,8 @@ class _Accum {
   int callCount = 0;
   int inputTokens = 0;
   int outputTokens = 0;
+  int cacheReadTokens = 0;
+  int cacheCreationTokens = 0;
   double costUsd = 0;
   double latencySum = 0;
   _Accum({required this.model, required this.provider});

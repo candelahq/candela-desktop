@@ -237,13 +237,15 @@ List<ModelBreakdown> buildModelBreakdownFromSpans(List<SpanRecord> spans) {
 
   final models = byModel.entries.map((e) {
     final group = e.value;
-    int inTok = 0, outTok = 0;
+    int inTok = 0, outTok = 0, cacheRead = 0, cacheCreation = 0;
     double cost = 0, ms = 0;
     for (final s in group) {
       inTok += s.inputTokens;
       outTok += s.outputTokens;
       cost += s.costUsd;
       ms += s.durationMs;
+      cacheRead += s.cacheReadTokens;
+      cacheCreation += s.cacheCreationTokens;
     }
     return ModelBreakdown(
       model: e.key,
@@ -253,6 +255,8 @@ List<ModelBreakdown> buildModelBreakdownFromSpans(List<SpanRecord> spans) {
       outputTokens: outTok,
       costUsd: cost,
       avgLatencyMs: group.isEmpty ? 0.0 : ms / group.length,
+      cacheReadTokens: cacheRead,
+      cacheCreationTokens: cacheCreation,
     );
   }).toList();
 

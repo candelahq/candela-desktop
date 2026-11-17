@@ -9,6 +9,7 @@ import '../../models/span_stats.dart';
 import '../../providers.dart';
 import '../../services/telemetry_service.dart';
 import '../../theme/colors.dart';
+import '../../widgets/cache_summary_strip.dart';
 
 /// Model catalog + usage screen with two tabs.
 class ModelsScreen extends ConsumerStatefulWidget {
@@ -823,6 +824,9 @@ class _UsageTabState extends ConsumerState<_UsageTab>
   int _port = 8181;
   _ModelFilter _filter = _ModelFilter.all;
 
+  /// Proxy cache TTL, set only when prompt caching is enabled.
+  String? _cacheTtl;
+
   @override
   bool get wantKeepAlive => true;
 
@@ -838,6 +842,9 @@ class _UsageTabState extends ConsumerState<_UsageTab>
     final config = await ref.read(configServiceProvider).load();
     if (!mounted) return;
     _port = config.port;
+    _cacheTtl = config.vertexAI?.cachingEnabled == true
+        ? config.vertexAI?.cacheTTL
+        : null;
     _svc = TelemetryService(port: _port);
     await _fetch();
     if (!mounted) return;
@@ -1048,7 +1055,13 @@ class _UsageTabState extends ConsumerState<_UsageTab>
                   children: [
                     Expanded(flex: 3, child: _buildModelList()),
                     if (selected != null)
-                      Expanded(flex: 2, child: _UsageDetail(model: selected)),
+                      Expanded(
+                        flex: 2,
+                        child: _UsageDetail(
+                          model: selected,
+                          cacheTtl: _cacheTtl,
+                        ),
+                      ),
                   ],
                 ),
         ),
@@ -1444,7 +1457,11 @@ class _UsageRowState extends State<_UsageRow> {
 
 class _UsageDetail extends StatelessWidget {
   final ModelBreakdown model;
-  const _UsageDetail({required this.model});
+
+  /// Proxy cache TTL, set only when prompt caching is enabled.
+  final String? cacheTtl;
+
+  const _UsageDetail({required this.model, this.cacheTtl});
 
   @override
   Widget build(BuildContext context) {
@@ -1527,52 +1544,28 @@ class _UsageDetail extends StatelessWidget {
                 '\$${model.outputPricePerMillion!.toStringAsFixed(2)}',
               ),
             ],
-            if (model.cache.hasRate) ...[
+            if (model.cache.hasActivity) ...[
               const SizedBox(height: 24),
-              Builder(
-                builder: (_) {
-                  final cache = model.cache;
-                  final badgeColor = cacheTierColor(cache.tier);
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Cache Efficiency',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: CandelaColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: badgeColor.withAlpha(25),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: badgeColor.withAlpha(80)),
-                        ),
-                        child: Text(
-                          '${cache.tierLabel}  ${cache.percentLabel}',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            fontFamily: 'monospace',
-                            color: badgeColor,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      _metricBar(
-                        'Cache Read',
-                        _fmtTokens(model.cacheReadTokens),
-                      ),
-                    ],
-                  );
-                },
+              const Text(
+                'Cache',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: CandelaColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              CacheSummaryStrip(cache: model.cache.withTtl(cacheTtl)),
+              const SizedBox(height: 6),
+              const Text(
+                'Effective hit rate divides cache reads by the prompt tokens '
+                'the proxy reports, which are cost-normalized. The web '
+                'dashboard uses the same formula.',
+                style: TextStyle(
+                  fontSize: 10,
+                  height: 1.4,
+                  color: CandelaColors.textMuted,
+                ),
               ),
             ],
             const SizedBox(height: 24),

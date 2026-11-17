@@ -7,6 +7,7 @@ import '../../models/span_stats.dart';
 import '../../services/telemetry_service.dart';
 import '../../theme/colors.dart';
 import '../../providers.dart';
+import '../../widgets/cache_summary_strip.dart';
 import '../../widgets/scope_toggle.dart';
 
 /// Full-page distributed trace viewer.
@@ -30,6 +31,10 @@ class _TracesScreenState extends ConsumerState<TracesScreen> {
   TelemetryService? _svc;
   bool _initialized = false;
   bool _isTeamMode = false;
+
+  /// Proxy cache TTL, set only when prompt caching is enabled. Spans carry no
+  /// per-request TTL, so this is always the current proxy setting.
+  String? _cacheTtl;
 
   // Filters
   String _searchQuery = '';
@@ -57,6 +62,10 @@ class _TracesScreenState extends ConsumerState<TracesScreen> {
 
     final config = await ref.read(configServiceProvider).load();
     if (!mounted) return;
+
+    _cacheTtl = config.vertexAI?.cachingEnabled == true
+        ? config.vertexAI?.cacheTTL
+        : null;
 
     final isTeam =
         config.mode == CandelaMode.team &&
@@ -374,6 +383,7 @@ class _TracesScreenState extends ConsumerState<TracesScreen> {
               return _SpanRow(
                 span: span,
                 isExpanded: isExpanded,
+                cacheTtl: _cacheTtl,
                 onTap: () => setState(() {
                   _expandedSpanId = isExpanded ? null : span.spanId;
                 }),
@@ -473,11 +483,13 @@ class _HeaderLabel extends StatelessWidget {
 class _SpanRow extends StatefulWidget {
   final SpanRecord span;
   final bool isExpanded;
+  final String? cacheTtl;
   final VoidCallback onTap;
   const _SpanRow({
     required this.span,
     required this.isExpanded,
     required this.onTap,
+    this.cacheTtl,
   });
   @override
   State<_SpanRow> createState() => _SpanRowState();
@@ -563,7 +575,7 @@ class _SpanRowState extends State<_SpanRow> {
             ),
           ),
         ),
-        if (widget.isExpanded) _SpanDetail(span: s),
+        if (widget.isExpanded) _SpanDetail(span: s, cacheTtl: widget.cacheTtl),
         const Divider(height: 1, color: CandelaColors.borderSubtle),
       ],
     );
@@ -574,7 +586,8 @@ class _SpanRowState extends State<_SpanRow> {
 
 class _SpanDetail extends StatelessWidget {
   final SpanRecord span;
-  const _SpanDetail({required this.span});
+  final String? cacheTtl;
+  const _SpanDetail({required this.span, this.cacheTtl});
 
   @override
   Widget build(BuildContext context) {
@@ -618,6 +631,10 @@ class _SpanDetail extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
+          if (span.cache.hasActivity) ...[
+            CacheSummaryStrip(cache: span.cache.withTtl(cacheTtl)),
+            const SizedBox(height: 12),
+          ],
           Row(
             children: [
               const Text(

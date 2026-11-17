@@ -21,6 +21,8 @@ class SpanRecord {
   final String status; // "ok" | "error" | "unset"
   final DateTime timestamp;
   final String name;
+  final int cacheReadTokens;
+  final int cacheCreationTokens;
 
   const SpanRecord({
     required this.spanId,
@@ -35,6 +37,8 @@ class SpanRecord {
     required this.status,
     required this.timestamp,
     required this.name,
+    this.cacheReadTokens = 0,
+    this.cacheCreationTokens = 0,
   });
 
   factory SpanRecord.fromJson(Map<String, dynamic> j) => SpanRecord(
@@ -51,6 +55,16 @@ class SpanRecord {
     timestamp:
         DateTime.tryParse(j['timestamp'] as String? ?? '') ?? DateTime.now(),
     name: j['name'] as String? ?? '',
+    cacheReadTokens: (j['cache_read_tokens'] as num?)?.toInt() ?? 0,
+    cacheCreationTokens: (j['cache_creation_tokens'] as num?)?.toInt() ?? 0,
+  );
+
+  /// Cache telemetry for this call. Attach the proxy TTL with
+  /// [CacheTelemetry.withTtl] where the config is in reach.
+  CacheTelemetry get cache => CacheTelemetry(
+    readTokens: cacheReadTokens,
+    creationTokens: cacheCreationTokens,
+    inputTokens: inputTokens,
   );
 }
 

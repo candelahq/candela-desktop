@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
-import '../../data/cache_efficiency.dart';
 import '../../gen/candela/types/model_catalog.pb.dart';
 import '../../models/catalog_model_view.dart';
 import '../../models/span_stats.dart';
@@ -1528,20 +1527,12 @@ class _UsageDetail extends StatelessWidget {
                 '\$${model.outputPricePerMillion!.toStringAsFixed(2)}',
               ),
             ],
-            if (model.cacheReadTokens > 0) ...[
+            if (model.cache.hasRate) ...[
               const SizedBox(height: 24),
               Builder(
                 builder: (_) {
-                  final eff = cacheEfficiencyLabel(
-                    model.cacheReadTokens,
-                    model.inputTokens,
-                  );
-                  if (eff == null) return const SizedBox.shrink();
-                  final badgeColor = switch (eff.tier) {
-                    CacheEfficiencyTier.excellent => const Color(0xFF4ADE80),
-                    CacheEfficiencyTier.good => CandelaColors.accent,
-                    CacheEfficiencyTier.low => CandelaColors.warning,
-                  };
+                  final cache = model.cache;
+                  final badgeColor = cacheTierColor(cache.tier);
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1565,7 +1556,7 @@ class _UsageDetail extends StatelessWidget {
                           border: Border.all(color: badgeColor.withAlpha(80)),
                         ),
                         child: Text(
-                          '${eff.label}  ${(eff.rate * 100).toStringAsFixed(1)}%',
+                          '${cache.tierLabel}  ${cache.percentLabel}',
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,

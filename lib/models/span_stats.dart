@@ -4,6 +4,8 @@
 /// `/_local/api/traces` endpoint (see traces_handler.go).
 library;
 
+import '../data/cache_efficiency.dart';
+
 // ── Raw span from the server ────────────────────────────────────────────────
 
 class SpanRecord {
@@ -120,6 +122,14 @@ class ModelBreakdown {
   });
 
   int get totalTokens => inputTokens + outputTokens;
+
+  /// Cache telemetry for this model. Attach the proxy TTL with
+  /// [CacheTelemetry.withTtl] where the config is in reach.
+  CacheTelemetry get cache => CacheTelemetry(
+    readTokens: cacheReadTokens,
+    creationTokens: cacheCreationTokens,
+    inputTokens: inputTokens,
+  );
 
   /// Returns a copy with pricing data enriched from the static registry.
   ModelBreakdown withPricing({

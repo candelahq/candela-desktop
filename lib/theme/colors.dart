@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../data/cache_efficiency.dart';
+
 /// Candela brand colors — ported from globals.css design tokens.
 class CandelaColors {
   CandelaColors._();
@@ -49,3 +51,12 @@ class CandelaColorsLight {
   static const border = Color(0xFFD8D8E0);
   static const borderSubtle = Color(0xFFE8E8EE);
 }
+
+/// Badge color for a cache-efficiency tier. Matches the web dashboard's
+/// success/accent/warning mapping; a missing tier (no rate) is muted.
+Color cacheTierColor(CacheEfficiencyTier? tier) => switch (tier) {
+  CacheEfficiencyTier.excellent => const Color(0xFF4ADE80),
+  CacheEfficiencyTier.good => CandelaColors.accent,
+  CacheEfficiencyTier.low => CandelaColors.warning,
+  null => CandelaColors.textMuted,
+};

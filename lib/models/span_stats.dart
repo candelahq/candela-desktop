@@ -211,8 +211,8 @@ enum TokenTimeRange {
 
 /// Aggregate a list of spans into a [UsageSummary].
 ///
-/// This is the pure-logic equivalent of TodayScreen._buildSummaryFromSpans,
-/// extracted here so it can be unit tested.
+/// The Today screen aggregates its UTC-day window through this helper, so
+/// the stat cards and the cache strip share one implementation.
 UsageSummary buildSummaryFromSpans(List<SpanRecord> spans) {
   int totalIn = 0, totalOut = 0, totalCacheRead = 0, totalCacheCreation = 0;
   double totalCost = 0, totalMs = 0;
@@ -241,8 +241,7 @@ UsageSummary buildSummaryFromSpans(List<SpanRecord> spans) {
 /// Aggregate a list of spans into per-model [ModelBreakdown] entries,
 /// sorted by cost descending.
 ///
-/// This is the pure-logic equivalent of TodayScreen._buildTodayModels,
-/// extracted here so it can be unit tested.
+/// The Today screen builds "Top Models Today" through this helper.
 List<ModelBreakdown> buildModelBreakdownFromSpans(List<SpanRecord> spans) {
   if (spans.isEmpty) return [];
 

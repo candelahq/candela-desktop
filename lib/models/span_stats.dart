@@ -87,6 +87,8 @@ class UsageSummary {
   final List<TimeSeriesPoint> costOverTime;
   final List<TimeSeriesPoint> tokensOverTime;
   final List<TimeSeriesPoint> callsOverTime;
+  final int totalCacheReadTokens;
+  final int totalCacheCreationTokens;
 
   const UsageSummary({
     required this.totalCalls,
@@ -97,9 +99,19 @@ class UsageSummary {
     required this.costOverTime,
     required this.tokensOverTime,
     required this.callsOverTime,
+    this.totalCacheReadTokens = 0,
+    this.totalCacheCreationTokens = 0,
   });
 
   int get totalTokens => totalInputTokens + totalOutputTokens;
+
+  /// Cache telemetry for the whole window. Attach the proxy TTL with
+  /// [CacheTelemetry.withTtl] where the config is in reach.
+  CacheTelemetry get cache => CacheTelemetry(
+    readTokens: totalCacheReadTokens,
+    creationTokens: totalCacheCreationTokens,
+    inputTokens: totalInputTokens,
+  );
 }
 
 /// Per-model cost & token breakdown row.
@@ -202,13 +214,15 @@ enum TokenTimeRange {
 /// This is the pure-logic equivalent of TodayScreen._buildSummaryFromSpans,
 /// extracted here so it can be unit tested.
 UsageSummary buildSummaryFromSpans(List<SpanRecord> spans) {
-  int totalIn = 0, totalOut = 0;
+  int totalIn = 0, totalOut = 0, totalCacheRead = 0, totalCacheCreation = 0;
   double totalCost = 0, totalMs = 0;
   for (final s in spans) {
     totalIn += s.inputTokens;
     totalOut += s.outputTokens;
     totalCost += s.costUsd;
     totalMs += s.durationMs;
+    totalCacheRead += s.cacheReadTokens;
+    totalCacheCreation += s.cacheCreationTokens;
   }
   return UsageSummary(
     totalCalls: spans.length,
@@ -219,6 +233,8 @@ UsageSummary buildSummaryFromSpans(List<SpanRecord> spans) {
     costOverTime: const [],
     tokensOverTime: const [],
     callsOverTime: const [],
+    totalCacheReadTokens: totalCacheRead,
+    totalCacheCreationTokens: totalCacheCreation,
   );
 }
 

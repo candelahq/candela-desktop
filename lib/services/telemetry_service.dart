@@ -457,13 +457,15 @@ class TelemetryService {
     TokenTimeRange range,
     DateTime now,
   ) {
-    int totalIn = 0, totalOut = 0;
+    int totalIn = 0, totalOut = 0, totalCacheRead = 0, totalCacheCreation = 0;
     double totalCost = 0, totalMs = 0;
     for (final s in spans) {
       totalIn += s.inputTokens;
       totalOut += s.outputTokens;
       totalCost += s.costUsd;
       totalMs += s.durationMs;
+      totalCacheRead += s.cacheReadTokens;
+      totalCacheCreation += s.cacheCreationTokens;
     }
     return UsageSummary(
       totalCalls: spans.length,
@@ -479,6 +481,8 @@ class TelemetryService {
         (s) => s.totalTokens.toDouble(),
       ),
       callsOverTime: _series(spans, range, now, (_) => 1.0),
+      totalCacheReadTokens: totalCacheRead,
+      totalCacheCreationTokens: totalCacheCreation,
     );
   }
 

@@ -10,6 +10,7 @@ import '../../services/telemetry_service.dart';
 import '../../theme/colors.dart';
 import '../../widgets/area_chart.dart';
 import '../../widgets/budget_waterfall_card.dart';
+import '../../widgets/cache_summary_strip.dart';
 import '../../widgets/model_breakdown_table.dart';
 import '../../widgets/model_selector_dropdown.dart';
 import '../../widgets/scope_toggle.dart';
@@ -99,6 +100,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         state.result?.models.map((m) => m.model).toSet().toList() ?? [];
 
     final error = DashboardScreen.errorMessageFor(state);
+    final cachingMode = config?.vertexAI?.cachingMode ?? 'off';
 
     // Fire threshold notifications when budget data is available.
     if (state.result?.budget != null) {
@@ -127,10 +129,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               filteredSummary: summary,
               loading: state.loading,
               error: error,
-              cachingMode: config?.vertexAI?.cachingMode ?? 'off',
+              cachingMode: cachingMode,
               semanticCache: config?.optimizations?.semanticCache ?? false,
               contextCompression:
                   config?.optimizations?.contextCompression ?? false,
+              cacheTtl: cachingMode == 'off'
+                  ? null
+                  : config?.vertexAI?.cacheTTL,
               range: state.range,
             ),
           ),
@@ -303,6 +308,7 @@ class _Body extends StatelessWidget {
   final String cachingMode;
   final bool semanticCache;
   final bool contextCompression;
+  final String? cacheTtl;
   final TokenTimeRange range;
 
   const _Body({
@@ -314,6 +320,7 @@ class _Body extends StatelessWidget {
     this.cachingMode = 'off',
     this.semanticCache = false,
     this.contextCompression = false,
+    this.cacheTtl,
   });
 
   @override
@@ -338,6 +345,10 @@ class _Body extends StatelessWidget {
             const SizedBox(height: 20),
           ],
           _StatGrid(summary: filteredSummary, loading: loading, range: range),
+          if (filteredSummary?.cache.hasActivity ?? false) ...[
+            const SizedBox(height: 12),
+            CacheSummaryStrip(cache: filteredSummary!.cache.withTtl(cacheTtl)),
+          ],
           if (hasOptimizations) ...[
             const SizedBox(height: 12),
             _OptimizationChips(

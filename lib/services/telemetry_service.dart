@@ -159,7 +159,7 @@ class TelemetryService {
 
     return TelemetryResult(
       summary: buildSummary(filtered, range, now),
-      models: preBuiltModels ?? _buildModelBreakdown(filtered),
+      models: preBuiltModels ?? buildModelBreakdownFromSpans(filtered),
       spans: filtered,
       isTeamMode: isTeamMode,
       budget: budget,
@@ -457,14 +457,17 @@ class TelemetryService {
     TokenTimeRange range,
     DateTime now,
   ) {
-    int totalIn = 0, totalOut = 0;
+    int totalIn = 0, totalOut = 0, totalCacheRead = 0, totalCacheCreation = 0;
     double totalCost = 0, totalMs = 0;
     for (final s in spans) {
       totalIn += s.inputTokens;
       totalOut += s.outputTokens;
       totalCost += s.costUsd;
       totalMs += s.durationMs;
+      totalCacheRead += s.cacheReadTokens;
+      totalCacheCreation += s.cacheCreationTokens;
     }
+    final cacheTotals = spanCacheTotals(spans);
     return UsageSummary(
       totalCalls: spans.length,
       totalInputTokens: totalIn,
@@ -479,38 +482,11 @@ class TelemetryService {
         (s) => s.totalTokens.toDouble(),
       ),
       callsOverTime: _series(spans, range, now, (_) => 1.0),
+      totalCacheReadTokens: totalCacheRead,
+      totalCacheCreationTokens: totalCacheCreation,
+      totalPromptTokens: cacheTotals.promptTokens,
+      totalCacheCostUsd: cacheTotals.costUsd,
     );
-  }
-
-  List<ModelBreakdown> _buildModelBreakdown(List<SpanRecord> spans) {
-    final map = <String, _Accum>{};
-    for (final s in spans) {
-      // Key by model name only — prevents duplicate rows when the same model
-      // appears under different providers.
-      final a = map.putIfAbsent(
-        s.model,
-        () => _Accum(model: s.model, provider: s.provider),
-      );
-      a.callCount++;
-      a.inputTokens += s.inputTokens;
-      a.outputTokens += s.outputTokens;
-      a.costUsd += s.costUsd;
-      a.latencySum += s.durationMs;
-    }
-    return map.values
-        .map(
-          (a) => ModelBreakdown(
-            model: a.model,
-            provider: a.provider,
-            callCount: a.callCount,
-            inputTokens: a.inputTokens,
-            outputTokens: a.outputTokens,
-            costUsd: a.costUsd,
-            avgLatencyMs: a.callCount == 0 ? 0 : a.latencySum / a.callCount,
-          ),
-        )
-        .toList()
-      ..sort((a, b) => b.costUsd.compareTo(a.costUsd));
   }
 
   /// H3: [now] is passed in to ensure bucket timestamps are stable.
@@ -619,17 +595,4 @@ class TelemetryResult {
        error = null;
 
   bool get hasData => summary != null;
-}
-
-// ── Internal accumulator ──────────────────────────────────────────────────────
-
-class _Accum {
-  final String model;
-  final String provider;
-  int callCount = 0;
-  int inputTokens = 0;
-  int outputTokens = 0;
-  double costUsd = 0;
-  double latencySum = 0;
-  _Accum({required this.model, required this.provider});
 }

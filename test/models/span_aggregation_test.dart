@@ -12,6 +12,10 @@ SpanRecord _span({
   String provider = 'google',
   int inputTokens = 100,
   int outputTokens = 50,
+  int cacheReadTokens = 0,
+  int cacheCreationTokens = 0,
+  int promptTokens = 0,
+  double? cacheCostUsd,
   double costUsd = 0.01,
   double durationMs = 500.0,
   DateTime? timestamp,
@@ -28,6 +32,10 @@ SpanRecord _span({
   status: 'ok',
   timestamp: timestamp ?? DateTime.now(),
   name: 'chat',
+  cacheReadTokens: cacheReadTokens,
+  cacheCreationTokens: cacheCreationTokens,
+  promptTokens: promptTokens,
+  cacheCostUsd: cacheCostUsd,
 );
 
 void main() {
@@ -191,6 +199,105 @@ void main() {
       expect(fast.avgLatencyMs, 200.0); // (100+300)/2
       expect(slow.avgLatencyMs, 2000.0);
     });
+  });
+
+  group('cache totals', () {
+    test('buildSummaryFromSpans sums cache tokens, prompt tokens and cost', () {
+      final summary = buildSummaryFromSpans([
+        _span(
+          model: 'claude-sonnet-4',
+          inputTokens: 1000,
+          cacheReadTokens: 400,
+          cacheCreationTokens: 100,
+          promptTokens: 800,
+          cacheCostUsd: 0.02,
+        ),
+        _span(
+          model: 'claude-sonnet-4',
+          inputTokens: 1000,
+          cacheReadTokens: 600,
+          promptTokens: 1200,
+          cacheCostUsd: 0.03,
+        ),
+      ]);
+      expect(summary.totalCacheReadTokens, 1000);
+      expect(summary.totalCacheCreationTokens, 100);
+      expect(summary.totalPromptTokens, 2000);
+      expect(summary.totalCacheCostUsd, closeTo(0.05, 1e-10));
+      expect(summary.cache.effectiveHitRate, closeTo(0.5, 1e-9));
+      expect(summary.cache.percentLabel, '50.0%');
+      expect(summary.cache.costLabel, '\$0.05');
+    });
+
+    test('one span without a prompt count makes the window total unknown', () {
+      final summary = buildSummaryFromSpans([
+        _span(
+          model: 'claude-sonnet-4',
+          cacheReadTokens: 400,
+          promptTokens: 800,
+          cacheCostUsd: 0.02,
+        ),
+        _span(model: 'claude-sonnet-4', cacheReadTokens: 100),
+      ]);
+      expect(summary.totalPromptTokens, 0);
+      expect(summary.totalCacheCostUsd, isNull);
+      expect(summary.cache.hasActivity, isTrue);
+      expect(summary.cache.percentLabel, '—');
+      expect(summary.cache.costLabel, '—');
+    });
+
+    test('a span with no cache activity leaves the cost precise', () {
+      final summary = buildSummaryFromSpans([
+        _span(
+          model: 'mixed',
+          cacheReadTokens: 400,
+          promptTokens: 800,
+          cacheCostUsd: 0.02,
+        ),
+        _span(model: 'mixed', promptTokens: 200),
+      ]);
+      expect(summary.totalPromptTokens, 1000);
+      expect(summary.totalCacheCostUsd, closeTo(0.02, 1e-10));
+      expect(summary.cache.costLabel, '\$0.02');
+    });
+
+    test('buildModelBreakdownFromSpans keeps cache totals per model', () {
+      final models = buildModelBreakdownFromSpans([
+        _span(
+          model: 'cached',
+          inputTokens: 1000,
+          cacheReadTokens: 800,
+          cacheCreationTokens: 200,
+          promptTokens: 1000,
+          cacheCostUsd: 0.01,
+          costUsd: 0.01,
+        ),
+        _span(model: 'uncached', costUsd: 0.05),
+      ]);
+      final cached = models.firstWhere((m) => m.model == 'cached');
+      final uncached = models.firstWhere((m) => m.model == 'uncached');
+      expect(cached.cacheReadTokens, 800);
+      expect(cached.cacheCreationTokens, 200);
+      expect(cached.promptTokens, 1000);
+      expect(cached.cacheCostUsd, closeTo(0.01, 1e-10));
+      expect(cached.cache.effectiveHitRate, closeTo(0.8, 1e-9));
+      expect(uncached.cache.hasActivity, isFalse);
+      expect(uncached.cache.effectiveHitRate, isNull);
+    });
+
+    test(
+      'a span that used the cache without a cost leaves that model unknown',
+      () {
+        final models = buildModelBreakdownFromSpans([
+          _span(model: 'mixed', promptTokens: 500, cacheCostUsd: 0.01),
+          _span(model: 'mixed', promptTokens: 500, cacheReadTokens: 200),
+        ]);
+        final mixed = models.single;
+        expect(mixed.promptTokens, 1000);
+        expect(mixed.cacheCostUsd, isNull);
+        expect(mixed.cache.costLabel, '—');
+      },
+    );
   });
 
   group('TokenTimeRange.todayUtc', () {

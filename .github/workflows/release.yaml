@@ -20,7 +20,8 @@ permissions:
   contents: write  # create GitHub Releases
 
 env:
-  FLUTTER_VERSION: stable
+  FLUTTER_CHANNEL: stable
+  FLUTTER_VERSION: '3.47.5'
 
 jobs:
   # ── macOS Build ──────────────────────────────────────────
@@ -36,7 +37,8 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          channel: ${{ env.FLUTTER_VERSION }}
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - run: flutter pub get
 
@@ -156,7 +158,8 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          channel: ${{ env.FLUTTER_VERSION }}
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - run: flutter pub get
 
@@ -193,7 +196,8 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          channel: ${{ env.FLUTTER_VERSION }}
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
 
       - name: Install Linux dependencies
         uses: ./.github/actions/setup-linux-deps
